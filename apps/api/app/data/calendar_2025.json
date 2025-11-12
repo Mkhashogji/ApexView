@@ -1,0 +1,341 @@
+{
+  "season": 2025,
+  "last_updated": "2025-11-07",
+  "source": "FIA Official Calendar",
+  "total_rounds": 24,
+  "sprint_rounds": [2, 6, 13, 19, 21, 23],
+  "calendar": [
+    {
+      "round": "Testing",
+      "dates": "Feb 26–28",
+      "grand_prix": "Pre-Season Testing",
+      "host": {
+        "city": "Sakhir",
+        "country": "Bahrain"
+      },
+      "circuit": {
+        "name": "Bahrain International Circuit",
+        "location": "Sakhir, Bahrain"
+      }
+    },
+    {
+      "round": 1,
+      "dates": "Mar 14–16",
+      "grand_prix": "Australian Grand Prix",
+      "host": {
+        "city": "Melbourne",
+        "country": "Australia"
+      },
+      "circuit": {
+        "name": "Albert Park Circuit",
+        "location": "Melbourne, Australia"
+      }
+    },
+    {
+      "round": 2,
+      "dates": "Mar 21–23",
+      "grand_prix": "Chinese Grand Prix",
+      "host": {
+        "city": "Shanghai",
+        "country": "People's Republic of China"
+      },
+      "circuit": {
+        "name": "Shanghai International Circuit",
+        "location": "Shanghai, China"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 3,
+      "dates": "Apr 4–6",
+      "grand_prix": "Japanese Grand Prix",
+      "host": {
+        "city": "Suzuka",
+        "country": "Japan"
+      },
+      "circuit": {
+        "name": "Suzuka International Racing Course",
+        "location": "Suzuka, Japan"
+      }
+    },
+    {
+      "round": 4,
+      "dates": "Apr 11–13",
+      "grand_prix": "Bahrain Grand Prix",
+      "host": {
+        "city": "Sakhir",
+        "country": "Bahrain"
+      },
+      "circuit": {
+        "name": "Bahrain International Circuit",
+        "location": "Sakhir, Bahrain"
+      }
+    },
+    {
+      "round": 5,
+      "dates": "Apr 18–20",
+      "grand_prix": "Saudi Arabian Grand Prix",
+      "host": {
+        "city": "Jeddah",
+        "country": "Saudi Arabia"
+      },
+      "circuit": {
+        "name": "Jeddah Corniche Circuit",
+        "location": "Jeddah, Saudi Arabia"
+      }
+    },
+    {
+      "round": 6,
+      "dates": "May 2–4",
+      "grand_prix": "Miami Grand Prix",
+      "host": {
+        "city": "Miami",
+        "country": "United States"
+      },
+      "circuit": {
+        "name": "Miami International Autodrome",
+        "location": "Miami, USA"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 7,
+      "dates": "May 16–18",
+      "grand_prix": "Emilia Romagna Grand Prix",
+      "host": {
+        "city": "Imola",
+        "country": "Italy"
+      },
+      "circuit": {
+        "name": "Imola Circuit",
+        "location": "Imola, Italy"
+      }
+    },
+    {
+      "round": 8,
+      "dates": "May 23–25",
+      "grand_prix": "Monaco Grand Prix",
+      "host": {
+        "city": "Monte Carlo",
+        "country": "Monaco"
+      },
+      "circuit": {
+        "name": "Circuit de Monaco",
+        "location": "Monte Carlo, Monaco"
+      }
+    },
+    {
+      "round": 9,
+      "dates": "May 30–Jun 1",
+      "grand_prix": "Spanish Grand Prix",
+      "host": {
+        "city": "Montmeló",
+        "country": "Spain"
+      },
+      "circuit": {
+        "name": "Circuit de Barcelona-Catalunya",
+        "location": "Montmeló, Spain"
+      }
+    },
+    {
+      "round": 10,
+      "dates": "Jun 13–15",
+      "grand_prix": "Canadian Grand Prix",
+      "host": {
+        "city": "Montreal",
+        "country": "Canada"
+      },
+      "circuit": {
+        "name": "Circuit Gilles Villeneuve",
+        "location": "Montreal, Canada"
+      }
+    },
+    {
+      "round": 11,
+      "dates": "Jun 27–29",
+      "grand_prix": "Austrian Grand Prix",
+      "host": {
+        "city": "Spielberg",
+        "country": "Austria"
+      },
+      "circuit": {
+        "name": "Red Bull Ring",
+        "location": "Spielberg, Austria"
+      }
+    },
+    {
+      "round": 12,
+      "dates": "Jul 4–6",
+      "grand_prix": "British Grand Prix",
+      "host": {
+        "city": "Silverstone",
+        "country": "United Kingdom"
+      },
+      "circuit": {
+        "name": "Silverstone Circuit",
+        "location": "Silverstone, UK"
+      }
+    },
+    {
+      "round": 13,
+      "dates": "Jul 25–27",
+      "grand_prix": "Belgian Grand Prix",
+      "host": {
+        "city": "Stavelot",
+        "country": "Belgium"
+      },
+      "circuit": {
+        "name": "Circuit de Spa-Francorchamps",
+        "location": "Stavelot, Belgium"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 14,
+      "dates": "Aug 1–3",
+      "grand_prix": "Hungarian Grand Prix",
+      "host": {
+        "city": "Mogyoród",
+        "country": "Hungary"
+      },
+      "circuit": {
+        "name": "Hungaroring",
+        "location": "Mogyoród, Hungary"
+      }
+    },
+    {
+      "round": 15,
+      "dates": "Aug 29–31",
+      "grand_prix": "Dutch Grand Prix",
+      "host": {
+        "city": "Zandvoort",
+        "country": "Netherlands"
+      },
+      "circuit": {
+        "name": "Circuit Zandvoort",
+        "location": "Zandvoort, Netherlands"
+      }
+    },
+    {
+      "round": 16,
+      "dates": "Sep 5–7",
+      "grand_prix": "Italian Grand Prix",
+      "host": {
+        "city": "Monza",
+        "country": "Italy"
+      },
+      "circuit": {
+        "name": "Autodromo Nazionale Monza",
+        "location": "Monza, Italy"
+      }
+    },
+    {
+      "round": 17,
+      "dates": "Sep 19–21",
+      "grand_prix": "Azerbaijan Grand Prix",
+      "host": {
+        "city": "Baku",
+        "country": "Azerbaijan"
+      },
+      "circuit": {
+        "name": "Baku City Circuit",
+        "location": "Baku, Azerbaijan"
+      }
+    },
+    {
+      "round": 18,
+      "dates": "Oct 3–5",
+      "grand_prix": "Singapore Grand Prix",
+      "host": {
+        "city": "Singapore",
+        "country": "Singapore"
+      },
+      "circuit": {
+        "name": "Marina Bay Street Circuit",
+        "location": "Singapore"
+      }
+    },
+    {
+      "round": 19,
+      "dates": "Oct 17–19",
+      "grand_prix": "United States Grand Prix",
+      "host": {
+        "city": "Austin",
+        "country": "United States"
+      },
+      "circuit": {
+        "name": "Circuit of the Americas",
+        "location": "Austin, USA"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 20,
+      "dates": "Oct 24–26",
+      "grand_prix": "Mexico City Grand Prix",
+      "host": {
+        "city": "Mexico City",
+        "country": "Mexico"
+      },
+      "circuit": {
+        "name": "Autódromo Hermanos Rodríguez",
+        "location": "Mexico City, Mexico"
+      }
+    },
+    {
+      "round": 21,
+      "dates": "Nov 7–9",
+      "grand_prix": "São Paulo Grand Prix",
+      "host": {
+        "city": "São Paulo",
+        "country": "Brazil"
+      },
+      "circuit": {
+        "name": "Autódromo José Carlos Pace (Interlagos)",
+        "location": "São Paulo, Brazil"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 22,
+      "dates": "Nov 20–22",
+      "grand_prix": "Las Vegas Grand Prix",
+      "host": {
+        "city": "Las Vegas",
+        "country": "United States"
+      },
+      "circuit": {
+        "name": "Las Vegas Strip Circuit",
+        "location": "Las Vegas, USA"
+      }
+    },
+    {
+      "round": 23,
+      "dates": "Nov 28–30",
+      "grand_prix": "Qatar Grand Prix",
+      "host": {
+        "city": "Lusail",
+        "country": "Qatar"
+      },
+      "circuit": {
+        "name": "Lusail International Circuit",
+        "location": "Lusail, Qatar"
+      },
+      "is_sprint": true
+    },
+    {
+      "round": 24,
+      "dates": "Dec 5–7",
+      "grand_prix": "Abu Dhabi Grand Prix",
+      "host": {
+        "city": "Abu Dhabi",
+        "country": "United Arab Emirates"
+      },
+      "circuit": {
+        "name": "Yas Marina Circuit",
+        "location": "Abu Dhabi, UAE"
+      }
+    }
+  ]
+}
+

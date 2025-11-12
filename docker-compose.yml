@@ -1,0 +1,82 @@
+services:
+  # FastAPI backend service
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: f1-api
+    environment:
+      - LIVE_DATA=${LIVE_DATA:-false}
+      - DEFAULT_SEASON=${DEFAULT_SEASON:-2025}
+      - PARQUET_DIR=/app/data/cache/parquet
+      - FASTF1_CACHE=/app/data/cache/sqlite
+      - ML_SERVICE_URL=http://ml:8501
+    volumes:
+      - ./data/cache:/app/data/cache
+    ports:
+      - "8000:8000"
+    networks:
+      - f1-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ML microservice
+  ml:
+    build:
+      context: .
+      dockerfile: apps/ml_service/Dockerfile
+    container_name: f1-ml
+    environment:
+      - WORKERS=2
+    ports:
+      - "8501:8501"
+    networks:
+      - f1-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Next.js frontend service
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: f1-web
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_ML_URL=http://localhost:8501
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    networks:
+      - f1-network
+    depends_on:
+      api:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  f1-network:
+    driver: bridge
+
+volumes:
+  cache-data:
+    driver: local
+

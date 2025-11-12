@@ -1,0 +1,30 @@
+{
+  "name": "f1-engineering-app",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "clean": "pnpm --recursive clean",
+    "generate:openapi": "cd apps/api && python scripts/generate_openapi.py ../../packages/models/src/openapi.json",
+    "generate:types": "openapi-typescript packages/models/src/openapi.json -o packages/models/src/api.ts",
+    "codegen": "pnpm generate:openapi && pnpm generate:types"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "openapi-typescript": "^6.7.0"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}
+

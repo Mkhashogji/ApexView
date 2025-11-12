@@ -1,0 +1,83 @@
+{
+  "circuitName": "Example Grand Prix Circuit",
+  "round": 1,
+  "season": 2024,
+  "length": 5281,
+  "turns": 16,
+  "lapRecord": {
+    "time": "1:32.090",
+    "driver": "VER",
+    "year": 2023
+  },
+  "sectors": [
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1760,
+      "characteristics": "High-speed straights with heavy braking zones"
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1760,
+      "endDistance": 3520,
+      "characteristics": "Technical section with tight corners"
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 3520,
+      "endDistance": 5281,
+      "characteristics": "Mix of medium-speed corners leading to main straight"
+    }
+  ],
+  "drsZones": [
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 5100,
+      "activationPoint": 5200,
+      "endPoint": 200,
+      "description": "Main straight"
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 2800,
+      "activationPoint": 2900,
+      "endPoint": 3200,
+      "description": "Back straight"
+    }
+  ],
+  "corners": [
+    {
+      "cornerNumber": 1,
+      "name": "Turn 1",
+      "distance": 250,
+      "type": "right",
+      "angle": 90,
+      "gear": 3,
+      "speed": 85
+    },
+    {
+      "cornerNumber": 2,
+      "name": "Turn 2",
+      "distance": 450,
+      "type": "left",
+      "angle": 120,
+      "gear": 2,
+      "speed": 70
+    }
+  ],
+  "elevationData": [
+    { "distance": 0, "elevation": 0 },
+    { "distance": 500, "elevation": 5 },
+    { "distance": 1000, "elevation": 12 },
+    { "distance": 1500, "elevation": 8 },
+    { "distance": 2000, "elevation": 3 },
+    { "distance": 2500, "elevation": -2 },
+    { "distance": 3000, "elevation": 0 },
+    { "distance": 3500, "elevation": 7 },
+    { "distance": 4000, "elevation": 15 },
+    { "distance": 4500, "elevation": 10 },
+    { "distance": 5000, "elevation": 2 },
+    { "distance": 5281, "elevation": 0 }
+  ]
+}
+

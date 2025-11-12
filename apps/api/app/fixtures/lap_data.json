@@ -1,0 +1,71 @@
+{
+  "laps": [
+    {
+      "lap_number": 1,
+      "driver": "VER",
+      "lap_time": 89.452,
+      "sector1_time": 28.234,
+      "sector2_time": 36.891,
+      "sector3_time": 24.327,
+      "compound": "SOFT",
+      "tyre_age": 2,
+      "is_personal_best": true
+    },
+    {
+      "lap_number": 1,
+      "driver": "NOR",
+      "lap_time": 89.631,
+      "sector1_time": 28.198,
+      "sector2_time": 37.082,
+      "sector3_time": 24.351,
+      "compound": "SOFT",
+      "tyre_age": 2,
+      "is_personal_best": true
+    },
+    {
+      "lap_number": 1,
+      "driver": "LEC",
+      "lap_time": 89.724,
+      "sector1_time": 28.301,
+      "sector2_time": 37.011,
+      "sector3_time": 24.412,
+      "compound": "SOFT",
+      "tyre_age": 2,
+      "is_personal_best": true
+    },
+    {
+      "lap_number": 1,
+      "driver": "TSU",
+      "lap_time": 89.891,
+      "sector1_time": 28.412,
+      "sector2_time": 37.134,
+      "sector3_time": 24.345,
+      "compound": "SOFT",
+      "tyre_age": 3,
+      "is_personal_best": true
+    },
+    {
+      "lap_number": 1,
+      "driver": "SAI",
+      "lap_time": 89.983,
+      "sector1_time": 28.391,
+      "sector2_time": 37.201,
+      "sector3_time": 24.391,
+      "compound": "SOFT",
+      "tyre_age": 2,
+      "is_personal_best": true
+    },
+    {
+      "lap_number": 1,
+      "driver": "HAM",
+      "lap_time": 90.124,
+      "sector1_time": 28.501,
+      "sector2_time": 37.298,
+      "sector3_time": 24.325,
+      "compound": "SOFT",
+      "tyre_age": 2,
+      "is_personal_best": true
+    }
+  ]
+}
+

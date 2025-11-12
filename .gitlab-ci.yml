@@ -1,0 +1,190 @@
+# F1 Engineering App - GitLab CI/CD Pipeline
+
+stages:
+  - lint
+  - test
+  - build
+  - dockerize
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  NODE_ENV: production
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+
+# Lint stage - check code quality
+
+lint:web:
+  stage: lint
+  image: node:20-alpine
+  before_script:
+    - corepack enable
+    - npm i -g pnpm@9
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm --filter web lint
+  cache:
+    paths:
+      - node_modules/
+      - apps/web/node_modules/
+  only:
+    - branches
+    - merge_requests
+
+lint:api:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install ruff
+  script:
+    - cd apps/api && ruff check .
+  only:
+    - branches
+    - merge_requests
+
+lint:ml:
+  stage: lint
+  image: python:3.11-slim
+  before_script:
+    - pip install ruff
+  script:
+    - cd apps/ml_service && ruff check .
+  only:
+    - branches
+    - merge_requests
+
+# Test stage - run unit tests
+
+test:web:
+  stage: test
+  image: node:20-alpine
+  before_script:
+    - corepack enable
+    - npm i -g pnpm@9
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm --filter web test -- --ci --run
+  cache:
+    paths:
+      - node_modules/
+      - apps/web/node_modules/
+  only:
+    - branches
+    - merge_requests
+
+test:api:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - cd apps/api
+    - pip install -e ".[dev]"
+  script:
+    - cd apps/api && pytest -q
+  only:
+    - branches
+    - merge_requests
+
+test:ml:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - cd apps/ml_service
+    - pip install -e ".[dev]"
+  script:
+    - cd apps/ml_service && pytest -q
+  only:
+    - branches
+    - merge_requests
+
+# Build stage - compile production builds
+
+build:web:
+  stage: build
+  image: node:20-alpine
+  before_script:
+    - corepack enable
+    - npm i -g pnpm@9
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm --filter web build
+  artifacts:
+    paths:
+      - apps/web/.next
+    expire_in: 1 week
+  cache:
+    paths:
+      - node_modules/
+      - apps/web/node_modules/
+  only:
+    - branches
+    - merge_requests
+
+# Dockerize stage - build and push container images
+
+dockerize:
+  stage: dockerize
+  image: docker:27-dind
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_CERT_PATH: ""
+    DOCKER_TLS_VERIFY: ""
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+  script:
+    # Build images
+    - docker build -t $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA -f apps/web/Dockerfile .
+    - docker build -t $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA -f apps/api/Dockerfile .
+    - docker build -t $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA -f apps/ml_service/Dockerfile .
+    
+    # Tag as latest for main branch
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "main" ]; then
+        docker tag $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/web:latest
+        docker tag $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/api:latest
+        docker tag $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/ml:latest
+      fi
+    
+    # Push images
+    - docker push $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA
+    
+    # Push latest tags
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "main" ]; then
+        docker push $CI_REGISTRY_IMAGE/web:latest
+        docker push $CI_REGISTRY_IMAGE/api:latest
+        docker push $CI_REGISTRY_IMAGE/ml:latest
+      fi
+  only:
+    - main
+    - branches
+  except:
+    - schedules
+
+# Optional: Deploy stage (template for production deployment)
+# Uncomment and configure when ready for production
+
+# deploy:production:
+#   stage: deploy
+#   image: alpine:latest
+#   before_script:
+#     - apk add --no-cache curl
+#   script:
+#     - echo "Deploying to production..."
+#     - echo "Images available:"
+#     - echo "  - $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA"
+#     - echo "  - $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
+#     - echo "  - $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA"
+#     # Add deployment commands here (e.g., kubectl, docker-compose, etc.)
+#   only:
+#     - main
+#   when: manual
+#   environment:
+#     name: production
+#     url: https://f1-app.example.com
+

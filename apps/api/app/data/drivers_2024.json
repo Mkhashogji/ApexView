@@ -1,0 +1,145 @@
+{
+  "drivers": [
+    {
+      "abbreviation": "VER",
+      "fullName": "Max Verstappen",
+      "team": "Red Bull Racing",
+      "teamColor": "#3671C6",
+      "number": 1
+    },
+    {
+      "abbreviation": "PER",
+      "fullName": "Sergio Perez",
+      "team": "Red Bull Racing",
+      "teamColor": "#3671C6",
+      "number": 11
+    },
+    {
+      "abbreviation": "LEC",
+      "fullName": "Charles Leclerc",
+      "team": "Ferrari",
+      "teamColor": "#E8002D",
+      "number": 16
+    },
+    {
+      "abbreviation": "SAI",
+      "fullName": "Carlos Sainz",
+      "team": "Ferrari",
+      "teamColor": "#E8002D",
+      "number": 55
+    },
+    {
+      "abbreviation": "HAM",
+      "fullName": "Lewis Hamilton",
+      "team": "Mercedes",
+      "teamColor": "#27F4D2",
+      "number": 44
+    },
+    {
+      "abbreviation": "RUS",
+      "fullName": "George Russell",
+      "team": "Mercedes",
+      "teamColor": "#27F4D2",
+      "number": 63
+    },
+    {
+      "abbreviation": "NOR",
+      "fullName": "Lando Norris",
+      "team": "McLaren",
+      "teamColor": "#FF8000",
+      "number": 4
+    },
+    {
+      "abbreviation": "PIA",
+      "fullName": "Oscar Piastri",
+      "team": "McLaren",
+      "teamColor": "#FF8000",
+      "number": 81
+    },
+    {
+      "abbreviation": "ALO",
+      "fullName": "Fernando Alonso",
+      "team": "Aston Martin",
+      "teamColor": "#229971",
+      "number": 14
+    },
+    {
+      "abbreviation": "STR",
+      "fullName": "Lance Stroll",
+      "team": "Aston Martin",
+      "teamColor": "#229971",
+      "number": 18
+    },
+    {
+      "abbreviation": "GAS",
+      "fullName": "Pierre Gasly",
+      "team": "Alpine",
+      "teamColor": "#FF87BC",
+      "number": 10
+    },
+    {
+      "abbreviation": "OCO",
+      "fullName": "Esteban Ocon",
+      "team": "Alpine",
+      "teamColor": "#FF87BC",
+      "number": 31
+    },
+    {
+      "abbreviation": "ALB",
+      "fullName": "Alexander Albon",
+      "team": "Williams",
+      "teamColor": "#64C4FF",
+      "number": 23
+    },
+    {
+      "abbreviation": "SAR",
+      "fullName": "Logan Sargeant",
+      "team": "Williams",
+      "teamColor": "#64C4FF",
+      "number": 2
+    },
+    {
+      "abbreviation": "TSU",
+      "fullName": "Yuki Tsunoda",
+      "team": "RB",
+      "teamColor": "#6692FF",
+      "number": 22
+    },
+    {
+      "abbreviation": "RIC",
+      "fullName": "Daniel Ricciardo",
+      "team": "RB",
+      "teamColor": "#6692FF",
+      "number": 3
+    },
+    {
+      "abbreviation": "BOT",
+      "fullName": "Valtteri Bottas",
+      "team": "Kick Sauber",
+      "teamColor": "#52E252",
+      "number": 77
+    },
+    {
+      "abbreviation": "ZHO",
+      "fullName": "Zhou Guanyu",
+      "team": "Kick Sauber",
+      "teamColor": "#52E252",
+      "number": 24
+    },
+    {
+      "abbreviation": "MAG",
+      "fullName": "Kevin Magnussen",
+      "team": "Haas F1 Team",
+      "teamColor": "#B6BABD",
+      "number": 20
+    },
+    {
+      "abbreviation": "HUL",
+      "fullName": "Nico Hulkenberg",
+      "team": "Haas F1 Team",
+      "teamColor": "#B6BABD",
+      "number": 27
+    }
+  ]
+}
+

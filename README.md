@@ -7,7 +7,8 @@ A comprehensive Formula 1 telemetry and analysis platform built with Next.js and
 ## Architecture
 
 - **Frontend**: Next.js 14+ with App Router, TypeScript, and Tailwind CSS
-- **Backend**: FastAPI with FastF1 integration
+- **Backend API**: FastAPI with FastF1 integration for telemetry and session data
+- **ML Service**: FastAPI microservice for lap similarity analysis and driver clustering
 - **Packages**: Shared UI components and type definitions
 - **Monorepo**: Managed with pnpm workspaces
 
@@ -17,7 +18,8 @@ A comprehensive Formula 1 telemetry and analysis platform built with Next.js and
 f1-engineering-app/
 ├── apps/
 │   ├── web/          # Next.js frontend
-│   └── api/          # FastAPI backend
+│   ├── api/          # FastAPI backend (main API)
+│   └── ml_service/   # ML microservice
 ├── packages/
 │   ├── ui/           # Shared React components
 │   └── models/       # Shared types and utilities
@@ -30,7 +32,7 @@ f1-engineering-app/
 ### Prerequisites
 
 - Node.js 18+
-- Python 3.10+
+- Python 3.10+ (3.11+ for ML service)
 - pnpm 8+
 
 ### Installation
@@ -49,8 +51,24 @@ pnpm dev
 # Frontend only
 pnpm dev:web
 
-# Backend only
+# Backend API only
 pnpm dev:api
+
+# ML service (requires Python 3.11+)
+cd apps/ml_service && uvicorn main:app --reload --port 8501
+```
+
+### Docker Deployment
+
+```bash
+# Start all services with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
 
 ## Features
@@ -60,15 +78,18 @@ pnpm dev:api
 - **Practice Sessions**: Telemetry consistency and setup insights
 - **Track Information**: Circuit layouts, sectors, DRS zones, elevation profiles
 - **Sprint Weekend Support**: Traditional vs Sprint session handling
+- **ML-Powered Insights**: Lap similarity analysis and driver clustering algorithms
 
 ## Documentation
 
 See the `docs/` directory for detailed documentation on:
 - Vision and features
+- Architecture overview
 - Session models (traditional vs sprint)
 - Telemetry specifications
 - Page-specific requirements
-- ML features
+- ML service and features
+- CI/CD pipeline
 - **2025 Season Updates** - See `docs/SEASON_2025_UPDATES.md` for current driver lineup and calendar
 
 ## License

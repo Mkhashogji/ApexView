@@ -73,5 +73,5 @@ See the `docs/` directory for detailed documentation on:
 
 ## License
 
-MIT
-
+© 2025 F1 Engineering App Project.
+All rights reserved for educational and research use.

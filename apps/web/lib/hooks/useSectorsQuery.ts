@@ -7,10 +7,14 @@ import { queryKeys } from './queryKeys'
  * 
  * Cache strategy: 30 seconds stale time
  */
-export function useSectorsQuery(sessionId: string, drivers: string[]) {
+export function useSectorsQuery(
+  sessionId: string, 
+  drivers: string[],
+  sessionPart?: string
+) {
   return useQuery({
-    queryKey: queryKeys.sectors.list(sessionId, drivers),
-    queryFn: () => fetchSectors(sessionId, drivers),
+    queryKey: queryKeys.sectors.list(sessionId, drivers, sessionPart),
+    queryFn: () => fetchSectors(sessionId, drivers, sessionPart),
     staleTime: 30000, // 30 seconds
     enabled: Boolean(sessionId && drivers.length > 0),
   })

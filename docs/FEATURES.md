@@ -19,59 +19,111 @@ Central dashboard showing current race weekend status and quick access to all se
 
 ## 2. Qualifying Analysis Page
 
+**Updated:** December 2025 - ML integration, 2x2 grid layout, React Query
+
 ### Purpose
-Detailed lap-by-lap analysis with multi-driver comparison.
+Detailed lap-by-lap analysis with multi-driver comparison, ML-powered insights, and synchronized chart interactions.
+
+### Layout
+2x2 grid on desktop, single column on mobile:
+- Top Left: Speed Trace (TelemetryLine)
+- Top Right: Delta to Reference (DeltaPlot)
+- Bottom Left: Sector Breakdown (SectorCards)
+- Bottom Right: AI Insights (ML-powered)
 
 ### Features
 
-#### Driver Selection
+#### Driver Selection (`DriverMultiSelect`)
 - Multi-select dropdown for up to 6 drivers
-- Team color coding
-- Quick select presets (teammates, top 3, etc.)
+- Team color-coded chips with remove button
+- Quick presets: Top 3, Ferrari, McLaren, Mercedes, Red Bull
+- Drivers grouped by team in dropdown
+- Full name tooltip on hover
+- ARIA labels for accessibility
 
-#### Session Format Toggle
-- Traditional qualifying (Q1, Q2, Q3)
-- Sprint qualifying
-- Automatic detection of weekend format
+#### Session Tabs (`QualifyingSessionTabs`)
+- Traditional: Q1, Q2, Q3 tabs
+- Sprint: SQ1, SQ2, SQ3 tabs (auto-detected)
+- Red underline with glow for active tab
+- Keyboard navigation support
+- Disabled state for unavailable sessions
 
-#### Sector Performance Cards
-- Best sector times per driver
-- Sector 1, 2, 3 breakdown
-- Visual indicators for fastest in each sector
-- Time delta to fastest
+#### Telemetry Chart (`TelemetryLine`)
+- **Channels:** Speed, Throttle, Brake, Gear, RPM, DRS
+- Team-colored driver traces
+- DRS zone shading (light green from track data)
+- Corner annotations on x-axis (T1, T2, etc.)
+- Synchronized zoom/pan with Delta Plot
+- Export to PNG with 2x scale
+- ARIA label for screen readers
 
-#### Telemetry Line Chart
-- Speed, throttle, brake traces over distance
-- Overlaid for multiple drivers
-- Color-coded by driver/team
-- Interactive legend (click to hide/show)
-- Zoom and pan controls
-- Hover tooltip with exact values
+#### Delta Plot (`DeltaPlot`)
+- Time delta vs reference driver over distance
+- Positive (red) = slower, Negative (green) = faster
+- Sector boundary vertical lines
+- Final delta annotations at lap end
+- Synchronized zoom/pan with Telemetry
+- Auto-scaling Y-axis
 
-#### Delta Plot
-- Time delta to reference lap over distance
-- Select reference driver
-- Positive/negative areas colored differently
-- Integrated with track map (show where gains/losses occur)
+#### Sector Cards (`SectorCards`)
+- Three cards with fastest sector time + driver
+- Purple indicator for fastest sectors
+- **Theoretical Best Lap** calculation (sum of fastest sectors)
+- Delta to pole position display
+- Detailed comparison table with color-coded deltas
+- Purple highlighting for best sector times in table
 
-#### Lap Time Table
-- All laps for selected drivers
-- Color-coded by compound
-- Highlighting for deleted laps
-- Sort and filter options
+#### AI Insights Panel (`AIInsights`) - **ML Integrated**
+- Fetches from ML service endpoints:
+  - `/ml/insights/{session_id}` - Combined insights
+  - `/ml/lap-similarity` - Pairwise driver similarity
+  - `/ml/driver-style-clustering` - Driving style groups
+- **Insight Types:**
+  - Similarity: "VER & NOR: 92% similar, main difference in braking"
+  - Cluster: "VER, LEC grouped: aggressive throttle application"
+  - Sector: "HAM +0.156s vs VER, time loss in S2"
+  - Braking: "NOR brakes ~18m earlier into T12"
+- Loading skeleton state
+- **Automatic fallback** to rule-based insights if ML unavailable
+- Confidence indicators (high/medium/low)
+- Driver color badges
 
-#### AI Insights Panel
-- Automated analysis of performance differences
-- Setup hints based on telemetry patterns
-- Corner-specific observations
-- Braking point comparisons
+### Data Fetching (React Query)
+
+```typescript
+// Session metadata
+useSessionsQuery(season, round)
+
+// Telemetry for selected drivers  
+useTelemetryQuery(sessionId, selectedDrivers)
+
+// Sector times
+useSectorsQuery(sessionId, selectedDrivers)
+
+// Delta analysis
+useDeltaQuery(sessionId, referenceDriver, compareDrivers)
+
+// Track info (DRS, corners, sectors)
+useTrackQuery(round, season)
+
+// ML insights
+useMLInsightsQuery(sessionId, selectedDrivers)
+useLapSimilarityQuery(sessionId, driver1, driver2)
+useDriverClusteringQuery(sessionId, drivers)
+```
+
+### URL State (Shareable)
+```
+/qualifying?season=2025&round=24&drivers=VER,NOR,PIA&session=Q3&ref=VER
+```
 
 ### User Workflows
-1. Select 2-3 drivers to compare
-2. View sector cards to see overall performance
-3. Examine telemetry traces to find performance differences
-4. Analyze delta plot to identify specific corners where time is gained/lost
-5. Read AI insights for automated analysis
+1. Select 2-3 drivers to compare (or use presets)
+2. Switch between Q1/Q2/Q3 to see session progression
+3. View sector cards for overall performance + theoretical best
+4. Examine telemetry traces (zoom syncs with delta plot)
+5. Analyze delta plot to identify corners where time is gained/lost
+6. Read ML-powered AI insights for automated analysis
 
 ## 3. Race Analysis Page
 

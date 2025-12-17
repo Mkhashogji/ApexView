@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     API_VERSION: str = "0.1.0"
     
     # Feature Flags
-    LIVE_DATA: bool = False  # Toggle between mock data and FastF1
+    LIVE_DATA: bool = True  # Toggle between mock data and FastF1 (enabled for 2025 data)
     
     # FastF1 Settings
     CACHE_DIR: Path = Path("/app/data/cache")  # Docker-friendly path

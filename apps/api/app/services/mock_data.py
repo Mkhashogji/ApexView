@@ -8,8 +8,12 @@ from app.models.dto import (
     SessionResponse,
     LapResponse,
     TelemetryResponse,
+    TrackResponse,
     DeltaResponse,
     SectorTime,
+    SectorInfo,
+    DRSZone,
+    CornerInfo,
 )
 from app.core.config import settings
 
@@ -69,7 +73,11 @@ class MockDataService:
         return lap_data["laps"]
 
     async def get_telemetry(
-        self, session: str, drivers: List[str], lap_type: str = "fastest"
+        self, 
+        session: str, 
+        drivers: List[str], 
+        lap_type: str = "fastest",
+        session_part: Optional[str] = None  # Accept but ignore for mock data
     ) -> List[TelemetryResponse]:
         """
         Generate synthetic telemetry data for specified drivers.
@@ -125,7 +133,11 @@ class MockDataService:
         return telemetry_responses
 
     async def get_delta_analysis(
-        self, session: str, reference_driver: str, compare_drivers: List[str]
+        self, 
+        session: str, 
+        reference_driver: str, 
+        compare_drivers: List[str],
+        session_part: Optional[str] = None  # Accept but ignore for mock data
     ) -> List[DeltaResponse]:
         """
         Calculate delta between reference and comparison drivers.
@@ -169,7 +181,12 @@ class MockDataService:
         
         return delta_responses
 
-    async def get_sectors(self, session: str, drivers: List[str]) -> List[SectorTime]:
+    async def get_sectors(
+        self, 
+        session: str, 
+        drivers: List[str],
+        session_part: Optional[str] = None  # Accept but ignore for mock data
+    ) -> List[SectorTime]:
         """
         Get sector times for specified drivers.
         """
@@ -182,40 +199,36 @@ class MockDataService:
                 sector_times.append(
                     SectorTime(
                         driver=lap["driver"],
-                        sector_1=lap["sector1_time"],
-                        sector_2=lap["sector2_time"],
-                        sector_3=lap["sector3_time"],
+                        sector1=lap["sector1_time"],
+                        sector2=lap["sector2_time"],
+                        sector3=lap["sector3_time"],
                         total_time=lap["lap_time"],
                     )
                 )
         
         return sector_times
 
-    async def get_track_info(self, season: int, round: int):
+    async def get_track_info(self, season: int, round: int) -> TrackResponse:
         """Get track layout and information (mock)."""
-        return {
-            "circuit_name": "Bahrain International Circuit",
-            "round": round,
-            "season": season,
-            "length": 5412.0,
-            "sectors": [
-                {"sector_number": 1, "start_distance": 0, "end_distance": 1804},
-                {"sector_number": 2, "start_distance": 1804, "end_distance": 3608},
-                {"sector_number": 3, "start_distance": 3608, "end_distance": 5412},
+        return TrackResponse(
+            circuit_name="Bahrain International Circuit",
+            round=round,
+            season=season,
+            length=5412.0,
+            sectors=[
+                SectorInfo(sector_number=1, start_distance=0, end_distance=1804),
+                SectorInfo(sector_number=2, start_distance=1804, end_distance=3608),
+                SectorInfo(sector_number=3, start_distance=3608, end_distance=5412),
             ],
-            "drs_zones": [
-                {
-                    "zone_number": 1,
-                    "detection_point": 450,
-                    "activation_point": 500,
-                    "end_point": 1200,
-                },
-                {
-                    "zone_number": 2,
-                    "detection_point": 2800,
-                    "activation_point": 2850,
-                    "end_point": 3500,
-                },
+            drs_zones=[
+                DRSZone(zone_number=1, detection_point=450, activation_point=500, end_point=1200),
+                DRSZone(zone_number=2, detection_point=2800, activation_point=2850, end_point=3500),
             ],
-        }
+            corners=[
+                CornerInfo(corner_number=1, distance=400, type="right", name="Turn 1"),
+                CornerInfo(corner_number=2, distance=700, type="left"),
+                CornerInfo(corner_number=3, distance=900, type="left"),
+                CornerInfo(corner_number=4, distance=1300, type="right"),
+            ],
+        )
 

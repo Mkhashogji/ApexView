@@ -1,26 +1,220 @@
 'use client'
 
-import { Telemetry } from '@/../../packages/models/src/types'
-import { getTeamColor } from '@/lib/drivers'
+import { Telemetry, DRSZone, Corner } from '@/../../packages/models/src/types'
+import { getTeamColor, getDriverInfo, getDriverTCam, getTeammateDrivers } from '@/lib/drivers'
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import type { PlotRelayoutEvent } from 'plotly.js'
 
 // Dynamically import Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
-interface TelemetryLineProps {
-  telemetryData: Map<string, Telemetry>
-  selectedDrivers: string[]
+/** Available telemetry channels */
+type TelemetryChannel = 'speed' | 'throttle' | 'brake' | 'gear' | 'rpm' | 'drs'
+
+/** Channel configuration */
+interface ChannelConfig {
+  label: string
+  unit: string
+  range?: [number, number]
+  color?: string
 }
 
-type TelemetryChannel = 'speed' | 'throttle' | 'brake'
+interface TelemetryLineProps {
+  /** Telemetry data mapped by driver abbreviation */
+  telemetryData: Map<string, Telemetry>
+  /** Selected driver abbreviations */
+  selectedDrivers: string[]
+  /** DRS zones for annotation overlay */
+  drsZones?: DRSZone[]
+  /** Corner positions for x-axis annotations */
+  corners?: Corner[]
+  /** Track length in meters */
+  trackLength?: number
+  /** Callback for zoom/pan sync with other charts */
+  onRangeChange?: (xRange: [number, number] | null) => void
+  /** External x-axis range for sync */
+  xRange?: [number, number] | null
+}
 
-export function TelemetryLine({ telemetryData, selectedDrivers }: TelemetryLineProps) {
+/** Channel configurations */
+const CHANNEL_CONFIG: Record<TelemetryChannel, ChannelConfig> = {
+  speed: { label: 'Speed', unit: 'km/h', range: [0, 370] },
+  throttle: { label: 'Throttle', unit: '%', range: [0, 100] },
+  brake: { label: 'Brake', unit: '%', range: [0, 100] },
+  gear: { label: 'Gear', unit: '', range: [0, 9] },
+  rpm: { label: 'RPM', unit: '', range: [0, 15000] },
+  drs: { label: 'DRS', unit: '', range: [-0.5, 1.5] },
+}
+
+/** All available channels */
+const ALL_CHANNELS: TelemetryChannel[] = ['speed', 'throttle', 'brake', 'gear', 'rpm', 'drs']
+
+/** Primary channels shown by default */
+const PRIMARY_CHANNELS: TelemetryChannel[] = ['speed', 'throttle', 'brake']
+
+/**
+ * Helper function to determine line style based on T-Cam designation
+ * When both teammates are selected, use solid for black T-Cam and dashed for yellow T-Cam
+ */
+function getLineStyle(driver: string, selectedDrivers: string[]): { dash: 'solid' | 'dash'; width: number } {
+  const teammates = getTeammateDrivers(driver)
+  const selectedTeammates = teammates.filter(t => selectedDrivers.includes(t))
+  
+  // Only apply T-Cam styling if both teammates are selected
+  if (selectedTeammates.length <= 1) {
+    return { dash: 'solid', width: 2 }
+  }
+  
+  const tCam = getDriverTCam(driver)
+  return tCam === 'black'
+    ? { dash: 'solid', width: 2.5 }
+    : { dash: 'dash', width: 2 }
+}
+
+export function TelemetryLine({ 
+  telemetryData, 
+  selectedDrivers,
+  drsZones = [],
+  corners = [],
+  trackLength,
+  onRangeChange,
+  xRange,
+}: TelemetryLineProps) {
   const [activeChannel, setActiveChannel] = useState<TelemetryChannel>('speed')
+  const [showAllChannels, setShowAllChannels] = useState(false)
+
+  // Get available channels based on data
+  const availableChannels = useMemo(() => {
+    // Guard: Check if telemetryData exists and has content
+    if (!telemetryData || telemetryData.size === 0) return PRIMARY_CHANNELS
+    if (!selectedDrivers || selectedDrivers.length === 0) return PRIMARY_CHANNELS
+    
+    const firstDriver = selectedDrivers.find(d => telemetryData.has(d))
+    if (!firstDriver) return PRIMARY_CHANNELS
+    
+    const data = telemetryData.get(firstDriver)
+    if (!data) return PRIMARY_CHANNELS
+    
+    return ALL_CHANNELS.filter(channel => {
+      switch (channel) {
+        case 'rpm': return data.rpm && Array.isArray(data.rpm) && data.rpm.length > 0
+        case 'drs': return data.drs && Array.isArray(data.drs) && data.drs.length > 0
+        case 'gear': return data.gear && Array.isArray(data.gear) && data.gear.length > 0
+        default: return true
+      }
+    })
+  }, [telemetryData, selectedDrivers])
+
+  // Memoize traces for performance
+  const traces = useMemo(() => {
+    // Guard: Ensure we have valid data to process
+    if (!telemetryData || telemetryData.size === 0) return []
+    if (!selectedDrivers || selectedDrivers.length === 0) return []
+    
+    return selectedDrivers
+      .filter((driver) => telemetryData.has(driver))
+      .map((driver) => {
+        const data = telemetryData.get(driver)
+        // Guard: Skip if no data for this driver
+        if (!data) return null
+        
+        const color = getTeamColor(driver)
+        const driverInfo = getDriverInfo(driver)
+        const config = CHANNEL_CONFIG[activeChannel]
+
+        let yData: number[] = []
+        switch (activeChannel) {
+          case 'speed': yData = data.speed || []; break
+          case 'throttle': yData = data.throttle || []; break
+          case 'brake': yData = data.brake || []; break
+          case 'gear': yData = data.gear || []; break
+          case 'rpm': yData = data.rpm || []; break
+          case 'drs': yData = data.drs || []; break
+        }
+
+        // Get line style based on T-Cam (solid for black, dash for yellow when teammates selected)
+        const lineStyle = getLineStyle(driver, selectedDrivers)
+
+        return {
+          x: data.distance || [],
+          y: yData,
+          type: 'scatter' as const,
+          mode: 'lines' as const,
+          name: driver,
+          line: { 
+            color, 
+            ...lineStyle 
+          },
+          hovertemplate: `<b>${driverInfo?.fullName || driver}</b><br>` +
+            `Distance: %{x:.0f}m<br>` +
+            `${config.label}: %{y:.1f}${config.unit}<extra></extra>`,
+        }
+      })
+      .filter((trace): trace is NonNullable<typeof trace> => trace !== null)
+  }, [telemetryData, selectedDrivers, activeChannel])
+
+  // Generate DRS zone shapes
+  const drsShapes = useMemo(() => {
+    if (!drsZones.length) return []
+    
+    const config = CHANNEL_CONFIG[activeChannel]
+    const yMin = config.range?.[0] ?? 0
+    const yMax = config.range?.[1] ?? 100
+
+    return drsZones.map((zone) => ({
+      type: 'rect' as const,
+      xref: 'x' as const,
+      yref: 'y' as const,
+      x0: zone.activationPoint,
+      x1: zone.endPoint,
+      y0: yMin,
+      y1: yMax,
+      fillcolor: 'rgba(34, 197, 94, 0.1)',
+      line: { width: 0 },
+      layer: 'below' as const,
+    }))
+  }, [drsZones, activeChannel])
+
+  // Generate corner annotations
+  const cornerAnnotations = useMemo(() => {
+    if (!corners.length) return []
+
+    return corners.map((corner) => ({
+      x: corner.distance,
+      y: 0,
+      xref: 'x' as const,
+      yref: 'paper' as const,
+      text: `T${corner.cornerNumber}`,
+      showarrow: false,
+      font: { size: 9, color: '#6B7280' },
+      yshift: -25,
+    }))
+  }, [corners])
+
+  // Handle relayout event for zoom/pan sync
+  const handleRelayout = useCallback((event: PlotRelayoutEvent) => {
+    if (!onRangeChange) return
+
+    if ('xaxis.range[0]' in event && 'xaxis.range[1]' in event) {
+      const x0 = event['xaxis.range[0]'] as number
+      const x1 = event['xaxis.range[1]'] as number
+      onRangeChange([x0, x1])
+    } else if ('xaxis.autorange' in event) {
+      onRangeChange(null) // Reset to auto
+    }
+  }, [onRangeChange])
+
+  const config = CHANNEL_CONFIG[activeChannel]
+  const displayChannels = showAllChannels ? availableChannels : PRIMARY_CHANNELS
 
   if (telemetryData.size === 0) {
     return (
-      <div className="h-96 w-full rounded border border-f1gray/50 bg-f1dark/50 p-4">
+      <div 
+        className="h-96 w-full rounded-lg border border-f1gray/50 bg-f1dark/50 p-4"
+        role="img"
+        aria-label="No telemetry data available"
+      >
         <div className="flex h-full items-center justify-center text-gray-500">
           <p>No telemetry data available</p>
         </div>
@@ -28,74 +222,57 @@ export function TelemetryLine({ telemetryData, selectedDrivers }: TelemetryLineP
     )
   }
 
-  // Prepare data for selected channel
-  const traces = selectedDrivers
-    .filter((driver) => telemetryData.has(driver))
-    .map((driver) => {
-      const data = telemetryData.get(driver)!
-      const color = getTeamColor(driver)
-
-      let yData: number[]
-      let yLabel: string
-
-      switch (activeChannel) {
-        case 'speed':
-          yData = data.speed
-          yLabel = 'Speed (km/h)'
-          break
-        case 'throttle':
-          yData = data.throttle
-          yLabel = 'Throttle (%)'
-          break
-        case 'brake':
-          yData = data.brake
-          yLabel = 'Brake (%)'
-          break
-      }
-
-      return {
-        x: data.distance,
-        y: yData,
-        type: 'scatter' as const,
-        mode: 'lines' as const,
-        name: driver,
-        line: {
-          color: color,
-          width: 2,
-        },
-        hovertemplate: `<b>${driver}</b><br>Distance: %{x:.0f}m<br>${yLabel}: %{y:.1f}<extra></extra>`,
-      }
-    })
-
-  const channelConfig: Record<TelemetryChannel, { label: string; unit: string; range?: [number, number] }> = {
-    speed: { label: 'Speed', unit: 'km/h', range: [0, 350] },
-    throttle: { label: 'Throttle', unit: '%', range: [0, 100] },
-    brake: { label: 'Brake', unit: '%', range: [0, 100] },
-  }
-
-  const config = channelConfig[activeChannel]
-
   return (
     <div className="space-y-4">
       {/* Channel selector */}
-      <div className="flex gap-2">
-        {(['speed', 'throttle', 'brake'] as TelemetryChannel[]).map((channel) => (
+      <div className="flex flex-wrap items-center gap-2">
+        {displayChannels.map((channel) => (
           <button
             key={channel}
             onClick={() => setActiveChannel(channel)}
-            className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
-              activeChannel === channel
-                ? 'bg-f1red text-white'
-                : 'bg-f1gray text-gray-400 hover:bg-f1gray/80'
-            }`}
+            disabled={!availableChannels.includes(channel)}
+            className={`
+              rounded-md px-4 py-2 text-sm font-medium transition-all duration-200
+              focus-ring
+              ${activeChannel === channel
+                ? 'bg-f1red text-white shadow-glow-red-sm'
+                : availableChannels.includes(channel)
+                ? 'bg-f1gray/50 text-gray-300 hover:bg-f1gray hover:text-white'
+                : 'bg-f1gray/20 text-gray-600 cursor-not-allowed'
+              }
+            `}
+            aria-pressed={activeChannel === channel}
+            aria-label={`Show ${CHANNEL_CONFIG[channel].label} trace`}
           >
-            {channelConfig[channel].label}
+            {CHANNEL_CONFIG[channel].label}
           </button>
         ))}
+        
+        {/* Toggle more channels */}
+        {availableChannels.length > PRIMARY_CHANNELS.length && (
+          <button
+            onClick={() => setShowAllChannels(!showAllChannels)}
+            className="ml-2 text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            {showAllChannels ? '− Less' : '+ More'}
+          </button>
+        )}
+
+        {/* DRS zone legend */}
+        {drsZones.length > 0 && (
+          <div className="ml-auto flex items-center gap-2 text-xs text-gray-400">
+            <span className="h-3 w-6 rounded bg-drs-zone/20 border border-drs-zone/30" />
+            <span>DRS Zone</span>
+          </div>
+        )}
       </div>
 
       {/* Plotly chart */}
-      <div className="h-96 w-full">
+      <div 
+        className="h-96 w-full"
+        role="img"
+        aria-label={`Telemetry ${config.label} chart comparing ${selectedDrivers.join(', ')}`}
+      >
         <Plot
           data={traces}
           layout={{
@@ -103,34 +280,47 @@ export function TelemetryLine({ telemetryData, selectedDrivers }: TelemetryLineP
             height: 384,
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#9CA3AF', family: 'Inter, sans-serif' },
+            font: { color: '#9CA3AF', family: 'Inter, sans-serif', size: 12 },
             xaxis: {
-              title: 'Distance (m)',
+              title: { text: 'Distance (m)', standoff: 20 },
               gridcolor: '#374151',
               zeroline: false,
+              range: xRange || undefined,
+              tickformat: ',.0f',
             },
             yaxis: {
-              title: `${config.label} (${config.unit})`,
+              title: { text: `${config.label}${config.unit ? ` (${config.unit})` : ''}`, standoff: 10 },
               gridcolor: '#374151',
-              zeroline: false,
+              zeroline: activeChannel === 'drs',
+              zerolinecolor: '#4B5563',
               range: config.range,
             },
-            margin: { l: 60, r: 40, t: 40, b: 60 },
+            margin: { l: 65, r: 20, t: 20, b: 70 },
             hovermode: 'x unified',
             legend: {
               orientation: 'h' as const,
-              y: -0.2,
+              y: -0.25,
               x: 0.5,
               xanchor: 'center',
+              bgcolor: 'rgba(0,0,0,0)',
+              font: { size: 11 },
             },
+            shapes: drsShapes,
+            annotations: cornerAnnotations,
           }}
           config={{
             responsive: true,
             displayModeBar: true,
-            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+            modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
             displaylogo: false,
+            toImageButtonOptions: {
+              format: 'png',
+              filename: `telemetry_${activeChannel}`,
+              scale: 2,
+            },
           }}
           style={{ width: '100%', height: '100%' }}
+          onRelayout={handleRelayout}
         />
       </div>
     </div>

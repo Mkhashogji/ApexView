@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from typing import List
+from typing import List, Optional
 from app.models.dto import LapResponse, SectorTime
 from app.services.data_service import get_data_service
 
@@ -35,12 +35,15 @@ async def get_fastest_laps(
 async def get_sectors(
     session: str = Query(..., description="Session ID or identifier"),
     drivers: List[str] = Query(..., description="Driver abbreviations"),
+    session_part: Optional[str] = Query(None, description="Qualifying session part: Q1, Q2, or Q3"),
 ):
     """
     Get sector times for specified drivers in a session.
-    Returns sector 1, 2, 3 times and total lap time.
+    
+    Optionally filter by qualifying session part (Q1, Q2, Q3) to get
+    lap times from specific parts of qualifying.
     """
     service = get_data_service()
-    sectors = await service.get_sectors(session, drivers)
+    sectors = await service.get_sectors(session, drivers, session_part)
     return sectors
 

@@ -2,352 +2,344 @@
 
 ## Overview
 
-The qualifying page provides detailed lap-by-lap analysis with multi-driver comparison, delta charts, and sector breakdowns. It supports both traditional qualifying and sprint qualifying formats.
+The qualifying page provides detailed lap-by-lap analysis with multi-driver comparison, delta charts, sector breakdowns, and ML-powered insights. It supports both traditional qualifying (Q1/Q2/Q3) and sprint qualifying (SQ1/SQ2/SQ3) formats.
+
+**Updated:** December 2025 - React Query integration, ML service, 2x2 grid layout
 
 ## Layout Structure
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Header: "Qualifying Analysis"                       │
-│ Subtitle: Circuit name, date, format               │
+│ Header: "QUALIFYING ANALYSIS" (Montserrat, uppercase)│
+│ Subtitle: Circuit name, Season, Round               │
 ├─────────────────────────────────────────────────────┤
-│ Filters Panel                                       │
-│ [Drivers] [Q1/Q2/Q3] [Traditional/Sprint]          │
+│ [Q1] [Q2] [Q3] Tabs    │    Reference: [Dropdown]  │
 ├─────────────────────────────────────────────────────┤
-│ Sector Performance Cards (3 cards)                 │
-│ [Sector 1] [Sector 2] [Sector 3]                   │
-├─────────────────────────────────────────────────────┤
-│ Speed Trace Chart                                   │
-│ Multi-driver telemetry overlay                     │
-├─────────────────────────────────────────────────────┤
-│ Delta Plot Chart                                    │
-│ Time delta to reference driver                     │
-├─────────────────────────────────────────────────────┤
-│ Lap Times Table                                     │
-│ All laps with sectors and compound                 │
-├─────────────────────────────────────────────────────┤
-│ AI Insights Panel                                   │
-│ Automated analysis and observations                │
-└─────────────────────────────────────────────────────┘
+│ Driver Chips: [VER] [NOR] [HAM] + [Add Drivers]    │
+├──────────────────────┬──────────────────────────────┤
+│ SPEED TRACE          │ DELTA TO REFERENCE           │
+│ (TelemetryLine)      │ (DeltaPlot)                  │
+│ - Multi-channel      │ - Sector boundaries          │
+│ - DRS zone shading   │ - Final delta annotations    │
+│ - Corner annotations │ - Chart sync with telemetry  │
+├──────────────────────┼──────────────────────────────┤
+│ SECTOR BREAKDOWN     │ AI INSIGHTS                  │
+│ (SectorCards)        │ (AIInsights - ML powered)    │
+│ - Theoretical best   │ - Lap similarity scores      │
+│ - Purple sectors     │ - Driving style clusters     │
+│ - Delta table        │ - Braking differences        │
+└──────────────────────┴──────────────────────────────┘
 ```
+
+### Responsive Behavior
+
+- **Desktop (≥768px):** 2x2 grid layout (`md:grid-cols-2`)
+- **Mobile (<768px):** Single column stack with collapsible sections
 
 ## Components
 
-### 1. Filters Panel
+### 1. Session Tabs (`QualifyingSessionTabs`)
 
-**Driver Multi-Select**
-- Dropdown with checkbox selection
-- Maximum 6 drivers selectable
-- Team color indicators
-- Quick presets:
-  - "Top 3" - P1, P2, P3
-  - "Ferrari" - Both Ferrari drivers
-  - "Red Bull" - Both RB drivers
-
-**Session Sub-Select (Q1/Q2/Q3)**
-- Radio buttons or tabs
-- Show eliminated drivers in each session (grayed out if not participated)
-- Default: Q3 (or highest available)
-
-**Format Toggle (Traditional vs Sprint)**
-- Toggle switch
-- Auto-detected from weekend format
-- Manual override allowed
-
-### 2. Sector Performance Cards
-
-Three cards showing best performance in each sector.
-
-**Card Content:**
-```
-┌──────────────────┐
-│ SECTOR 1         │
-│ 24.532s          │ ← Best time
-│ ● VER            │ ← Driver with color dot
-│ +0.012 HAM       │ ← 2nd best with delta
-│ +0.045 LEC       │ ← 3rd best with delta
-└──────────────────┘
-```
+**Purpose:** Switch between Q1/Q2/Q3 (or SQ1/SQ2/SQ3 for sprint weekends)
 
 **Features:**
-- Click to highlight that driver across all charts
-- Hover shows full sector telemetry preview
-- Purple sector indicators (driver's personal best)
+- Auto-detect sprint weekend from session data
+- Red underline with glow for active tab
+- Gray out unavailable sessions
+- Keyboard navigation (arrow keys, Home/End)
+- ARIA attributes for accessibility
 
-### 3. Speed Trace Chart
-
-Multi-driver telemetry overlay showing speed over distance.
-
-**Data Displayed:**
-- X-axis: Distance (m or lap %)
-- Y-axis: Speed (km/h)
-- Lines: One per selected driver
-- Background: DRS zones (light green)
-
-**Interactions:**
-- Hover: Show all driver values at that point
-- Click legend: Toggle driver visibility
-- Zoom: Click and drag
-- Pan: Shift + drag
-- Reset: Double-click
-
-**Annotations:**
-- Turn numbers on X-axis
-- Maximum speed markers
-- Braking zones (subtle shading)
-
-**Plotly Configuration:**
-```javascript
-{
-  type: 'scatter',
-  mode: 'lines',
-  hovermode: 'x unified',
-  showlegend: true,
-  legend: { orientation: 'h', y: -0.2 }
+**Props:**
+```typescript
+interface QualifyingSessionTabsProps {
+  selected: QualifyingSessionPart  // 'Q1' | 'Q2' | 'Q3' | 'SQ1' | 'SQ2' | 'SQ3'
+  onChange: (session: QualifyingSessionPart) => void
+  isSprintWeekend?: boolean
+  availableSessions?: QualifyingSessionPart[]
 }
 ```
 
-### 4. Delta Plot Chart
+### 2. Driver Multi-Select (`DriverMultiSelect`)
 
-Time delta relative to reference driver over distance.
-
-**Data Displayed:**
-- X-axis: Distance (m)
-- Y-axis: Delta time (s)
-- Zero line: Reference driver
-- Positive area: Slower (red fill)
-- Negative area: Faster (green fill)
-
-**Reference Selection:**
-- Dropdown above chart
-- Default: Fastest driver in selected set
-- Options: Any selected driver
+**Purpose:** Select up to 6 drivers for comparison
 
 **Features:**
-- Cumulative delta annotation at finish line
-- Sector boundaries marked
-- Click to see detailed breakdown at that point
+- Team-colored chips with remove button
+- Team presets (Top 3, Ferrari, McLaren, etc.)
+- Full driver name tooltip on hover
+- Grouped dropdown by team
+- ARIA labels for accessibility
+- Click outside to close
 
-**Interpretation Helper:**
+**Props:**
+```typescript
+interface DriverMultiSelectProps {
+  selected: string[]
+  onChange: (drivers: string[]) => void
+  maxDrivers?: number  // default: 6
+}
 ```
-┌─────────────────────────────────────┐
-│ +0.234s slower at T3               │
-│ -0.112s faster at T7               │
-│ Final delta: +0.122s               │
-└─────────────────────────────────────┘
-```
 
-### 5. Lap Times Table
+### 3. Telemetry Chart (`TelemetryLine`)
 
-Sortable table of all laps for selected drivers.
+**Purpose:** Multi-driver telemetry overlay with channel selection
 
-**Columns:**
-- Driver (color-coded)
-- Lap number
-- Lap time
-- S1, S2, S3 times
-- Compound (colored dot)
-- Track status (🟢/🟡/🔴)
-- Delta to fastest
+**Channels:**
+- Speed (km/h) - default
+- Throttle (%)
+- Brake (%)
+- Gear (1-8)
+- RPM
+- DRS (0/1)
 
 **Features:**
-- Sort by any column
-- Filter by compound
-- Highlight fastest in each sector (purple background)
-- Show deleted laps (strikethrough)
+- DRS zone shading (light green from track data)
+- Corner annotations on x-axis (T1, T2, etc.)
+- Channel toggle buttons with red active state
+- Zoom/pan synchronization with DeltaPlot
+- Team-colored driver traces
+- Unified hover tooltips
+- Export as PNG
 
-**Row Colors:**
-- Personal best: Green tint
-- Deleted lap: Red tint
-- Pit in/out: Gray
+**Props:**
+```typescript
+interface TelemetryLineProps {
+  telemetryData: Map<string, Telemetry>
+  selectedDrivers: string[]
+  drsZones?: DRSZone[]
+  corners?: Corner[]
+  trackLength?: number
+  onRangeChange?: (xRange: [number, number] | null) => void
+  xRange?: [number, number] | null
+}
+```
 
-### 6. AI Insights Panel
+### 4. Delta Plot (`DeltaPlot`)
 
-Automated analysis based on telemetry and lap data.
+**Purpose:** Time delta to reference driver over lap distance
+
+**Features:**
+- Positive area (red) = slower than reference
+- Negative area (green) = faster than reference
+- Sector boundary vertical lines
+- Final delta annotations per driver
+- Synchronized zoom/pan with TelemetryLine
+- Y-axis auto-scaling with padding
+
+**Props:**
+```typescript
+interface DeltaPlotProps {
+  deltaData: DeltaData[]
+  referenceDriver: string
+  sectors?: SectorInfo[]
+  trackLength?: number
+  onRangeChange?: (xRange: [number, number] | null) => void
+  xRange?: [number, number] | null
+}
+```
+
+### 5. Sector Cards (`SectorCards`)
+
+**Purpose:** Sector time breakdown with theoretical best lap calculation
+
+**Features:**
+- Three sector cards with fastest time and driver
+- Purple indicator for fastest sector
+- Theoretical best lap calculation (sum of fastest sectors)
+- Delta to pole position
+- Detailed comparison table with color-coded deltas
+- Purple highlighting for fastest sector times
+
+**Props:**
+```typescript
+interface SectorCardsProps {
+  sectorData: SectorComparison[]
+  referenceDriver: string
+  poleTime?: number
+}
+```
+
+### 6. AI Insights Panel (`AIInsights`)
+
+**Purpose:** ML-powered analysis with rule-based fallback
+
+**Data Sources:**
+- `/ml/insights/{session_id}` - Combined insights
+- `/ml/lap-similarity` - Pairwise driver similarity
+- `/ml/driver-style-clustering` - Driving style groups
 
 **Insight Types:**
+- **Similarity:** "VER & NOR: 92% similar, main difference in braking"
+- **Cluster:** "VER, LEC grouped together: aggressive throttle application"
+- **Sector:** "HAM +0.156s vs VER, time loss in S2"
+- **Braking:** "NOR brakes ~18m earlier into T12"
 
-**Braking Analysis:**
-```
-🔍 VER brakes 12m later into Turn 1 compared to HAM,
-   gaining 0.042s per lap.
-```
+**Features:**
+- Loading skeleton state
+- Error fallback to rule-based insights
+- Confidence indicators (high/medium/low)
+- Driver color badges
 
-**Sector Performance:**
-```
-⚡ HAM strongest in Sector 2 (-0.089s vs field avg),
-   losing time in Sector 3 (+0.134s).
-```
-
-**Setup Hints:**
-```
-🔧 Similar telemetry patterns suggest LEC and SAI
-   running comparable downforce levels.
-```
-
-**Consistency:**
-```
-📊 VER most consistent with σ=0.082s across 5 laps.
-   HAM shows higher variance (σ=0.215s).
-```
-
-## Data Loading
-
-### Initial Load
-1. Fetch session metadata
-2. Load fastest lap for each driver
-3. Display sector cards and lap table
-4. Lazy-load telemetry on scroll
-
-### Progressive Enhancement
-1. Show skeleton while loading
-2. Render lap data first (fast)
-3. Load telemetry for selected drivers (slower)
-4. Generate AI insights last (background task)
-
-### API Calls
+**Props:**
 ```typescript
-// 1. Session info
-const session = await fetchSession(season, round, 'Q')
-
-// 2. Lap data for all drivers
-const laps = await fetchLaps(session.id, ['all'])
-
-// 3. Telemetry for selected drivers (lazy)
-const telemetry = await fetchTelemetry(
-  session.id, 
-  selectedDrivers, 
-  'fastest'
-)
-
-// 4. Delta analysis
-const deltas = await fetchDelta(
-  session.id,
-  referenceDriver,
-  selectedDrivers
-)
-```
-
-## User Workflows
-
-### Workflow 1: Basic Comparison
-1. User lands on page → Default shows top 3 qualifiers
-2. Sector cards show who was fastest where
-3. Speed trace shows where time was gained/lost
-4. Delta plot quantifies the differences
-
-### Workflow 2: Detailed Analysis
-1. User selects 2 specific drivers (e.g., VER vs HAM)
-2. Compares speed traces to find performance differences
-3. Examines delta plot to see cumulative effect
-4. Reads AI insights for interpretation
-
-### Workflow 3: Teammate Comparison
-1. User clicks "Ferrari" preset → Loads LEC and SAI
-2. Analyzes sector cards for strengths
-3. Reviews consistency in lap table
-4. Checks setup similarities in AI insights
-
-### Workflow 4: Q1/Q2/Q3 Progression
-1. User switches between Q1, Q2, Q3 tabs
-2. Tracks single driver's improvement
-3. Sees tyre compound strategy
-4. Identifies track evolution effects
-
-## State Management
-
-### URL State (Shareable)
-```
-/qualifying?
-  season=2024
-  &round=1
-  &drivers=VER,HAM,LEC
-  &session=Q3
-  &reference=VER
-```
-
-### Local State
-```typescript
-interface QualifyingPageState {
-  selectedDrivers: string[]
-  sessionPart: 'Q1' | 'Q2' | 'Q3'
+interface AIInsightsProps {
+  sessionId: string
+  sectorData: SectorComparison[]
   referenceDriver: string
-  telemetryLoaded: boolean
-  sortColumn: string
-  sortDirection: 'asc' | 'desc'
+  selectedDrivers: string[]
 }
 ```
 
-## Responsive Design
+## Data Loading with React Query
 
-### Desktop (> 1024px)
-- Full width charts
-- Side-by-side sector cards
-- Table with all columns
+### Hooks Used
 
-### Tablet (768-1024px)
-- Stacked sector cards
-- Simplified table (hide some columns)
-- Charts remain full-featured
+```typescript
+// Session metadata
+const sessionsQuery = useSessionsQuery(season, round)
 
-### Mobile (< 768px)
-- Single column layout
-- Sector cards in carousel
-- Simplified speed trace (no delta plot)
-- Condensed table (driver, time, delta only)
+// Telemetry for selected drivers
+const telemetryQuery = useTelemetryQuery(sessionId, selectedDrivers)
 
-## Performance Targets
+// Sector times
+const sectorsQuery = useSectorsQuery(sessionId, selectedDrivers)
 
-- Initial page load: < 2s
-- Telemetry load: < 1s per driver
-- Chart interaction: 60fps
-- Delta calculation: < 500ms
+// Delta analysis
+const deltaQuery = useDeltaQuery(sessionId, referenceDriver, compareDrivers)
+
+// Track info (DRS zones, corners, sectors)
+const trackQuery = useTrackQuery(round, season)
+
+// ML insights
+const mlInsightsQuery = useMLInsightsQuery(sessionId, selectedDrivers)
+```
+
+### Cache Strategy
+
+| Data Type | Stale Time | Notes |
+|-----------|------------|-------|
+| Sessions | 2 minutes | Rarely changes during analysis |
+| Telemetry | 30 seconds | Large datasets, aggressive caching |
+| Sectors | 30 seconds | Semi-static for historical data |
+| Delta | 30 seconds | Computed, cache to avoid recomputation |
+| Track | 5 minutes | Static per season |
+| ML Insights | 60 seconds | Expensive computation |
+
+## URL State Management
+
+### Shareable URL Format
+
+```
+/qualifying?season=2025&round=24&drivers=VER,NOR,PIA&session=Q3&ref=VER
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| season | number | 2025 | F1 season year |
+| round | number | 24 | Race round number |
+| drivers | string[] | VER,NOR,PIA | Comma-separated driver codes |
+| session | string | Q3 | Qualifying part (Q1/Q2/Q3/SQ1/SQ2/SQ3) |
+| ref | string | First driver | Reference driver for delta |
+
+## Chart Synchronization
+
+Charts share zoom/pan state via React state:
+
+```typescript
+const [chartXRange, setChartXRange] = useState<[number, number] | null>(null)
+
+// TelemetryLine updates range
+onRangeChange={setChartXRange}
+xRange={chartXRange}
+
+// DeltaPlot receives same range
+onRangeChange={setChartXRange}
+xRange={chartXRange}
+```
+
+On Plotly `relayout` event, both charts sync their x-axis range.
+
+## Accessibility
+
+### ARIA Attributes
+
+- `role="tablist"` on session tabs container
+- `role="tab"` and `aria-selected` on each tab
+- `aria-label` on charts (e.g., "Telemetry speed chart comparing selected drivers")
+- `aria-current="page"` on active navigation item
+- `role="listbox"` on driver selection
+
+### Keyboard Navigation
+
+- Tab through interactive elements
+- Arrow keys for session tab navigation
+- Escape to close driver dropdown
+- Enter/Space to toggle selections
+
+### Color Contrast
+
+- All text meets WCAG AA (4.5:1 ratio)
+- Delta colors (red/green) supplemented with +/- signs
+- Purple sector indicator has sufficient contrast
+
+## Performance Optimizations
+
+1. **Memoization:** `useMemo` for traces, processed data
+2. **Dynamic Import:** Plotly loaded client-side only
+3. **Query Deduplication:** React Query prevents duplicate requests
+4. **Lazy Loading:** Charts only render when data available
+5. **Telemetry Downsampling:** Consider for very long traces
 
 ## Error Handling
 
-### No Data Available
+### No Data
+
 ```
 ┌─────────────────────────────────────┐
-│ ⚠️ Qualifying data not yet available│
-│                                     │
-│ Session scheduled for:              │
-│ Saturday, March 2, 2024 - 15:00 UTC│
+│ Select drivers above to begin       │
+│ analysis                            │
 └─────────────────────────────────────┘
 ```
 
-### Partial Data
+### API Error
+
 ```
-⚠️ Telemetry data not available for HAM lap 12.
-   Showing fastest available lap (lap 15).
+┌─────────────────────────────────────┐
+│ Failed to load qualifying data.     │
+│ Please try again.                   │
+│                                     │
+│        [Retry Button]               │
+└─────────────────────────────────────┘
 ```
 
-### API Errors
-```
-❌ Failed to load session data.
-   [Retry Button]
-```
+### ML Service Unavailable
+
+AIInsights automatically falls back to rule-based insights when ML endpoints fail.
 
 ## Testing Checklist
 
 - [ ] Load qualifying data for traditional weekend
-- [ ] Load sprint qualifying data
-- [ ] Select/deselect drivers
-- [ ] Switch between Q1/Q2/Q3
+- [ ] Load sprint qualifying data (SQ1/SQ2/SQ3)
+- [ ] Select/deselect drivers (max 6)
+- [ ] Switch between Q1/Q2/Q3 tabs
 - [ ] Change reference driver
-- [ ] Sort lap table by different columns
-- [ ] Zoom/pan on charts
-- [ ] Toggle driver visibility
-- [ ] Share URL with state
-- [ ] Handle missing telemetry
-- [ ] Responsive layout on mobile
-- [ ] Loading states display correctly
-- [ ] AI insights generate successfully
+- [ ] Verify chart zoom/pan sync
+- [ ] Verify DRS zone shading appears
+- [ ] Verify sector boundaries in delta plot
+- [ ] Verify theoretical best lap calculation
+- [ ] Test ML insights loading and fallback
+- [ ] Verify URL state persistence
+- [ ] Share URL and verify state restored
+- [ ] Test responsive layout on mobile
+- [ ] Keyboard navigation works
+- [ ] Screen reader announcements
+- [ ] Loading skeletons display
 
-## Future Enhancements
+## Sprint Weekend Support
 
-- Compare with previous years
-- Overlay track map with telemetry
-- Export comparison report
-- Video playback synchronized with telemetry
-- Compound strategy recommendations
-
+When `isSprintWeekend` is detected:
+- Session tabs show SQ1, SQ2, SQ3
+- Session ID format changes to `{season}_{round}_Sprint_Qualifying`
+- Sprint badge displayed next to tabs

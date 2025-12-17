@@ -1,6 +1,21 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Literal
 from datetime import datetime
+
+
+def to_camel(string: str) -> str:
+    """Convert snake_case to camelCase."""
+    components = string.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
+class CamelCaseModel(BaseModel):
+    """Base model that serializes to camelCase for frontend compatibility."""
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
 
 
 SessionType = Literal[
@@ -8,7 +23,7 @@ SessionType = Literal[
 ]
 
 
-class SessionResponse(BaseModel):
+class SessionResponse(CamelCaseModel):
     """Session information response."""
     session_id: str
     session_type: SessionType
@@ -20,7 +35,7 @@ class SessionResponse(BaseModel):
     circuit_name: Optional[str] = None
 
 
-class LapResponse(BaseModel):
+class LapResponse(CamelCaseModel):
     """Lap data response."""
     lap_number: int
     driver: str
@@ -33,7 +48,7 @@ class LapResponse(BaseModel):
     is_personal_best: bool = False
 
 
-class TelemetryResponse(BaseModel):
+class TelemetryResponse(CamelCaseModel):
     """
     Telemetry data response with flat arrays for performance.
     All arrays are distance-indexed and have the same length.
@@ -49,7 +64,7 @@ class TelemetryResponse(BaseModel):
     drs: Optional[List[int]] = None
 
 
-class DeltaResponse(BaseModel):
+class DeltaResponse(CamelCaseModel):
     """Time delta analysis between two drivers."""
     reference_driver: str
     compare_driver: str
@@ -57,23 +72,23 @@ class DeltaResponse(BaseModel):
     delta: List[float]  # seconds, positive = compare driver is slower
 
 
-class SectorTime(BaseModel):
+class SectorTime(CamelCaseModel):
     """Sector times for a driver."""
     driver: str
-    sector_1: float  # seconds
-    sector_2: float  # seconds
-    sector_3: float  # seconds
+    sector1: float  # seconds (renamed from sector_1)
+    sector2: float  # seconds (renamed from sector_2)
+    sector3: float  # seconds (renamed from sector_3)
     total_time: float  # seconds
 
 
-class SectorInfo(BaseModel):
+class SectorInfo(CamelCaseModel):
     """Circuit sector information."""
     sector_number: int
     start_distance: float
     end_distance: float
 
 
-class DRSZone(BaseModel):
+class DRSZone(CamelCaseModel):
     """DRS zone information."""
     zone_number: int
     detection_point: float
@@ -81,7 +96,15 @@ class DRSZone(BaseModel):
     end_point: float
 
 
-class TrackResponse(BaseModel):
+class CornerInfo(CamelCaseModel):
+    """Corner information for track layout."""
+    corner_number: int
+    distance: float
+    type: str  # 'left' or 'right'
+    name: Optional[str] = None
+
+
+class TrackResponse(CamelCaseModel):
     """Track information response."""
     circuit_name: str
     round: int
@@ -89,6 +112,5 @@ class TrackResponse(BaseModel):
     length: float  # meters
     sectors: List[SectorInfo]
     drs_zones: List[DRSZone]
-    corners: Optional[List[dict]] = None
+    corners: Optional[List[CornerInfo]] = None
     elevation_data: Optional[List[dict]] = None
-

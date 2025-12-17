@@ -10,11 +10,12 @@ import { queryKeys } from './queryKeys'
 export function useDeltaQuery(
   sessionId: string,
   referenceDriver: string,
-  compareDrivers: string[]
+  compareDrivers: string[],
+  sessionPart?: string
 ) {
   return useQuery({
-    queryKey: queryKeys.delta.analysis(sessionId, referenceDriver, compareDrivers),
-    queryFn: () => fetchDelta(sessionId, referenceDriver, compareDrivers),
+    queryKey: queryKeys.delta.analysis(sessionId, referenceDriver, compareDrivers, sessionPart),
+    queryFn: () => fetchDelta(sessionId, referenceDriver, compareDrivers, sessionPart),
     staleTime: 30000, // 30 seconds
     enabled: Boolean(sessionId && referenceDriver && compareDrivers.length > 0),
   })

@@ -1,6 +1,8 @@
 import fastf1
+import json
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 from app.core.cache import enable_cache
@@ -12,11 +14,17 @@ from app.models.dto import (
     TrackResponse,
     DeltaResponse,
     SectorTime,
+    SectorInfo,
+    DRSZone,
+    CornerInfo,
 )
 from app.services.transforms import calculate_delta, downsample_telemetry
 
 # Enable cache on module import
 enable_cache()
+
+# Static track data directory
+TRACK_DATA_DIR = Path(__file__).parent.parent / "data" / "tracks"
 
 
 class FastF1Client:
@@ -281,9 +289,9 @@ class FastF1Client:
                 sector_times.append(
                     SectorTime(
                         driver=lap.driver,
-                        sector_1=lap.sector1_time,
-                        sector_2=lap.sector2_time,
-                        sector_3=lap.sector3_time,
+                        sector1=lap.sector1_time,
+                        sector2=lap.sector2_time,
+                        sector3=lap.sector3_time,
                         total_time=lap.lap_time,
                     )
                 )
@@ -291,17 +299,85 @@ class FastF1Client:
         return sector_times
     
     async def get_track_info(self, season: int, round: int) -> TrackResponse:
-        """Get track layout and information."""
-        # FastF1 doesn't provide detailed track info, so this would need static data
-        # For now, return minimal info
-        event = fastf1.get_event(season, round)
-        
-        return TrackResponse(
-            circuit_name=event.EventName if hasattr(event, 'EventName') else "Unknown",
-            round=round,
-            season=season,
-            length=5000.0,  # Default, would need static data
-            sectors=[],
-            drs_zones=[],
-        )
+        """Get track layout and information from static data with FastF1 fallback."""
+        try:
+            # Try to load from static track data
+            mapping_path = TRACK_DATA_DIR / "circuit_mapping.json"
+            if not mapping_path.exists():
+                raise FileNotFoundError("Circuit mapping not found")
+            
+            with open(mapping_path) as f:
+                mapping = json.load(f)
+            
+            circuit_id = mapping.get(str(season), {}).get(str(round))
+            if not circuit_id:
+                raise KeyError(f"No circuit mapping for {season}/{round}")
+            
+            track_path = TRACK_DATA_DIR / f"{circuit_id}.json"
+            if not track_path.exists():
+                raise FileNotFoundError(f"Track data not found: {circuit_id}")
+            
+            with open(track_path) as f:
+                track_data = json.load(f)
+            
+            # Build sectors from static data
+            sectors = [
+                SectorInfo(
+                    sector_number=s["sectorNumber"],
+                    start_distance=s["startDistance"],
+                    end_distance=s["endDistance"]
+                )
+                for s in track_data.get("sectors", [])
+            ]
+            
+            # Build DRS zones from static data
+            drs_zones = [
+                DRSZone(
+                    zone_number=z["zoneNumber"],
+                    detection_point=z["detectionPoint"],
+                    activation_point=z["activationPoint"],
+                    end_point=z["endPoint"]
+                )
+                for z in track_data.get("drsZones", [])
+            ]
+            
+            # Build corners from static data
+            corners = [
+                CornerInfo(
+                    corner_number=c["cornerNumber"],
+                    distance=c["distance"],
+                    type=c["type"],
+                    name=c.get("name")
+                )
+                for c in track_data.get("corners", [])
+            ] if track_data.get("corners") else None
+            
+            return TrackResponse(
+                circuit_name=track_data.get("circuitName", "Unknown"),
+                round=round,
+                season=season,
+                length=float(track_data.get("length", 5000)),
+                sectors=sectors,
+                drs_zones=drs_zones,
+                corners=corners,
+            )
+            
+        except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
+            print(f"Track data not available: {e}, falling back to FastF1")
+            # Fallback to basic FastF1 event info
+            try:
+                event = fastf1.get_event(season, round)
+                circuit_name = event.EventName if hasattr(event, 'EventName') else "Unknown"
+            except Exception:
+                circuit_name = "Unknown"
+            
+            return TrackResponse(
+                circuit_name=circuit_name,
+                round=round,
+                season=season,
+                length=5000.0,
+                sectors=[],
+                drs_zones=[],
+                corners=None,
+            )
 

@@ -1,0 +1,229 @@
+{
+  "season": 2025,
+  "last_updated": "2024-12-11",
+  "source": "FIA Official Calendar",
+  "races": [
+    {
+      "round": 1,
+      "name": "Australian Grand Prix",
+      "shortName": "Australia GP",
+      "circuit": "Albert Park Circuit",
+      "country": "Australia",
+      "city": "Melbourne",
+      "date": "2025-03-16"
+    },
+    {
+      "round": 2,
+      "name": "Chinese Grand Prix",
+      "shortName": "China GP",
+      "circuit": "Shanghai International Circuit",
+      "country": "China",
+      "city": "Shanghai",
+      "date": "2025-03-23",
+      "isSprint": true
+    },
+    {
+      "round": 3,
+      "name": "Japanese Grand Prix",
+      "shortName": "Japan GP",
+      "circuit": "Suzuka International Racing Course",
+      "country": "Japan",
+      "city": "Suzuka",
+      "date": "2025-04-06"
+    },
+    {
+      "round": 4,
+      "name": "Bahrain Grand Prix",
+      "shortName": "Bahrain GP",
+      "circuit": "Bahrain International Circuit",
+      "country": "Bahrain",
+      "city": "Sakhir",
+      "date": "2025-04-13"
+    },
+    {
+      "round": 5,
+      "name": "Saudi Arabian Grand Prix",
+      "shortName": "Saudi Arabia GP",
+      "circuit": "Jeddah Corniche Circuit",
+      "country": "Saudi Arabia",
+      "city": "Jeddah",
+      "date": "2025-04-20"
+    },
+    {
+      "round": 6,
+      "name": "Miami Grand Prix",
+      "shortName": "Miami GP",
+      "circuit": "Miami International Autodrome",
+      "country": "United States",
+      "city": "Miami",
+      "date": "2025-05-04",
+      "isSprint": true
+    },
+    {
+      "round": 7,
+      "name": "Emilia Romagna Grand Prix",
+      "shortName": "Emilia Romagna GP",
+      "circuit": "Autodromo Enzo e Dino Ferrari",
+      "country": "Italy",
+      "city": "Imola",
+      "date": "2025-05-18"
+    },
+    {
+      "round": 8,
+      "name": "Monaco Grand Prix",
+      "shortName": "Monaco GP",
+      "circuit": "Circuit de Monaco",
+      "country": "Monaco",
+      "city": "Monte Carlo",
+      "date": "2025-05-25"
+    },
+    {
+      "round": 9,
+      "name": "Spanish Grand Prix",
+      "shortName": "Spain GP",
+      "circuit": "Circuit de Barcelona-Catalunya",
+      "country": "Spain",
+      "city": "Barcelona",
+      "date": "2025-06-01"
+    },
+    {
+      "round": 10,
+      "name": "Canadian Grand Prix",
+      "shortName": "Canada GP",
+      "circuit": "Circuit Gilles Villeneuve",
+      "country": "Canada",
+      "city": "Montreal",
+      "date": "2025-06-15"
+    },
+    {
+      "round": 11,
+      "name": "Austrian Grand Prix",
+      "shortName": "Austria GP",
+      "circuit": "Red Bull Ring",
+      "country": "Austria",
+      "city": "Spielberg",
+      "date": "2025-06-29"
+    },
+    {
+      "round": 12,
+      "name": "British Grand Prix",
+      "shortName": "Britain GP",
+      "circuit": "Silverstone Circuit",
+      "country": "United Kingdom",
+      "city": "Silverstone",
+      "date": "2025-07-06"
+    },
+    {
+      "round": 13,
+      "name": "Belgian Grand Prix",
+      "shortName": "Belgium GP",
+      "circuit": "Circuit de Spa-Francorchamps",
+      "country": "Belgium",
+      "city": "Spa",
+      "date": "2025-07-27",
+      "isSprint": true
+    },
+    {
+      "round": 14,
+      "name": "Hungarian Grand Prix",
+      "shortName": "Hungary GP",
+      "circuit": "Hungaroring",
+      "country": "Hungary",
+      "city": "Budapest",
+      "date": "2025-08-03"
+    },
+    {
+      "round": 15,
+      "name": "Dutch Grand Prix",
+      "shortName": "Netherlands GP",
+      "circuit": "Circuit Zandvoort",
+      "country": "Netherlands",
+      "city": "Zandvoort",
+      "date": "2025-08-31"
+    },
+    {
+      "round": 16,
+      "name": "Italian Grand Prix",
+      "shortName": "Italy GP",
+      "circuit": "Autodromo Nazionale Monza",
+      "country": "Italy",
+      "city": "Monza",
+      "date": "2025-09-07"
+    },
+    {
+      "round": 17,
+      "name": "Azerbaijan Grand Prix",
+      "shortName": "Azerbaijan GP",
+      "circuit": "Baku City Circuit",
+      "country": "Azerbaijan",
+      "city": "Baku",
+      "date": "2025-09-21"
+    },
+    {
+      "round": 18,
+      "name": "Singapore Grand Prix",
+      "shortName": "Singapore GP",
+      "circuit": "Marina Bay Street Circuit",
+      "country": "Singapore",
+      "city": "Singapore",
+      "date": "2025-10-05"
+    },
+    {
+      "round": 19,
+      "name": "United States Grand Prix",
+      "shortName": "USA GP",
+      "circuit": "Circuit of The Americas",
+      "country": "United States",
+      "city": "Austin",
+      "date": "2025-10-19",
+      "isSprint": true
+    },
+    {
+      "round": 20,
+      "name": "Mexico City Grand Prix",
+      "shortName": "Mexico GP",
+      "circuit": "Autódromo Hermanos Rodríguez",
+      "country": "Mexico",
+      "city": "Mexico City",
+      "date": "2025-10-26"
+    },
+    {
+      "round": 21,
+      "name": "São Paulo Grand Prix",
+      "shortName": "Brazil GP",
+      "circuit": "Autódromo José Carlos Pace",
+      "country": "Brazil",
+      "city": "São Paulo",
+      "date": "2025-11-09",
+      "isSprint": true
+    },
+    {
+      "round": 22,
+      "name": "Las Vegas Grand Prix",
+      "shortName": "Las Vegas GP",
+      "circuit": "Las Vegas Strip Circuit",
+      "country": "United States",
+      "city": "Las Vegas",
+      "date": "2025-11-22"
+    },
+    {
+      "round": 23,
+      "name": "Qatar Grand Prix",
+      "shortName": "Qatar GP",
+      "circuit": "Lusail International Circuit",
+      "country": "Qatar",
+      "city": "Lusail",
+      "date": "2025-11-30",
+      "isSprint": true
+    },
+    {
+      "round": 24,
+      "name": "Abu Dhabi Grand Prix",
+      "shortName": "Abu Dhabi GP",
+      "circuit": "Yas Marina Circuit",
+      "country": "United Arab Emirates",
+      "city": "Abu Dhabi",
+      "date": "2025-12-07"
+    }
+  ]
+}

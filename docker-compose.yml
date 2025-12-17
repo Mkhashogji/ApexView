@@ -6,7 +6,7 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: f1-api
     environment:
-      - LIVE_DATA=${LIVE_DATA:-false}
+      - LIVE_DATA=${LIVE_DATA:-true}
       - DEFAULT_SEASON=${DEFAULT_SEASON:-2025}
       - PARQUET_DIR=/app/data/cache/parquet
       - FASTF1_CACHE=/app/data/cache/sqlite

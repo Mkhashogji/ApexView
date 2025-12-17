@@ -7,10 +7,14 @@ import { queryKeys } from './queryKeys'
  * 
  * Cache strategy: 30 seconds stale time (telemetry is static and large, cache aggressively)
  */
-export function useTelemetryQuery(sessionId: string, drivers: string[]) {
+export function useTelemetryQuery(
+  sessionId: string, 
+  drivers: string[],
+  sessionPart?: string
+) {
   return useQuery({
-    queryKey: queryKeys.telemetry.list(sessionId, drivers),
-    queryFn: () => fetchTelemetry(sessionId, drivers),
+    queryKey: queryKeys.telemetry.list(sessionId, drivers, sessionPart),
+    queryFn: () => fetchTelemetry(sessionId, drivers, sessionPart),
     staleTime: 30000, // 30 seconds
     enabled: Boolean(sessionId && drivers.length > 0), // Only fetch if we have valid params
   })

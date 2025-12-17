@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from typing import List
+from typing import List, Optional
 from app.models.dto import TelemetryResponse, DeltaResponse
 from app.services.data_service import get_data_service
 
@@ -12,13 +12,16 @@ async def get_telemetry(
     drivers: List[str] = Query(..., description="Driver abbreviations"),
     lap_type: str = Query("fastest", description="Lap type: fastest, average, specific"),
     downsample: bool = Query(True, description="Downsample telemetry if too many points"),
+    session_part: Optional[str] = Query(None, description="Qualifying session part: Q1, Q2, or Q3"),
 ):
     """
     Get telemetry data for specified drivers' laps.
     Returns speed, throttle, brake, gear, RPM, and DRS data as flat arrays.
+    
+    Optionally filter by qualifying session part (Q1, Q2, Q3).
     """
     service = get_data_service()
-    telemetry = await service.get_telemetry(session, drivers, lap_type)
+    telemetry = await service.get_telemetry(session, drivers, lap_type, session_part)
     return telemetry
 
 
@@ -27,12 +30,15 @@ async def get_delta_analysis(
     session: str = Query(..., description="Session ID"),
     reference_driver: str = Query(..., description="Reference driver"),
     compare_drivers: List[str] = Query(..., description="Drivers to compare"),
+    session_part: Optional[str] = Query(None, description="Qualifying session part: Q1, Q2, or Q3"),
 ):
     """
     Calculate delta time between reference driver and comparison drivers.
     Returns distance-indexed delta arrays showing where time is gained/lost.
+    
+    Optionally filter by qualifying session part (Q1, Q2, Q3).
     """
     service = get_data_service()
-    delta_data = await service.get_delta_analysis(session, reference_driver, compare_drivers)
+    delta_data = await service.get_delta_analysis(session, reference_driver, compare_drivers, session_part)
     return delta_data
 

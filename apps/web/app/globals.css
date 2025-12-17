@@ -2,19 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google Fonts - Montserrat for headings, Inter for body */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
   --font-formula: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* F1 brand colors as CSS variables for use in Plotly */
+  --f1-red: #E10600;
+  --f1-dark: #15151E;
+  --f1-gray: #38383F;
+  --delta-positive: #EF4444;
+  --delta-negative: #22C55E;
+  --drs-zone: #22C55E;
+  --purple-sector: #A855F7;
 }
 
 @layer base {
+  html {
+    font-family: var(--font-body);
+  }
+  
   body {
-    @apply bg-f1dark text-white;
+    @apply bg-f1dark text-white antialiased;
+    background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2338383F' fill-opacity='0.08'%3E%3Cpath d='M5 0h1L0 5v1h1L6 1V0H5z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  
+  /* Headings use Montserrat */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply font-bold tracking-tight;
+  }
+  
+  /* Monospace for timing data */
+  .font-timing {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Card panel component - consistent styling across app */
+  .card-panel {
+    @apply rounded-lg border border-f1gray bg-f1dark/80 backdrop-blur-sm p-6;
+  }
+  
+  .card-panel-header {
+    @apply text-lg font-heading font-semibold uppercase tracking-wide mb-4;
+  }
+  
+  /* Active tab/button with red glow */
+  .active-glow {
+    @apply bg-f1red text-white shadow-glow-red;
+  }
+  
+  /* Driver chip badge */
+  .driver-chip {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-white transition-all duration-150;
+  }
+  
+  .driver-chip:hover {
+    @apply opacity-90 scale-105;
+  }
+  
+  /* Delta value styling */
+  .delta-positive {
+    @apply text-delta-positive;
+  }
+  
+  .delta-negative {
+    @apply text-delta-negative;
+  }
+  
+  /* Purple fastest sector badge */
+  .purple-sector {
+    @apply bg-purple-sector/20 text-purple-sector border border-purple-sector/50;
+  }
+  
+  /* Loading skeleton */
+  .skeleton {
+    @apply animate-pulse bg-f1gray/30 rounded;
+  }
+  
+  /* Session tab styling */
+  .session-tab {
+    @apply px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 border-transparent;
+  }
+  
+  .session-tab:hover:not(.session-tab-active):not(:disabled) {
+    @apply text-white border-f1gray;
+  }
+  
+  .session-tab-active {
+    @apply text-white border-f1red shadow-glow-red-sm;
+  }
+  
+  .session-tab:disabled {
+    @apply opacity-40 cursor-not-allowed;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Timing display - fixed width numbers */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* Focus visible for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-f1red focus-visible:ring-offset-2 focus-visible:ring-offset-f1dark;
   }
 }
 

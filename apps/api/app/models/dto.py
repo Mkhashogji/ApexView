@@ -94,6 +94,7 @@ class DRSZone(CamelCaseModel):
     detection_point: float
     activation_point: float
     end_point: float
+    wrap_around: Optional[bool] = None  # True if zone crosses start/finish line
 
 
 class CornerInfo(CamelCaseModel):

@@ -1,0 +1,33 @@
+{
+  "circuitId": "gilles_villeneuve",
+  "circuitName": "Circuit Gilles Villeneuve",
+  "country": "Canada",
+  "length": 4361,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1100 },
+    { "sectorNumber": 2, "startDistance": 1100, "endDistance": 2700 },
+    { "sectorNumber": 3, "startDistance": 2700, "endDistance": 4361 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 795, "activationPoint": 1445, "endPoint": 1950 },
+    { "zoneNumber": 2, "detectionPoint": 2260, "activationPoint": 2945, "endPoint": 4050 },
+    { "zoneNumber": 3, "detectionPoint": 2260, "activationPoint": 4250, "endPoint": 180, "wrapAround": true }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 180, "type": "left", "name": "Virage Senna" },
+    { "cornerNumber": 2, "distance": 280, "type": "right", "name": "Virage Senna" },
+    { "cornerNumber": 3, "distance": 480, "type": "right" },
+    { "cornerNumber": 4, "distance": 680, "type": "left" },
+    { "cornerNumber": 5, "distance": 780, "type": "right" },
+    { "cornerNumber": 6, "distance": 1200, "type": "left" },
+    { "cornerNumber": 7, "distance": 1350, "type": "right" },
+    { "cornerNumber": 8, "distance": 1950, "type": "left", "name": "Pont de la Concorde" },
+    { "cornerNumber": 9, "distance": 2150, "type": "right" },
+    { "cornerNumber": 10, "distance": 2700, "type": "left", "name": "L'Épingle" },
+    { "cornerNumber": 11, "distance": 2900, "type": "right" },
+    { "cornerNumber": 12, "distance": 3100, "type": "left" },
+    { "cornerNumber": 13, "distance": 4050, "type": "left", "name": "Final Chicane" },
+    { "cornerNumber": 14, "distance": 4180, "type": "right", "name": "Wall of Champions" }
+  ]
+}
+

@@ -1,0 +1,29 @@
+{
+  "circuitId": "red_bull_ring",
+  "circuitName": "Red Bull Ring",
+  "country": "Austria",
+  "length": 4326,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 778 },
+    { "sectorNumber": 2, "startDistance": 778, "endDistance": 2376 },
+    { "sectorNumber": 3, "startDistance": 2376, "endDistance": 4318 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 3670, "activationPoint": 3850, "endPoint": 518, "wrapAround": true },
+    { "zoneNumber": 2, "detectionPoint": 778, "activationPoint": 864, "endPoint": 1296 },
+    { "zoneNumber": 3, "detectionPoint": 2073, "activationPoint": 2376, "endPoint": 2938 }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 518, "type": "right", "name": "Niki Lauda Turn" },
+    { "cornerNumber": 2, "distance": 778, "type": "right", "name": "Münzer Turn" },
+    { "cornerNumber": 3, "distance": 1296, "type": "right", "name": "Schlossgold" },
+    { "cornerNumber": 4, "distance": 1641, "type": "right", "name": "Rauch Turn" },
+    { "cornerNumber": 5, "distance": 2073, "type": "left", "name": "Exit Kink" },
+    { "cornerNumber": 6, "distance": 2506, "type": "right", "name": "Projekt Spielberg" },
+    { "cornerNumber": 7, "distance": 2938, "type": "right", "name": "Graz Turn" },
+    { "cornerNumber": 8, "distance": 3240, "type": "left", "name": "Full Throttle" },
+    { "cornerNumber": 9, "distance": 3670, "type": "right", "name": "Jochen Rindt Turn" },
+    { "cornerNumber": 10, "distance": 4103, "type": "right", "name": "Final Corner" }
+  ]
+}
+

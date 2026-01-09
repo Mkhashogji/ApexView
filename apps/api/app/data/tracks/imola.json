@@ -1,0 +1,65 @@
+{
+  "circuitId": "imola",
+  "circuitName": "Autodromo Internazionale Enzo e Dino Ferrari",
+  "country": "Italy",
+  "length": 4909,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1520 },
+    { "sectorNumber": 2, "startDistance": 1520, "endDistance": 3300 },
+    { "sectorNumber": 3, "startDistance": 3300, "endDistance": 4909 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 3965, "activationPoint": 4790, "endPoint": 600, "wrapAround": true }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 100, "type": "left", "name": "Tamburello Entry" },
+    { "cornerNumber": 2, "distance": 650, "type": "left", "name": "Variante Tamburello 1" },
+    { "cornerNumber": 3, "distance": 750, "type": "right", "name": "Variante Tamburello 2" },
+    { "cornerNumber": 4, "distance": 950, "type": "straight", "name": "Second Straight" },
+    { "cornerNumber": 5, "distance": 1150, "type": "left", "name": "Variante Villeneuve 1" },
+    { "cornerNumber": 6, "distance": 1280, "type": "right", "name": "Variante Villeneuve 2" },
+    { "cornerNumber": 7, "distance": 1650, "type": "left", "name": "Tosa" },
+    { "cornerNumber": 8, "distance": 2100, "type": "right", "name": "Piratella" },
+    { "cornerNumber": 9, "distance": 2400, "type": "left", "name": "Piratella Exit" },
+    { "cornerNumber": 10, "distance": 2700, "type": "left", "name": "Acque Minerali 1" },
+    { "cornerNumber": 11, "distance": 2850, "type": "right", "name": "Acque Minerali 2" },
+    { "cornerNumber": 12, "distance": 3000, "type": "left", "name": "Acque Minerali 3" },
+    { "cornerNumber": 13, "distance": 3150, "type": "left", "name": "Variante Bassa 1" },
+    { "cornerNumber": 14, "distance": 3300, "type": "right", "name": "Variante Bassa 2" },
+    { "cornerNumber": 15, "distance": 3900, "type": "left", "name": "Variante Alta 1" },
+    { "cornerNumber": 16, "distance": 4050, "type": "right", "name": "Variante Alta 2" },
+    { "cornerNumber": 17, "distance": 4350, "type": "left", "name": "Rivazza 1" },
+    { "cornerNumber": 18, "distance": 4550, "type": "left", "name": "Rivazza 2" },
+    { "cornerNumber": 19, "distance": 4750, "type": "right", "name": "Start/Finish Approach" }
+  ],
+  "qualifying": {
+    "year": 2025,
+    "pole": {
+      "driver": "Oscar Piastri",
+      "team": "McLaren",
+      "time": "1:14.670"
+    },
+    "topSpeeds": {
+      "fastest": { "driver": "Oscar Piastri", "speed": 328 },
+      "range": [318, 328]
+    }
+  },
+  "race": {
+    "year": 2025,
+    "winner": {
+      "driver": "Max Verstappen",
+      "team": "Red Bull Racing"
+    },
+    "fastestLap": {
+      "driver": "Max Verstappen",
+      "time": "1:17.988",
+      "lap": 58
+    },
+    "podium": [
+      { "position": 1, "driver": "Max Verstappen", "team": "Red Bull Racing" },
+      { "position": 2, "driver": "Lando Norris", "team": "McLaren" },
+      { "position": 3, "driver": "Oscar Piastri", "team": "McLaren" }
+    ]
+  }
+}
+

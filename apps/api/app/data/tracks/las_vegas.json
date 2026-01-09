@@ -1,0 +1,34 @@
+{
+  "circuitId": "las_vegas",
+  "circuitName": "Las Vegas Strip Circuit",
+  "country": "USA",
+  "length": 6201,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 2100 },
+    { "sectorNumber": 2, "startDistance": 2100, "endDistance": 4200 },
+    { "sectorNumber": 3, "startDistance": 4200, "endDistance": 6201 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 1800, "activationPoint": 1900, "endPoint": 2050 },
+    { "zoneNumber": 2, "detectionPoint": 4400, "activationPoint": 4500, "endPoint": 6100 }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 200, "type": "left" },
+    { "cornerNumber": 2, "distance": 450, "type": "right" },
+    { "cornerNumber": 3, "distance": 700, "type": "right" },
+    { "cornerNumber": 4, "distance": 1100, "type": "left" },
+    { "cornerNumber": 5, "distance": 1500, "type": "right" },
+    { "cornerNumber": 6, "distance": 2200, "type": "left" },
+    { "cornerNumber": 7, "distance": 2400, "type": "right" },
+    { "cornerNumber": 8, "distance": 2700, "type": "left" },
+    { "cornerNumber": 9, "distance": 2900, "type": "right" },
+    { "cornerNumber": 10, "distance": 3200, "type": "right" },
+    { "cornerNumber": 11, "distance": 3500, "type": "left" },
+    { "cornerNumber": 12, "distance": 3800, "type": "right" },
+    { "cornerNumber": 13, "distance": 4100, "type": "left" },
+    { "cornerNumber": 14, "distance": 4350, "type": "left" },
+    { "cornerNumber": 15, "distance": 4500, "type": "right" },
+    { "cornerNumber": 16, "distance": 4700, "type": "left" },
+    { "cornerNumber": 17, "distance": 6000, "type": "right" }
+  ]
+}

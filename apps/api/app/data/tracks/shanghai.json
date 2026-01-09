@@ -1,0 +1,91 @@
+{
+  "circuitId": "shanghai",
+  "circuitName": "Shanghai International Circuit",
+  "country": "China",
+  "length": 5451,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1700 },
+    { "sectorNumber": 2, "startDistance": 1700, "endDistance": 3400 },
+    { "sectorNumber": 3, "startDistance": 3400, "endDistance": 5451 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 3100, "activationPoint": 3600, "endPoint": 4300 },
+    { "zoneNumber": 2, "detectionPoint": 4500, "activationPoint": 5300, "endPoint": 350, "wrapAround": true }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 350, "type": "right", "name": "Turn 1 (Snail Entry)" },
+    { "cornerNumber": 2, "distance": 650, "type": "right", "name": "Turn 2 (Snail Exit)" },
+    { "cornerNumber": 3, "distance": 900, "type": "left", "name": "Turn 3" },
+    { "cornerNumber": 4, "distance": 1100, "type": "right", "name": "Turn 4" },
+    { "cornerNumber": 5, "distance": 1350, "type": "left", "name": "Turn 5" },
+    { "cornerNumber": 6, "distance": 1700, "type": "right", "name": "Turn 6" },
+    { "cornerNumber": 7, "distance": 2000, "type": "left", "name": "Turn 7 (High Speed)" },
+    { "cornerNumber": 8, "distance": 2300, "type": "right", "name": "Turn 8" },
+    { "cornerNumber": 9, "distance": 2600, "type": "left", "name": "Turn 9" },
+    { "cornerNumber": 10, "distance": 2900, "type": "right", "name": "Turn 10" },
+    { "cornerNumber": 11, "distance": 3400, "type": "right", "name": "Turn 11 (Second Snail Entry)" },
+    { "cornerNumber": 12, "distance": 3650, "type": "right", "name": "Turn 12" },
+    { "cornerNumber": 13, "distance": 3900, "type": "right", "name": "Turn 13 (Second Snail Exit)" },
+    { "cornerNumber": 14, "distance": 5100, "type": "right", "name": "Turn 14 (Hairpin)" },
+    { "cornerNumber": 15, "distance": 5250, "type": "left", "name": "Turn 15" },
+    { "cornerNumber": 16, "distance": 5380, "type": "left", "name": "Turn 16 (Last Corner)" }
+  ],
+  "qualifying": {
+    "year": 2025,
+    "pole": {
+      "driver": "Oscar Piastri",
+      "team": "McLaren",
+      "time": "1:30.641"
+    },
+    "topSpeeds": {
+      "fastest": { "driver": "Kimi Antonelli", "speed": 336 },
+      "range": [327, 336]
+    }
+  },
+  "sprint": {
+    "year": 2025,
+    "sprintPole": {
+      "driver": "Lewis Hamilton",
+      "team": "Ferrari",
+      "time": "1:30.849"
+    },
+    "sprintWinner": {
+      "driver": "Lewis Hamilton",
+      "team": "Ferrari"
+    },
+    "sprintPodium": [
+      { "position": 1, "driver": "Lewis Hamilton", "team": "Ferrari" },
+      { "position": 2, "driver": "Oscar Piastri", "team": "McLaren" },
+      { "position": 3, "driver": "Max Verstappen", "team": "Red Bull" }
+    ]
+  },
+  "race": {
+    "year": 2025,
+    "winner": {
+      "driver": "Oscar Piastri",
+      "team": "McLaren"
+    },
+    "fastestLap": {
+      "driver": "Lando Norris",
+      "time": "1:35.454",
+      "lap": 42,
+      "note": "Hamilton set 1:35.069 on L41 but was disqualified"
+    },
+    "podium": [
+      { "position": 1, "driver": "Oscar Piastri", "team": "McLaren" },
+      { "position": 2, "driver": "Lando Norris", "team": "McLaren" },
+      { "position": 3, "driver": "George Russell", "team": "Mercedes" }
+    ]
+  },
+  "pirelliRatings": {
+    "traction": 3,
+    "asphaltGrip": 3,
+    "asphaltAbrasion": 3,
+    "trackEvolution": 5,
+    "tyreStress": 4,
+    "braking": 4,
+    "lateral": 4,
+    "downforce": 3
+  }
+}
+

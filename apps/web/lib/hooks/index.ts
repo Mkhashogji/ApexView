@@ -11,6 +11,7 @@ export { useSectorsQuery } from './useSectorsQuery'
 
 // Track data hooks
 export { useTrackQuery, useDRSZones, useCorners, useSectorBoundaries } from './useTrackQuery'
+export { useTrackIntelligence } from './useTrackIntelligence'
 
 // ML service hooks
 export { 

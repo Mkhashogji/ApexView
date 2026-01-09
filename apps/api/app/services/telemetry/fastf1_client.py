@@ -595,7 +595,8 @@ class FastF1Client:
                     zone_number=z["zoneNumber"],
                     detection_point=z["detectionPoint"],
                     activation_point=z["activationPoint"],
-                    end_point=z["endPoint"]
+                    end_point=z["endPoint"],
+                    wrap_around=z.get("wrapAround")  # Handle wrap-around zones crossing start/finish
                 )
                 for z in track_data.get("drsZones", [])
             ]

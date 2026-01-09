@@ -1,97 +1,75 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import { TrackIntelligenceContent } from './TrackIntelligenceContent'
 
 type Props = {
   params: { round: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const round = parseInt(params.round, 10)
+  
   return {
-    title: `Round ${params.round} Circuit | F1 Engineering`,
-    description: 'Circuit information with track layout, sectors, and technical profile',
+    title: `Round ${round} Track Intelligence | F1 Engineering`,
+    description: 'Comprehensive circuit analysis with technical insights, sector breakdown, and strategic considerations',
   }
 }
 
 export default function TrackPage({ params }: Props) {
-  const { round } = params
+  const round = parseInt(params.round, 10)
+
+  // Validate round number
+  if (isNaN(round) || round < 1 || round > 24) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white">Invalid Round</h1>
+          <p className="mt-2 text-gray-400">
+            Please select a valid race weekend (Round 1-24).
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Circuit Information</h1>
-          <p className="mt-1 text-gray-400">Round {round}</p>
-        </div>
-        <div className="flex gap-2">
-          <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-400">
-            Coming Soon
-          </span>
-        </div>
+      <Suspense fallback={<TrackIntelligenceFallback />}>
+        <TrackIntelligenceContent round={round} />
+      </Suspense>
+    </div>
+  )
+}
+
+// Fallback component for Suspense
+function TrackIntelligenceFallback() {
+  return (
+    <div className="animate-pulse space-y-6">
+      {/* Tags skeleton */}
+      <div className="flex gap-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-10 w-32 rounded-full bg-f1gray/30" />
+        ))}
       </div>
 
-      <div className="rounded-lg border border-f1gray bg-f1dark/50 p-8">
-        <h2 className="mb-4 text-xl font-semibold">Track Features</h2>
-        
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Interactive Track Map</h3>
-            <p className="text-sm text-gray-400">
-              SVG/Canvas visualization with turn numbers, DRS zones, and sector boundaries.
-            </p>
-          </div>
+      {/* Header skeleton */}
+      <div className="space-y-4">
+        <div className="h-10 w-2/3 rounded bg-f1gray/30" />
+        <div className="h-6 w-1/3 rounded bg-f1gray/30" />
+        <div className="h-24 w-full rounded-lg bg-f1gray/30" />
+      </div>
 
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Elevation Profile</h3>
-            <p className="text-sm text-gray-400">
-              Track elevation changes mapped to distance for gradient analysis.
-            </p>
-          </div>
+      {/* Stats grid skeleton */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-20 rounded-lg bg-f1gray/30" />
+        ))}
+      </div>
 
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Corner Analysis</h3>
-            <p className="text-sm text-gray-400">
-              Detailed corner information including type, gear, typical speed, and difficulty.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Technical Profile</h3>
-            <p className="text-sm text-gray-400">
-              Circuit characteristics: downforce level, tyre stress, brake severity, overtaking difficulty.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Sector Breakdown</h3>
-            <p className="text-sm text-gray-400">
-              Sector characteristics and typical time distributions.
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-f1gray/30 p-4">
-            <h3 className="mb-2 font-semibold text-f1red">Historical Data</h3>
-            <p className="text-sm text-gray-400">
-              Lap records, pole times, and previous race winner statistics.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-lg bg-f1red/10 p-4">
-          <p className="text-sm text-gray-300">
-            <strong className="text-f1red">Note:</strong> This page will feature an interactive
-            track map with clickable corners, elevation profile visualization, comprehensive
-            technical analysis, and historical data. Circuit data will be loaded from the
-            static circuit catalog.
-          </p>
-        </div>
-
-        <div className="mt-4 rounded-lg border border-f1gray/30 p-4">
-          <h4 className="mb-2 font-semibold">Available Routes:</h4>
-          <ul className="space-y-1 text-sm text-gray-400">
-            <li><code className="rounded bg-f1gray/30 px-2 py-1">/track/1</code> - Round 1 Circuit</li>
-            <li><code className="rounded bg-f1gray/30 px-2 py-1">/track/5</code> - Round 5 Circuit</li>
-            <li><code className="rounded bg-f1gray/30 px-2 py-1">/track/21</code> - Round 21 Circuit</li>
-          </ul>
-        </div>
+      {/* Two-column skeleton */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="h-64 rounded-lg bg-f1gray/30" />
+        <div className="h-64 rounded-lg bg-f1gray/30" />
       </div>
     </div>
   )

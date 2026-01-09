@@ -1,0 +1,38 @@
+{
+  "circuitId": "baku",
+  "circuitName": "Baku City Circuit",
+  "country": "Azerbaijan",
+  "length": 6003,
+  "sectors": [
+    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1400 },
+    { "sectorNumber": 2, "startDistance": 1400, "endDistance": 3400 },
+    { "sectorNumber": 3, "startDistance": 3400, "endDistance": 6003 }
+  ],
+  "drsZones": [
+    { "zoneNumber": 1, "detectionPoint": 5700, "activationPoint": 5900, "endPoint": 300, "wrapAround": true },
+    { "zoneNumber": 2, "detectionPoint": 3300, "activationPoint": 3500, "endPoint": 5700 }
+  ],
+  "corners": [
+    { "cornerNumber": 1, "distance": 300, "type": "right" },
+    { "cornerNumber": 2, "distance": 450, "type": "right" },
+    { "cornerNumber": 3, "distance": 600, "type": "right" },
+    { "cornerNumber": 4, "distance": 800, "type": "right" },
+    { "cornerNumber": 5, "distance": 1000, "type": "left" },
+    { "cornerNumber": 6, "distance": 1200, "type": "right" },
+    { "cornerNumber": 7, "distance": 1400, "type": "right" },
+    { "cornerNumber": 8, "distance": 1600, "type": "left" },
+    { "cornerNumber": 9, "distance": 1800, "type": "right" },
+    { "cornerNumber": 10, "distance": 2000, "type": "left" },
+    { "cornerNumber": 11, "distance": 2200, "type": "right" },
+    { "cornerNumber": 12, "distance": 2400, "type": "left" },
+    { "cornerNumber": 13, "distance": 2600, "type": "right" },
+    { "cornerNumber": 14, "distance": 2800, "type": "left" },
+    { "cornerNumber": 15, "distance": 3100, "type": "right" },
+    { "cornerNumber": 16, "distance": 3400, "type": "left" },
+    { "cornerNumber": 17, "distance": 4200, "type": "right" },
+    { "cornerNumber": 18, "distance": 4800, "type": "left" },
+    { "cornerNumber": 19, "distance": 5400, "type": "right" },
+    { "cornerNumber": 20, "distance": 5800, "type": "right" }
+  ]
+}
+

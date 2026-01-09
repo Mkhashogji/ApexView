@@ -2,6 +2,7 @@
 
 import { Telemetry, DRSZone, Corner } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo, getDriverTCam, getTeammateDrivers } from '@/lib/drivers'
+import { getDrsSegments } from '@/lib/utils/drsZones'
 import dynamic from 'next/dynamic'
 import { useState, useMemo, useCallback } from 'react'
 import type { PlotRelayoutEvent } from 'plotly.js'
@@ -154,7 +155,7 @@ export function TelemetryLine({
       .filter((trace): trace is NonNullable<typeof trace> => trace !== null)
   }, [telemetryData, selectedDrivers, activeChannel])
 
-  // Generate DRS zone shapes
+  // Generate DRS zone shapes (handles wrap-around zones that cross start/finish)
   const drsShapes = useMemo(() => {
     if (!drsZones.length) return []
     
@@ -162,19 +163,26 @@ export function TelemetryLine({
     const yMin = config.range?.[0] ?? 0
     const yMax = config.range?.[1] ?? 100
 
-    return drsZones.map((zone) => ({
+    // Use trackLength if provided, otherwise estimate from data
+    const effectiveTrackLength = trackLength || 
+      Math.max(...Array.from(telemetryData.values()).flatMap(d => d.distance || []), 5000)
+
+    // Convert DRS zones to segments (handles wrap-around zones)
+    const segments = getDrsSegments(drsZones, effectiveTrackLength)
+
+    return segments.map((segment) => ({
       type: 'rect' as const,
       xref: 'x' as const,
       yref: 'y' as const,
-      x0: zone.activationPoint,
-      x1: zone.endPoint,
+      x0: segment.start,
+      x1: segment.end,
       y0: yMin,
       y1: yMax,
       fillcolor: 'rgba(34, 197, 94, 0.1)',
       line: { width: 0 },
       layer: 'below' as const,
     }))
-  }, [drsZones, activeChannel])
+  }, [drsZones, activeChannel, trackLength, telemetryData])
 
   // Generate corner annotations
   const cornerAnnotations = useMemo(() => {

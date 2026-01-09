@@ -65,6 +65,8 @@ export interface DRSZone {
   detectionPoint: number
   activationPoint: number
   endPoint: number
+  /** True if zone crosses start/finish line (endPoint < activationPoint) */
+  wrapAround?: boolean
 }
 
 export interface Track {

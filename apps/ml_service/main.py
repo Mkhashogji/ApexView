@@ -53,6 +53,9 @@ from models.schemas import (
     PerformanceInsightsResponse,
     DriverPerformanceResult,
     PhaseTimingInfo,
+    # 5th Dimension: Lap Breakdown
+    LapBreakdownSchema,
+    StraightSegmentSchema,
 )
 from services.similarity import compute_lap_similarity
 from services.clustering import cluster_driving_styles
@@ -412,13 +415,18 @@ async def get_scaled_delta(request: ScaledDeltaRequest):
                 comp_official_time = comp_sectors["totalTime"]
 
                 # Convert telemetry to dict format expected by delta_analysis
+                # Include relative_distance and time for Tier 1 algorithm
                 ref_telem_dict = {
                     "distance": ref_telemetry["distance"],
-                    "speed": ref_telemetry["speed"]
+                    "speed": ref_telemetry["speed"],
+                    "relative_distance": ref_telemetry.get("relativeDistance"),  # camelCase from API
+                    "time": ref_telemetry.get("time"),
                 }
                 comp_telem_dict = {
                     "distance": comp_telemetry["distance"],
-                    "speed": comp_telemetry["speed"]
+                    "speed": comp_telemetry["speed"],
+                    "relative_distance": comp_telemetry.get("relativeDistance"),
+                    "time": comp_telemetry.get("time"),
                 }
 
                 logger.debug(
@@ -630,13 +638,18 @@ async def get_corner_analysis(request: CornerAnalysisRequest):
                     logger.debug(f"Using sector totalTime for {comp_driver}: {comp_official_time:.3f}s")
 
                 # First, calculate scaled delta (Phase 2)
+                # Include relative_distance and time for Tier 1 algorithm
                 ref_telem_dict = {
                     "distance": ref_telemetry["distance"],
-                    "speed": ref_telemetry["speed"]
+                    "speed": ref_telemetry["speed"],
+                    "relative_distance": ref_telemetry.get("relativeDistance"),
+                    "time": ref_telemetry.get("time"),
                 }
                 comp_telem_dict = {
                     "distance": comp_telemetry["distance"],
-                    "speed": comp_telemetry["speed"]
+                    "speed": comp_telemetry["speed"],
+                    "relative_distance": comp_telemetry.get("relativeDistance"),
+                    "time": comp_telemetry.get("time"),
                 }
 
                 delta_result = calculate_scaled_delta(
@@ -951,13 +964,18 @@ async def get_technique_profile(request: TechniqueProfilingRequest):
                 comp_official_time = comp_sectors["totalTime"]
 
                 # Calculate scaled delta (Phase 2)
+                # Include relative_distance and time for Tier 1 algorithm
                 ref_telem_dict = {
                     "distance": ref_telemetry["distance"],
-                    "speed": ref_telemetry["speed"]
+                    "speed": ref_telemetry["speed"],
+                    "relative_distance": ref_telemetry.get("relativeDistance"),
+                    "time": ref_telemetry.get("time"),
                 }
                 comp_telem_dict = {
                     "distance": comp_telemetry["distance"],
-                    "speed": comp_telemetry["speed"]
+                    "speed": comp_telemetry["speed"],
+                    "relative_distance": comp_telemetry.get("relativeDistance"),
+                    "time": comp_telemetry.get("time"),
                 }
 
                 delta_result = calculate_scaled_delta(
@@ -1260,13 +1278,18 @@ async def generate_driver_insights(request: InsightGenerationRequest):
                 comp_official_time = comp_sectors["totalTime"]
 
                 # Calculate scaled delta (Phase 2)
+                # Include relative_distance and time for Tier 1 algorithm
                 ref_telem_dict = {
                     "distance": ref_telemetry["distance"],
-                    "speed": ref_telemetry["speed"]
+                    "speed": ref_telemetry["speed"],
+                    "relative_distance": ref_telemetry.get("relativeDistance"),
+                    "time": ref_telemetry.get("time"),
                 }
                 comp_telem_dict = {
                     "distance": comp_telemetry["distance"],
-                    "speed": comp_telemetry["speed"]
+                    "speed": comp_telemetry["speed"],
+                    "relative_distance": comp_telemetry.get("relativeDistance"),
+                    "time": comp_telemetry.get("time"),
                 }
 
                 delta_result = calculate_scaled_delta(
@@ -1480,6 +1503,7 @@ async def get_performance_insights(request: PerformanceInsightsRequest):
             session_part=request.session_part,
             circuit_name=request.circuit_name,
             include_telemetry=request.include_telemetry,
+            track_length=request.track_length,
         )
 
         # Run orchestration
@@ -1512,6 +1536,19 @@ async def get_performance_insights(request: PerformanceInsightsRequest):
                     )
                     for cr in dr.corner_results
                 ] if dr.corner_results else [],
+                lap_breakdown=LapBreakdownSchema(
+                    corner_total=dr.lap_breakdown["corner_total"],
+                    straight_total=dr.lap_breakdown["straight_total"],
+                    official_gap=dr.lap_breakdown["official_gap"],
+                    track_coverage=dr.lap_breakdown["track_coverage"],
+                    straight_segments=[
+                        StraightSegmentSchema(**seg)
+                        for seg in dr.lap_breakdown.get("straight_segments", [])
+                    ],
+                    reconciliation_valid=dr.lap_breakdown["reconciliation_valid"],
+                    reconciliation_error=dr.lap_breakdown["reconciliation_error"],
+                    insight_text=dr.lap_breakdown.get("insight_text", ""),
+                ) if dr.lap_breakdown else None,
                 technique_profile=TechniqueProfileSchema(
                     driver=dr.technique_profile["driver"],
                     reference_driver=dr.technique_profile["reference_driver"],

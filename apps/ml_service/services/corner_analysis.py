@@ -120,6 +120,57 @@ class CornerResult:
 
 
 @dataclass
+class StraightSegment:
+    """
+    Delta information for a straight section between corners.
+
+    Attributes:
+        segment_number: Sequential segment number (1-indexed)
+        name: Human-readable segment name (e.g., "T6 → T10")
+        start_distance: Start distance in meters
+        end_distance: End distance in meters
+        delta_change: Time delta in this segment (seconds, positive = comp slower)
+        length: Segment length in meters
+        primary_factor: Primary driver of straight-line performance
+    """
+    segment_number: int
+    name: str
+    start_distance: float
+    end_distance: float
+    delta_change: float
+    length: float
+    primary_factor: str  # 'aero_efficiency', 'traction', 'balanced', 'drag'
+
+
+@dataclass
+class LapBreakdown:
+    """
+    Complete breakdown of lap time delta into corners and straights.
+
+    This provides mathematical closure: corner_total + straight_total = official_gap
+    (within reconciliation tolerance).
+
+    Attributes:
+        corner_total: Sum of all corner deltas (seconds)
+        straight_total: Sum of all straight deltas (seconds)
+        official_gap: Official timing gap from Phase 2 (seconds)
+        track_coverage: Fraction of track covered by corners (0-1)
+        straight_segments: List of individual straight segment analyses
+        reconciliation_valid: Whether corners + straights ≈ official_gap
+        reconciliation_error: Absolute difference from expected sum
+        insight_text: Educational text explaining the breakdown
+    """
+    corner_total: float
+    straight_total: float
+    official_gap: float
+    track_coverage: float
+    straight_segments: List[StraightSegment] = field(default_factory=list)
+    reconciliation_valid: bool = True
+    reconciliation_error: float = 0.0
+    insight_text: str = ""
+
+
+@dataclass
 class CornerAnalysisResult:
     """
     Complete result of corner analysis for a driver comparison.
@@ -131,6 +182,7 @@ class CornerAnalysisResult:
         total_delta_change: Sum of all corner delta changes
         corners_gaining: Count of corners where compare driver gained time
         corners_losing: Count of corners where compare driver lost time
+        lap_breakdown: Complete breakdown showing corners + straights = official
     """
     reference_driver: str
     compare_driver: str
@@ -138,6 +190,7 @@ class CornerAnalysisResult:
     total_delta_change: float = 0.0
     corners_gaining: int = 0
     corners_losing: int = 0
+    lap_breakdown: Optional[LapBreakdown] = None
 
 
 # ============================================================================
@@ -219,6 +272,65 @@ def _combine_confidence(
     rank_to_conf: Dict[int, ConfidenceLevel] = {3: "high", 2: "medium", 1: "low"}
     min_rank = min(confidence_rank[conf_a], confidence_rank[conf_b])
     return rank_to_conf[min_rank]
+
+
+def _boost_confidence_from_delta_accuracy(
+    corner_confidence: ConfidenceLevel,
+    delta_confidence: float
+) -> ConfidenceLevel:
+    """
+    Boost corner confidence based on delta analysis accuracy.
+
+    When delta analysis has high confidence (scale factor ~1.0), it means
+    the underlying time calculations are accurate. This external validation
+    can boost corner confidence by one level.
+
+    The rationale is that even if mechanical brake detection is uncertain,
+    we can trust the delta values more if the overall lap time calculation
+    is highly accurate (matches official timing).
+
+    Args:
+        corner_confidence: Current confidence from brake detection
+        delta_confidence: Confidence from delta analysis (0-1 scale)
+
+    Returns:
+        Potentially boosted confidence level
+
+    Boosting Rules:
+        - delta_confidence >= 0.9: Boost by 1 level (low->medium, medium->high)
+        - delta_confidence >= 0.8: Boost low->medium only
+        - delta_confidence < 0.8: No boost
+
+    Examples:
+        >>> _boost_confidence_from_delta_accuracy("low", 0.95)
+        "medium"
+        >>> _boost_confidence_from_delta_accuracy("medium", 0.95)
+        "high"
+        >>> _boost_confidence_from_delta_accuracy("low", 0.85)
+        "medium"
+        >>> _boost_confidence_from_delta_accuracy("medium", 0.85)
+        "medium"
+        >>> _boost_confidence_from_delta_accuracy("low", 0.70)
+        "low"
+    """
+    if delta_confidence >= 0.9:
+        # High delta accuracy - boost by one level
+        if corner_confidence == "low":
+            logger.debug(f"Boosting confidence low->medium (delta_conf={delta_confidence:.2f})")
+            return "medium"
+        elif corner_confidence == "medium":
+            logger.debug(f"Boosting confidence medium->high (delta_conf={delta_confidence:.2f})")
+            return "high"
+        return corner_confidence  # Already high
+
+    elif delta_confidence >= 0.8:
+        # Good delta accuracy - boost low to medium only
+        if corner_confidence == "low":
+            logger.debug(f"Boosting confidence low->medium (delta_conf={delta_confidence:.2f})")
+            return "medium"
+        return corner_confidence
+
+    return corner_confidence  # No boost
 
 
 # ============================================================================
@@ -421,7 +533,8 @@ def analyze_single_corner(
     ref_brake: np.ndarray,
     comp_distance: np.ndarray,
     comp_brake: np.ndarray,
-    corner: CornerInput
+    corner: CornerInput,
+    delta_confidence: float = 0.0
 ) -> CornerResult:
     """
     Analyze time gained/lost at a single corner.
@@ -431,6 +544,7 @@ def analyze_single_corner(
     2. Use the earlier braking point (with margin) as zone start
     3. Calculate delta change within zone
     4. Determine primary cause
+    5. Boost confidence based on delta analysis accuracy
 
     This dual-driver braking detection eliminates phase artifacts that occur
     when comparing late-braking drivers. If we only used the reference driver's
@@ -444,6 +558,8 @@ def analyze_single_corner(
         comp_distance: Comparison driver distance array
         comp_brake: Comparison driver brake array
         corner: CornerInput defining the corner
+        delta_confidence: Confidence from delta analysis (0-1), used to boost
+                         corner confidence when delta accuracy is high
 
     Returns:
         CornerResult with analysis details
@@ -452,7 +568,8 @@ def analyze_single_corner(
         >>> result = analyze_single_corner(
         ...     delta_result, ref_distance, ref_brake,
         ...     comp_distance, comp_brake,
-        ...     CornerInput(corner_number=1, apex_distance=500, corner_type="left")
+        ...     CornerInput(corner_number=1, apex_distance=500, corner_type="left"),
+        ...     delta_confidence=0.95
         ... )
         >>> print(f"T{result.corner_number}: {result.delta_change:+.3f}s")
     """
@@ -480,6 +597,9 @@ def analyze_single_corner(
 
     # Combined confidence reflects less confident detection
     confidence = _combine_confidence(ref_conf, comp_conf)
+
+    # Boost confidence if delta analysis is highly accurate
+    confidence = _boost_confidence_from_delta_accuracy(confidence, delta_confidence)
 
     # Store reference brake distance for reporting
     brake_distance = ref_brake_dist
@@ -613,7 +733,8 @@ def analyze_corners(
             ref_brake=ref_brake_arr,
             comp_distance=comp_distance_arr,
             comp_brake=comp_brake_arr,
-            corner=corner
+            corner=corner,
+            delta_confidence=delta_result.confidence
         )
         corner_results.append(result)
 
@@ -638,7 +759,8 @@ def analyze_corners(
         corner_results=corner_results,
         total_delta_change=total_delta,
         corners_gaining=gaining,
-        corners_losing=losing
+        corners_losing=losing,
+        lap_breakdown=None  # V1 doesn't calculate lap breakdown
     )
 
 
@@ -1116,7 +1238,8 @@ def analyze_single_corner_v2(
     comp_brake: np.ndarray,
     comp_speed: np.ndarray,
     corner: CornerInput,
-    config: CornerAnalysisConfig
+    config: CornerAnalysisConfig,
+    delta_confidence: float = 0.0
 ) -> CornerResultV2:
     """
     Analyze a single corner using v2 deceleration-based detection.
@@ -1127,6 +1250,7 @@ def analyze_single_corner_v2(
     3. Two-stage braking detection
     4. Dynamic exit detection
     5. Calculate delta change within clamped zone
+    6. Boost confidence based on delta analysis accuracy
 
     Args:
         delta_result: DeltaResult from calculate_scaled_delta
@@ -1138,6 +1262,8 @@ def analyze_single_corner_v2(
         comp_speed: Comparison driver speed array
         corner: CornerInput defining the corner
         config: CornerAnalysisConfig with tuning parameters
+        delta_confidence: Confidence from delta analysis (0-1), used to boost
+                         corner confidence when delta accuracy is high
 
     Returns:
         CornerResultV2 with analysis details and v2-specific metadata
@@ -1211,6 +1337,9 @@ def analyze_single_corner_v2(
         _combine_confidence(apex_confidence, ref_brake_conf),
         _combine_confidence(comp_brake_conf, exit_confidence)
     )
+
+    # Boost confidence if delta analysis is highly accurate
+    confidence = _boost_confidence_from_delta_accuracy(confidence, delta_confidence)
 
     if zone_start >= zone_end:
         logger.warning(
@@ -1394,7 +1523,8 @@ def analyze_corners_v2(
     comp_brake: List[float],
     comp_speed: List[float],
     corners: List[CornerInput],
-    circuit_id: str = ""
+    circuit_id: str = "",
+    track_length: Optional[float] = None
 ) -> CornerAnalysisResult:
     """
     Analyze all corners using v2 deceleration-based detection.
@@ -1413,9 +1543,10 @@ def analyze_corners_v2(
         comp_speed: Comparison driver speed array
         corners: List of CornerInput definitions
         circuit_id: Circuit identifier for config lookup
+        track_length: Track length in meters (for lap breakdown calculation)
 
     Returns:
-        CornerAnalysisResult with v2 corner analyses
+        CornerAnalysisResult with v2 corner analyses (including lap_breakdown if track_length provided)
     """
     logger.info(
         f"Analyzing {len(corners)} corners (v2) for "
@@ -1446,7 +1577,8 @@ def analyze_corners_v2(
             comp_brake=comp_brake_arr,
             comp_speed=comp_speed_arr,
             corner=corner,
-            config=config
+            config=config,
+            delta_confidence=delta_result.confidence
         )
         corner_results.append(result)
 
@@ -1497,11 +1629,358 @@ def analyze_corners_v2(
         f"gaining={gaining}, losing={losing}"
     )
 
+    # Calculate lap breakdown if track_length is provided
+    lap_breakdown = None
+    if track_length is not None and track_length > 0:
+        try:
+            lap_breakdown = calculate_lap_breakdown(
+                delta_result=delta_result,
+                corner_results=corner_results,
+                track_length=track_length,
+                comp_driver=delta_result.compare_driver
+            )
+            logger.info(
+                f"Lap breakdown calculated: "
+                f"corners={lap_breakdown.corner_total:+.3f}s, "
+                f"straights={lap_breakdown.straight_total:+.3f}s, "
+                f"reconciled={'✓' if lap_breakdown.reconciliation_valid else '✗'}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to calculate lap breakdown: {e}")
+            lap_breakdown = None
+
     return CornerAnalysisResult(
         reference_driver=delta_result.reference_driver,
         compare_driver=delta_result.compare_driver,
         corner_results=corner_results,
         total_delta_change=total_delta,
         corners_gaining=gaining,
-        corners_losing=losing
+        corners_losing=losing,
+        lap_breakdown=lap_breakdown
+    )
+
+
+# ============================================================================
+# Straight-Line Performance Integration (5th Dimension)
+# ============================================================================
+
+def _determine_straight_primary_factor(delta: float, length: float) -> str:
+    """
+    Determine primary factor for straight-line delta.
+
+    Uses heuristics based on segment length and delta direction:
+    - Long straights (>300m): aero/drag dependent
+    - Short straights (<300m): traction dependent
+    - Small deltas: balanced
+
+    Args:
+        delta: Delta change in seconds (negative = gaining time)
+        length: Segment length in meters
+
+    Returns:
+        Primary factor string: 'aero_efficiency', 'traction', 'balanced', 'drag'
+    """
+    if length <= 0:
+        return "balanced"
+
+    delta_per_100m = abs(delta / length) * 100
+
+    if delta_per_100m < 0.005:
+        return "balanced"
+    elif delta < 0:  # Gaining time
+        return "aero_efficiency" if length > 300 else "traction"
+    else:  # Losing time
+        return "drag" if length > 300 else "traction"
+
+
+def calculate_straight_segments(
+    delta_result: DeltaResult,
+    corner_results: List[CornerResult],
+    track_length: float
+) -> Tuple[List[StraightSegment], float]:
+    """
+    Calculate delta changes on straight sections between corners.
+
+    Identifies track segments NOT covered by corner zones and calculates
+    the delta change in each segment using the Phase 2 delta curve.
+
+    Strategy:
+    1. Sort corners by zone_start position
+    2. Identify gaps between consecutive corner zones
+    3. Calculate delta change in each gap using get_delta_change_in_range()
+    4. Sum all gap deltas = straight_total
+
+    Args:
+        delta_result: Phase 2 delta analysis result
+        corner_results: List of corner analysis results with zone boundaries
+        track_length: Total track length in meters
+
+    Returns:
+        Tuple of (list of straight segments, total straight delta)
+
+    Example:
+        >>> segments, straight_total = calculate_straight_segments(
+        ...     delta_result, corner_results, track_length=5543
+        ... )
+        >>> print(f"Straight total: {straight_total:+.3f}s")
+    """
+    if track_length <= 0:
+        logger.warning("Invalid track_length, returning empty segments")
+        return [], 0.0
+
+    if not corner_results:
+        # No corners = entire track is "straight"
+        total_delta = get_delta_change_in_range(delta_result, 0, track_length)
+        return [StraightSegment(
+            segment_number=1,
+            name="Full Track",
+            start_distance=0,
+            end_distance=track_length,
+            delta_change=total_delta,
+            length=track_length,
+            primary_factor="balanced"
+        )], total_delta
+
+    # Sort corners by track position
+    sorted_corners = sorted(corner_results, key=lambda c: c.zone_start)
+    straight_segments = []
+    segment_num = 1
+
+    MIN_SEGMENT_LENGTH = 10  # Minimum 10m to count as a straight segment
+
+    # Gap before first corner (start/finish to T1)
+    first_corner = sorted_corners[0]
+    if first_corner.zone_start > MIN_SEGMENT_LENGTH:
+        seg_start = 0
+        seg_end = first_corner.zone_start
+        delta = get_delta_change_in_range(delta_result, seg_start, seg_end)
+        straight_segments.append(StraightSegment(
+            segment_number=segment_num,
+            name=f"Start -> T{first_corner.corner_number}",
+            start_distance=seg_start,
+            end_distance=seg_end,
+            delta_change=delta,
+            length=seg_end - seg_start,
+            primary_factor=_determine_straight_primary_factor(delta, seg_end - seg_start)
+        ))
+        segment_num += 1
+
+    # Gaps between consecutive corners
+    for i in range(len(sorted_corners) - 1):
+        current = sorted_corners[i]
+        next_corner = sorted_corners[i + 1]
+
+        seg_start = current.zone_end
+        seg_end = next_corner.zone_start
+
+        if seg_end > seg_start + MIN_SEGMENT_LENGTH:
+            delta = get_delta_change_in_range(delta_result, seg_start, seg_end)
+            straight_segments.append(StraightSegment(
+                segment_number=segment_num,
+                name=f"T{current.corner_number} -> T{next_corner.corner_number}",
+                start_distance=seg_start,
+                end_distance=seg_end,
+                delta_change=delta,
+                length=seg_end - seg_start,
+                primary_factor=_determine_straight_primary_factor(delta, seg_end - seg_start)
+            ))
+            segment_num += 1
+
+    # Gap after last corner (final corner to finish)
+    last_corner = sorted_corners[-1]
+    if last_corner.zone_end < track_length - MIN_SEGMENT_LENGTH:
+        seg_start = last_corner.zone_end
+        seg_end = track_length
+        delta = get_delta_change_in_range(delta_result, seg_start, seg_end)
+        straight_segments.append(StraightSegment(
+            segment_number=segment_num,
+            name=f"T{last_corner.corner_number} -> Finish",
+            start_distance=seg_start,
+            end_distance=seg_end,
+            delta_change=delta,
+            length=seg_end - seg_start,
+            primary_factor=_determine_straight_primary_factor(delta, seg_end - seg_start)
+        ))
+
+    # Calculate total
+    straight_total = sum(seg.delta_change for seg in straight_segments)
+
+    logger.debug(
+        f"Calculated {len(straight_segments)} straight segments, "
+        f"total_delta={straight_total:+.3f}s"
+    )
+
+    return straight_segments, straight_total
+
+
+def _generate_lap_breakdown_insight(
+    corner_total: float,
+    straight_total: float,
+    official_gap: float,
+    track_coverage: float,
+    comp_driver: str
+) -> str:
+    """
+    Generate educational insight text explaining the lap breakdown.
+
+    Uses template-based generation (anti-hallucination pattern) to create
+    human-readable text that explains why corner totals don't match official gaps.
+
+    Args:
+        corner_total: Sum of corner deltas (seconds)
+        straight_total: Sum of straight deltas (seconds)
+        official_gap: Official timing gap (seconds)
+        track_coverage: Fraction of track covered by corners (0-1)
+        comp_driver: Comparison driver code
+
+    Returns:
+        Educational insight text
+    """
+    coverage_pct = track_coverage * 100
+    straight_pct = 100 - coverage_pct
+    driver = comp_driver or "Driver"
+
+    if corner_total > 0 and straight_total < 0:
+        # Lost in corners, gained on straights
+        if abs(corner_total) > abs(straight_total):
+            return (
+                f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+                f"{driver} lost {corner_total:+.3f}s in corners but recovered "
+                f"{abs(straight_total):.3f}s on straights. The cornering deficit "
+                f"was larger, resulting in a net gap of {official_gap:+.3f}s."
+            )
+        else:
+            return (
+                f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+                f"{driver} lost {corner_total:+.3f}s in corners but nearly "
+                f"compensated with {abs(straight_total):.3f}s gained on straights. "
+                f"Net gap: {official_gap:+.3f}s."
+            )
+    elif corner_total < 0 and straight_total > 0:
+        # Gained in corners, lost on straights
+        return (
+            f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+            f"{driver} gained {abs(corner_total):.3f}s in corners but lost "
+            f"{straight_total:+.3f}s on straights. Net result: {official_gap:+.3f}s."
+        )
+    elif corner_total > 0 and straight_total > 0:
+        # Lost everywhere
+        dominant = "corners" if corner_total > straight_total else "straights"
+        return (
+            f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+            f"{driver} lost time in both corners ({corner_total:+.3f}s) and "
+            f"straights ({straight_total:+.3f}s), with {dominant} being the larger deficit. "
+            f"Total: {official_gap:+.3f}s."
+        )
+    elif corner_total < 0 and straight_total < 0:
+        # Gained everywhere
+        dominant = "corners" if abs(corner_total) > abs(straight_total) else "straights"
+        return (
+            f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+            f"{driver} gained time in both corners ({corner_total:+.3f}s) and "
+            f"straights ({straight_total:+.3f}s), with {dominant} contributing more. "
+            f"Total advantage: {official_gap:+.3f}s."
+        )
+    else:
+        # Edge case: one of them is zero
+        return (
+            f"Corner zones cover {coverage_pct:.1f}% of the circuit. "
+            f"Corner delta: {corner_total:+.3f}s, Straight delta: {straight_total:+.3f}s. "
+            f"Net result: {official_gap:+.3f}s."
+        )
+
+
+def calculate_lap_breakdown(
+    delta_result: DeltaResult,
+    corner_results: List[CornerResult],
+    track_length: float,
+    comp_driver: str = ""
+) -> LapBreakdown:
+    """
+    Calculate complete lap breakdown showing corner and straight contributions.
+
+    This is the key function for straight-line integration. It ensures mathematical
+    closure: corner_total + straight_total = official_gap (within 5ms tolerance).
+
+    The breakdown transforms user confusion ("why don't these numbers match?")
+    into user understanding ("corners + straights = official gap").
+
+    Args:
+        delta_result: Phase 2 delta analysis result
+        corner_results: List of corner analysis results
+        track_length: Total track length in meters
+        comp_driver: Comparison driver code (for insight text)
+
+    Returns:
+        LapBreakdown with corner total, straight total, and reconciliation check
+
+    Example:
+        >>> breakdown = calculate_lap_breakdown(delta_result, corners, 5543, "LEC")
+        >>> print(f"Corners: {breakdown.corner_total:+.3f}s")
+        >>> print(f"Straights: {breakdown.straight_total:+.3f}s")
+        >>> print(f"Official: {breakdown.official_gap:+.3f}s")
+        >>> print(f"Valid: {breakdown.reconciliation_valid}")
+    """
+    if track_length <= 0:
+        logger.warning("Invalid track_length for lap breakdown")
+        return LapBreakdown(
+            corner_total=0.0,
+            straight_total=0.0,
+            official_gap=delta_result.official_gap,
+            track_coverage=0.0,
+            straight_segments=[],
+            reconciliation_valid=False,
+            reconciliation_error=abs(delta_result.official_gap),
+            insight_text="Unable to calculate lap breakdown (invalid track length)."
+        )
+
+    # Calculate corner total
+    corner_total = sum(cr.delta_change for cr in corner_results)
+
+    # Calculate corner distance coverage
+    corner_distance = sum(cr.zone_end - cr.zone_start for cr in corner_results)
+    track_coverage = corner_distance / track_length
+
+    # Calculate straight segments
+    straight_segments, straight_total = calculate_straight_segments(
+        delta_result, corner_results, track_length
+    )
+
+    # Reconciliation check
+    calculated_total = corner_total + straight_total
+    reconciliation_error = abs(calculated_total - delta_result.official_gap)
+    reconciliation_valid = reconciliation_error < 0.005  # 5ms tolerance
+
+    if not reconciliation_valid:
+        logger.warning(
+            f"Lap breakdown reconciliation failed: "
+            f"corners ({corner_total:+.3f}s) + straights ({straight_total:+.3f}s) = "
+            f"{calculated_total:+.3f}s, but official gap is {delta_result.official_gap:+.3f}s "
+            f"(error: {reconciliation_error:.3f}s)"
+        )
+
+    # Generate insight text
+    insight_text = _generate_lap_breakdown_insight(
+        corner_total=corner_total,
+        straight_total=straight_total,
+        official_gap=delta_result.official_gap,
+        track_coverage=track_coverage,
+        comp_driver=comp_driver
+    )
+
+    logger.info(
+        f"Lap breakdown: corners={corner_total:+.3f}s, straights={straight_total:+.3f}s, "
+        f"official={delta_result.official_gap:+.3f}s, coverage={track_coverage:.1%}, "
+        f"reconciled={reconciliation_valid}"
+    )
+
+    return LapBreakdown(
+        corner_total=corner_total,
+        straight_total=straight_total,
+        official_gap=delta_result.official_gap,
+        track_coverage=track_coverage,
+        straight_segments=straight_segments,
+        reconciliation_valid=reconciliation_valid,
+        reconciliation_error=reconciliation_error,
+        insight_text=insight_text
     )

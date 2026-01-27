@@ -61,6 +61,9 @@ class TelemetryResponse(CamelCaseModel):
     throttle: List[float]
     brake: List[float]
     gear: List[int]
+    # Fields for Tier 1 delta algorithm (RelativeDistance + Time scaling)
+    relative_distance: Optional[List[float]] = None  # 0-1 normalized track position
+    time: Optional[List[float]] = None  # Elapsed lap time in seconds (starting at 0)
     rpm: Optional[List[int]] = None
     drs: Optional[List[int]] = None
 

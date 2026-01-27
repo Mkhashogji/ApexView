@@ -21,6 +21,7 @@ const DIMENSION_LABELS: Record<DimensionType, string> = {
   apex: 'Apex',
   exit: 'Exit',
   consistency: 'Consistency',
+  straight_line: 'Straight-Line',
 }
 
 /** Color mapping for performance levels */

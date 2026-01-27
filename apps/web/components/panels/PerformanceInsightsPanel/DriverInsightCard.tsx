@@ -8,6 +8,7 @@ import type {
 import { getTeamColor } from '@/lib/drivers'
 import { TechniqueProfileDisplay } from './TechniqueProfileDisplay'
 import { FocusAreas } from './FocusAreas'
+import { LapBreakdownPanel } from '@/components/panels/LapBreakdownPanel'
 
 interface DriverInsightCardProps {
   /** Driver performance result from Phase 6 */
@@ -16,6 +17,69 @@ interface DriverInsightCardProps {
   referenceDriver: string
   /** Current insight mode */
   mode: InsightMode
+}
+
+/**
+ * Display gaining and losing straights as chip groups (5th dimension).
+ */
+function StraightFocusAreas({
+  gainingStraights,
+  losingStraights,
+  mode,
+}: {
+  gainingStraights: string[]
+  losingStraights: string[]
+  mode: InsightMode
+}) {
+  const gainLabel = mode === 'engineer' ? 'Gaining (Straights):' : 'Strong Straights:'
+  const lossLabel = mode === 'engineer' ? 'Losing (Straights):' : 'Work On (Straights):'
+
+  const hasGains = gainingStraights.length > 0
+  const hasLosses = losingStraights.length > 0
+
+  if (!hasGains && !hasLosses) {
+    return null
+  }
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium uppercase tracking-wide text-gray-500">
+        Straight-Line Focus
+      </h4>
+
+      {hasGains && (
+        <div className="flex items-start gap-2">
+          <span className="w-28 text-xs text-gray-400 pt-0.5">{gainLabel}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {gainingStraights.map((straight) => (
+              <span
+                key={straight}
+                className="px-2 py-0.5 text-xs rounded bg-green-500/20 text-green-400 border border-green-500/30"
+              >
+                {straight}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasLosses && (
+        <div className="flex items-start gap-2">
+          <span className="w-28 text-xs text-gray-400 pt-0.5">{lossLabel}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {losingStraights.map((straight) => (
+              <span
+                key={straight}
+                className="px-2 py-0.5 text-xs rounded bg-red-500/20 text-red-400 border border-red-500/30"
+              >
+                {straight}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -89,6 +153,17 @@ export function DriverInsightCard({
         )}
       </div>
 
+      {/* Lap Breakdown - 5th Dimension */}
+      {result.lap_breakdown && (
+        <div className="p-4 border-b border-f1gray/30">
+          <LapBreakdownPanel
+            breakdown={result.lap_breakdown}
+            compDriver={result.driver}
+            className="border-0 bg-transparent p-0"
+          />
+        </div>
+      )}
+
       {/* Technique Profile */}
       {result.technique_profile && (
         <div className="p-4 border-b border-f1gray/30">
@@ -96,12 +171,23 @@ export function DriverInsightCard({
         </div>
       )}
 
-      {/* Focus Areas */}
+      {/* Focus Areas - Corners */}
       {result.technique_profile && (
-        <div className="p-4">
+        <div className="p-4 border-b border-f1gray/30">
           <FocusAreas
             gainingCorners={result.technique_profile.top_gaining_corners}
             losingCorners={result.technique_profile.top_losing_corners}
+            mode={mode}
+          />
+        </div>
+      )}
+
+      {/* Focus Areas - Straights (5th Dimension) */}
+      {result.technique_profile?.straight_line && (
+        <div className="p-4">
+          <StraightFocusAreas
+            gainingStraights={result.technique_profile.straight_line.top_gaining_straights}
+            losingStraights={result.technique_profile.straight_line.top_losing_straights}
             mode={mode}
           />
         </div>

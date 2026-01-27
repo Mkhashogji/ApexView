@@ -17,6 +17,8 @@ interface PerformanceInsightsPanelProps {
   corners: Corner[]
   /** Qualifying session part (Q1, Q2, Q3) */
   sessionPart?: string
+  /** Track length in meters (required for lap breakdown) */
+  trackLength?: number
 }
 
 /**
@@ -38,6 +40,7 @@ export function PerformanceInsightsPanel({
   selectedDrivers,
   corners,
   sessionPart,
+  trackLength,
 }: PerformanceInsightsPanelProps) {
   const [mode, setMode] = useState<InsightMode>('engineer')
 
@@ -55,6 +58,7 @@ export function PerformanceInsightsPanel({
     corners,
     mode,
     sessionPart,
+    trackLength,
   })
 
   // ═══════════════════════════════════════════════════════════════════════════

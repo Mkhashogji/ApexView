@@ -7,7 +7,6 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import {
   useSessionsQuery,
   useTelemetryQuery,
-  useDeltaQuery,
   useSectorsQuery,
   useTrackQuery,
   useLapsQuery,
@@ -25,7 +24,7 @@ import { CornerBreakdownPanel } from '@/components/panels/CornerBreakdownPanel'
 import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsightsPanel'
 
 // Types
-import { Telemetry, QualifyingSessionPart } from '@/../../packages/models/src/types'
+import { Telemetry, QualifyingSessionPart, DeltaData } from '@/../../packages/models/src/types'
 
 // Data
 import raceCalendarData from '@/data/race-calendar-2025.json'
@@ -122,17 +121,12 @@ export function QualifyingContent() {
     isLoading: isLapsLoading 
   } = useLapsQuery(sessionId, selectedDrivers)
 
-  const { 
-    data: trackData, 
-    isLoading: isTrackLoading 
+  const {
+    data: trackData,
+    isLoading: isTrackLoading
   } = useTrackQuery(round, season)
 
-  const {
-    data: deltaData,
-    isLoading: isDeltaLoading
-  } = useDeltaQuery(sessionId, referenceDriver, compareDrivers, qualifyingPart)
-
-  // Phase 2: Scaled Delta Query
+  // Phase 2: Scaled Delta Query (provides accurate delta for DeltaPlot)
   const {
     data: scaledDeltaData,
     isLoading: isScaledDeltaLoading,
@@ -149,11 +143,11 @@ export function QualifyingContent() {
   } = useCornerAnalysisQuery(sessionId, referenceDriver, compareDrivers, trackData?.corners, qualifyingPart)
 
   // Combined loading state - wait for ALL data (including laps for completeness)
-  const isLoading = 
-    isSessionsLoading || 
-    isTelemetryLoading || 
-    isSectorsLoading || 
-    isDeltaLoading || 
+  const isLoading =
+    isSessionsLoading ||
+    isTelemetryLoading ||
+    isSectorsLoading ||
+    isScaledDeltaLoading ||  // Use scaled delta (Tier 1) instead of old delta
     isTrackLoading ||
     isLapsLoading
 
@@ -181,6 +175,19 @@ export function QualifyingContent() {
     }
     return map
   }, [telemetryData])
+
+  // Transform scaledDeltaData to DeltaData format for DeltaPlot
+  // This ensures DeltaPlot uses accurate Tier 1 data (scale_factor=1.0, confidence=100%)
+  const transformedDeltaData = useMemo((): DeltaData[] => {
+    if (!scaledDeltaData?.results) return []
+
+    return scaledDeltaData.results.map(result => ({
+      referenceDriver: result.referenceDriver,
+      compareDriver: result.compareDriver,
+      distance: result.distance,
+      delta: result.delta,  // Now uses accurate Tier 1 data!
+    }))
+  }, [scaledDeltaData])
 
   // Update URL when state changes
   const updateURL = useCallback((
@@ -319,7 +326,7 @@ export function QualifyingContent() {
   console.log('[QualifyingPage] Rendering with data - all guards passed', {
     telemetryMapSize: telemetryMap.size,
     sectorsDataLength: sectorsData?.length ?? 0,
-    deltaDataLength: deltaData?.length ?? 0,
+    scaledDeltaLength: transformedDeltaData.length,
     trackDataExists: !!trackData,
     trackLength: trackData?.length ?? 'undefined',
     trackDrsZones: trackData?.drsZones?.length ?? 0,
@@ -384,11 +391,11 @@ export function QualifyingContent() {
                 </div>
               </div>
 
-              {/* Delta to Reference - Full Width */}
+              {/* Delta to Reference - Full Width (using accurate Tier 1 scaled delta) */}
               <div className="card-panel">
                 <h2 className="card-panel-header">Delta to Reference ({referenceDriver})</h2>
                 <DeltaPlot
-                  deltaData={deltaData ?? []}
+                  deltaData={transformedDeltaData}
                   referenceDriver={referenceDriver}
                   sectors={trackData?.sectors ?? []}
                   trackLength={trackData?.length ?? undefined}
@@ -420,6 +427,7 @@ export function QualifyingContent() {
                 selectedDrivers={selectedDrivers}
                 corners={trackData?.corners ?? []}
                 sessionPart={qualifyingPart}
+                trackLength={trackData?.length}
               />
             </>
           ) : (

@@ -45,6 +45,8 @@ from services.corner_analysis import (
     analyze_corners_v2,
     CornerInput,
     CornerAnalysisResult,
+    LapBreakdown,
+    StraightSegment,
 )
 from services.technique_profiling import (
     profile_drivers,
@@ -87,6 +89,7 @@ class PerformanceInsightsConfig:
         session_part: Qualifying session part filter (Q1, Q2, Q3)
         circuit_name: Circuit name for context
         include_telemetry: Whether to include delta arrays in response
+        track_length: Track length in meters (for lap breakdown calculation)
     """
     session_id: str
     reference_driver: str
@@ -96,6 +99,7 @@ class PerformanceInsightsConfig:
     session_part: Optional[str] = None
     circuit_name: Optional[str] = None
     include_telemetry: bool = True
+    track_length: Optional[float] = None
 
 
 @dataclass
@@ -127,6 +131,8 @@ class DriverPerformanceResult:
     corners_losing: int = 0
     total_corner_delta: float = 0.0
     corner_results: List[Dict[str, Any]] = field(default_factory=list)
+    # 5th Dimension: Lap Breakdown
+    lap_breakdown: Optional[Dict[str, Any]] = None
 
     # Phase 4: Technique Profile
     technique_profile: Optional[Dict[str, Any]] = None
@@ -199,7 +205,7 @@ def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
 
 def _technique_profile_to_dict(profile: TechniqueProfile) -> Dict[str, Any]:
     """Convert TechniqueProfile dataclass to serializable dict."""
-    return {
+    result = {
         "driver": profile.driver,
         "reference_driver": profile.reference_driver,
         "braking": {
@@ -241,10 +247,26 @@ def _technique_profile_to_dict(profile: TechniqueProfile) -> Dict[str, Any]:
         "total_corners_analyzed": profile.total_corners_analyzed,
     }
 
+    # NEW: Include 5th dimension (straight-line) if present
+    if profile.straight_line is not None:
+        result["straight_line"] = {
+            "level": profile.straight_line.level.value,
+            "descriptor": profile.straight_line.descriptor,
+            "percentile": profile.straight_line.percentile,
+            "raw_delta": profile.straight_line.raw_delta,
+            "primary_factor": profile.straight_line.primary_factor,
+            "segment_count": profile.straight_line.segment_count,
+            "top_gaining_straights": profile.straight_line.top_gaining_straights,
+            "top_losing_straights": profile.straight_line.top_losing_straights,
+            "avg_confidence": profile.straight_line.avg_confidence,
+        }
+
+    return result
+
 
 def _session_percentiles_to_dict(percentiles: SessionPercentiles) -> Dict[str, Any]:
     """Convert SessionPercentiles dataclass to serializable dict."""
-    return {
+    result = {
         "braking_p30": percentiles.braking_p30,
         "braking_p70": percentiles.braking_p70,
         "apex_p30": percentiles.apex_p30,
@@ -255,6 +277,13 @@ def _session_percentiles_to_dict(percentiles: SessionPercentiles) -> Dict[str, A
         "consistency_p70": percentiles.consistency_p70,
         "driver_count": percentiles.driver_count,
     }
+
+    # NEW: Include straight-line percentiles for 5th dimension
+    if hasattr(percentiles, 'straight_line_p30'):
+        result["straight_line_p30"] = percentiles.straight_line_p30
+        result["straight_line_p70"] = percentiles.straight_line_p70
+
+    return result
 
 
 def _insight_to_dict(insight: NaturalLanguageInsight) -> Dict[str, Any]:
@@ -307,6 +336,36 @@ def _corner_result_to_dict(corner_result) -> Dict[str, Any]:
         "delta_change": corner_result.delta_change,
         "cause": corner_result.cause,
         "confidence": corner_result.confidence,
+    }
+
+
+def _straight_segment_to_dict(segment) -> Dict[str, Any]:
+    """Convert StraightSegment dataclass to serializable dict."""
+    return {
+        "segment_number": segment.segment_number,
+        "name": segment.name,
+        "start_distance": segment.start_distance,
+        "end_distance": segment.end_distance,
+        "delta_change": segment.delta_change,
+        "length": segment.length,
+        "primary_factor": segment.primary_factor,
+    }
+
+
+def _lap_breakdown_to_dict(lap_breakdown) -> Dict[str, Any]:
+    """Convert LapBreakdown dataclass to serializable dict."""
+    return {
+        "corner_total": lap_breakdown.corner_total,
+        "straight_total": lap_breakdown.straight_total,
+        "official_gap": lap_breakdown.official_gap,
+        "track_coverage": lap_breakdown.track_coverage,
+        "straight_segments": [
+            _straight_segment_to_dict(seg)
+            for seg in lap_breakdown.straight_segments
+        ],
+        "reconciliation_valid": lap_breakdown.reconciliation_valid,
+        "reconciliation_error": lap_breakdown.reconciliation_error,
+        "insight_text": lap_breakdown.insight_text,
     }
 
 
@@ -374,12 +433,15 @@ async def fetch_driver_telemetry(
                 return None, error
 
         # Get official lap time if available
+        # Include relative_distance and time for Tier 1 delta algorithm
         telemetry = {
             "distance": data["distance"],
             "speed": data["speed"],
             "brake": data.get("brake", [0] * len(data["distance"])),
             "throttle": data.get("throttle", [100] * len(data["distance"])),
             "lap_time": data.get("lapTime"),  # camelCase from API response
+            "relative_distance": data.get("relativeDistance"),  # camelCase from API
+            "time": data.get("time"),
         }
 
         return telemetry, None
@@ -531,7 +593,8 @@ def run_phase3_corner(
     delta_result: DeltaResult,
     ref_telemetry: Dict[str, Any],
     comp_telemetry: Dict[str, Any],
-    corners: List[CornerInput]
+    corners: List[CornerInput],
+    track_length: Optional[float] = None
 ) -> Tuple[Optional[CornerAnalysisResult], Optional[str]]:
     """
     Run Phase 3: Corner Analysis.
@@ -548,6 +611,7 @@ def run_phase3_corner(
         ref_telemetry: Reference driver telemetry
         comp_telemetry: Comparison driver telemetry
         corners: List of corner definitions
+        track_length: Track length in meters (for lap breakdown calculation)
 
     Returns:
         Tuple of (CornerAnalysisResult, error_message)
@@ -568,7 +632,8 @@ def run_phase3_corner(
                 comp_distance=comp_telemetry["distance"],
                 comp_brake=comp_telemetry["brake"],
                 comp_speed=comp_telemetry["speed"],
-                corners=corners
+                corners=corners,
+                track_length=track_length
             )
         else:
             # Fall back to V1 analysis
@@ -786,7 +851,8 @@ async def orchestrate_performance_insights(
                 delta_result,
                 ref_telemetry,
                 comp_telemetry,
-                config.corners
+                config.corners,
+                track_length=config.track_length
             )
 
             if error:
@@ -890,6 +956,11 @@ async def orchestrate_performance_insights(
                     _corner_result_to_dict(cr)
                     for cr in corner.corner_results
                 ]
+                # Add lap breakdown (5th Dimension)
+                if corner.lap_breakdown:
+                    driver_result.lap_breakdown = _lap_breakdown_to_dict(
+                        corner.lap_breakdown
+                    )
 
             # Add Phase 4 data
             if driver in profiles:

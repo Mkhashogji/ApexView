@@ -45,7 +45,9 @@ from services.technique_profiling import (
     TechniqueDimension,
     TechniqueLevel,
     SessionPercentiles,
+    StraightLineDimension,
 )
+from services.corner_analysis import LapBreakdown
 
 logger = logging.getLogger("ml_service.insight_generation")
 
@@ -528,6 +530,191 @@ class InsightTemplates:
         "none": "",
     }
 
+    # -------------------------------------------------------------------------
+    # STRAIGHT-LINE DIMENSION TEMPLATES (5th Dimension)
+    # -------------------------------------------------------------------------
+
+    STRAIGHT_LINE_ENGINEER: Dict[TechniqueLevel, str] = {
+        TechniqueLevel.STRONG: (
+            "Straight-Line: STRONG (P{percentile:.0f}) — {raw_ms:+d}ms. "
+            "{factor_text} "
+            "Gaining on {segment_count} straight segments."
+        ),
+        TechniqueLevel.NEUTRAL: (
+            "Straight-Line: NEUTRAL (P{percentile:.0f}) — {raw_ms:+d}ms. "
+            "Balanced performance across straight sections."
+        ),
+        TechniqueLevel.WEAK: (
+            "Straight-Line: WEAK (P{percentile:.0f}) — {raw_ms:+d}ms. "
+            "{factor_text} "
+            "Losing time on {segment_count} straight segments."
+        ),
+    }
+
+    STRAIGHT_LINE_DRIVER: Dict[TechniqueLevel, str] = {
+        TechniqueLevel.STRONG: (
+            "Your straight-line speed is a major strength — you're {raw_ms_abs}ms faster "
+            "on the straights. {factor_advice}"
+        ),
+        TechniqueLevel.NEUTRAL: (
+            "Your straight-line speed is comparable to the field — "
+            "focus on corners for differentiation."
+        ),
+        TechniqueLevel.WEAK: (
+            "You're losing {raw_ms_abs}ms on straights. {factor_advice} "
+            "Focus on {improvement_focus} to recover time between corners."
+        ),
+    }
+
+    # -------------------------------------------------------------------------
+    # PRIMARY FACTOR TEXT (for straight-line insights)
+    # -------------------------------------------------------------------------
+
+    PRIMARY_FACTOR_ENGINEER: Dict[str, str] = {
+        "aero_efficiency": "Low-drag configuration yielding top speed advantage.",
+        "exit_traction": "Excellent exit traction translating to straight-line gains.",
+        "high_drag": "High-downforce setup compromising straight-line speed.",
+        "poor_traction": "Traction deficit limiting acceleration out of corners.",
+        "balanced": "Balanced straight-line characteristics.",
+    }
+
+    PRIMARY_FACTOR_DRIVER: Dict[str, str] = {
+        "aero_efficiency": "Your setup's aero efficiency is paying off. Maintain smooth inputs through high-speed sections.",
+        "exit_traction": "Your throttle application from corners is generating gains. Keep maximizing exit speed.",
+        "high_drag": "Your setup's high downforce costs time on straights — compensate by maximizing corner speed.",
+        "poor_traction": "Work on smoother throttle application to reduce wheelspin and improve acceleration.",
+        "balanced": "Your straight-line performance is balanced. Focus on overall lap optimization.",
+    }
+
+    PRIMARY_FACTOR_IMPROVEMENT: Dict[str, str] = {
+        "aero_efficiency": "maintaining momentum through corners",
+        "exit_traction": "exit speed and throttle application",
+        "high_drag": "corner speed where downforce helps",
+        "poor_traction": "smooth throttle inputs and rear stability",
+        "balanced": "overall technique refinement",
+    }
+
+    # -------------------------------------------------------------------------
+    # LAP BREAKDOWN TEMPLATES (Reconciliation Explanation)
+    # -------------------------------------------------------------------------
+
+    LAP_BREAKDOWN_RECONCILED: Dict[str, str] = {
+        "engineer": (
+            "Lap Breakdown: Corners {corner_total:+.3f}s + Straights {straight_total:+.3f}s = "
+            "Official {official_gap:+.3f}s (reconciled within {error_ms}ms)."
+        ),
+        "driver": (
+            "Your lap breaks down to {corner_total:+.3f}s in corners and "
+            "{straight_total:+.3f}s on straights, matching the official gap."
+        ),
+    }
+
+    LAP_BREAKDOWN_NOT_RECONCILED: Dict[str, str] = {
+        "engineer": (
+            "Lap Breakdown: Corners {corner_total:+.3f}s + Straights {straight_total:+.3f}s = "
+            "{calculated_total:+.3f}s ({error_ms}ms discrepancy from official {official_gap:+.3f}s)."
+        ),
+        "driver": (
+            "Lap breakdown shows {corner_total:+.3f}s in corners and {straight_total:+.3f}s on straights."
+        ),
+    }
+
+    # -------------------------------------------------------------------------
+    # EXIT → STRAIGHT OPPORTUNITY TEMPLATES (Cross-Dimension Analysis)
+    # -------------------------------------------------------------------------
+
+    EXIT_STRAIGHT_OPPORTUNITY: Dict[Tuple[TechniqueLevel, TechniqueLevel], Dict[str, str]] = {
+        # (exit_level, straight_level) -> {"engineer": ..., "driver": ...}
+        (TechniqueLevel.STRONG, TechniqueLevel.STRONG): {
+            "engineer": (
+                "Exit-to-Straight Chain: OPTIMAL. Strong exits translating to straight-line gains. "
+                "This is the ideal combination — technique is maximizing car potential."
+            ),
+            "driver": (
+                "Your exit technique and straight-line speed are both strengths — "
+                "this is where you're making the biggest gains over the field."
+            ),
+        },
+        (TechniqueLevel.STRONG, TechniqueLevel.NEUTRAL): {
+            "engineer": (
+                "Exit-to-Straight Chain: Good exits but neutral straight-line. "
+                "Exit traction advantage not fully converting — check aero efficiency or power deployment."
+            ),
+            "driver": (
+                "Your corner exits are strong but straight-line speed is average. "
+                "The good traction should convert to better straights — could be a setup trade-off."
+            ),
+        },
+        (TechniqueLevel.STRONG, TechniqueLevel.WEAK): {
+            "engineer": (
+                "Exit-to-Straight Anomaly: Strong exits but weak straight-line. "
+                "Suggests high-drag setup or power deficit — exit gains not converting to straight-line speed."
+            ),
+            "driver": (
+                "You're exiting corners well but losing on straights. "
+                "This suggests a setup trade-off — your high downforce helps corners but costs on straights."
+            ),
+        },
+        (TechniqueLevel.NEUTRAL, TechniqueLevel.STRONG): {
+            "engineer": (
+                "Exit-to-Straight Chain: Neutral exits with strong straight-line. "
+                "Low-drag setup providing straight-line advantage despite average exit technique."
+            ),
+            "driver": (
+                "Your straight-line speed is good despite average exits. "
+                "Improving exit technique could amplify your existing advantage."
+            ),
+        },
+        (TechniqueLevel.NEUTRAL, TechniqueLevel.NEUTRAL): {
+            "engineer": (
+                "Exit-to-Straight Chain: Balanced. No significant gains or losses in this phase sequence."
+            ),
+            "driver": (
+                "Your exit-to-straight performance is balanced with the field."
+            ),
+        },
+        (TechniqueLevel.NEUTRAL, TechniqueLevel.WEAK): {
+            "engineer": (
+                "Exit-to-Straight Chain: Neutral exits compounding with weak straight-line. "
+                "Consider improving exit traction or reducing drag."
+            ),
+            "driver": (
+                "You're losing time on straights with average exits. "
+                "Focus on earlier throttle application to improve both areas."
+            ),
+        },
+        (TechniqueLevel.WEAK, TechniqueLevel.STRONG): {
+            "engineer": (
+                "Exit-to-Straight Anomaly: Weak exits but strong straight-line. "
+                "Low-drag setup providing top speed, but exit technique not maximizing this advantage."
+            ),
+            "driver": (
+                "You have straight-line speed potential but aren't maximizing corner exits. "
+                "Focus on throttle application — earlier, smoother power would amplify your straight-line advantage."
+            ),
+        },
+        (TechniqueLevel.WEAK, TechniqueLevel.NEUTRAL): {
+            "engineer": (
+                "Exit-to-Straight Chain: Weak exits limiting straight-line potential. "
+                "Improving exit technique should naturally benefit straight-line performance."
+            ),
+            "driver": (
+                "Your weak exits are limiting straight-line speed. "
+                "Work on getting on the power earlier and smoother."
+            ),
+        },
+        (TechniqueLevel.WEAK, TechniqueLevel.WEAK): {
+            "engineer": (
+                "Exit-to-Straight Chain: CRITICAL. Weak exits compounding into straight-line deficit. "
+                "Primary focus area for lap time improvement."
+            ),
+            "driver": (
+                "Both corner exits and straight-line speed need work. "
+                "Start with exits — better traction will naturally improve straight-line performance."
+            ),
+        },
+    }
+
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -807,6 +994,171 @@ def generate_opportunity_insights(
 
 
 # =============================================================================
+# STRAIGHT-LINE INSIGHT GENERATION (5th Dimension)
+# =============================================================================
+
+def generate_straight_line_insight(
+    straight_line: Optional[StraightLineDimension],
+    mode: InsightMode = InsightMode.ENGINEER
+) -> Optional[DimensionInsight]:
+    """
+    Generate insight text for the straight-line dimension (5th dimension).
+
+    ANTI-HALLUCINATION: All text comes from templates with data binding.
+
+    Args:
+        straight_line: StraightLineDimension from technique profile
+        mode: Output mode (ENGINEER/DRIVER)
+
+    Returns:
+        DimensionInsight with formatted text, or None if no data
+    """
+    if straight_line is None:
+        return None
+
+    # Get the appropriate template
+    if mode == InsightMode.ENGINEER:
+        template = InsightTemplates.STRAIGHT_LINE_ENGINEER.get(straight_line.level)
+    else:
+        template = InsightTemplates.STRAIGHT_LINE_DRIVER.get(straight_line.level)
+
+    if not template:
+        logger.warning(f"No straight-line template for {straight_line.level}/{mode.value}")
+        return None
+
+    # Get factor-specific text
+    factor = straight_line.primary_factor
+    factor_text = InsightTemplates.PRIMARY_FACTOR_ENGINEER.get(factor, "")
+    factor_advice = InsightTemplates.PRIMARY_FACTOR_DRIVER.get(factor, "")
+    improvement_focus = InsightTemplates.PRIMARY_FACTOR_IMPROVEMENT.get(factor, "overall technique")
+
+    # Format values
+    raw_ms = int(straight_line.raw_delta * 1000)
+    raw_ms_abs = abs(raw_ms)
+
+    # Format the template
+    try:
+        text = template.format(
+            percentile=straight_line.percentile,
+            raw_ms=raw_ms,
+            raw_ms_abs=raw_ms_abs,
+            factor_text=factor_text,
+            factor_advice=factor_advice,
+            improvement_focus=improvement_focus,
+            segment_count=straight_line.segment_count,
+        )
+    except KeyError as e:
+        logger.warning(f"Template formatting error for straight-line: {e}")
+        text = f"Straight-Line: {straight_line.level.value.upper()} — {raw_ms:+d}ms."
+
+    return DimensionInsight(
+        dimension="straight_line",
+        level=straight_line.level.value,
+        percentile=straight_line.percentile,
+        text=text,
+        raw_value_ms=raw_ms,
+        corner_count=straight_line.segment_count,  # Using segment_count for consistency
+    )
+
+
+def generate_lap_breakdown_insight(
+    lap_breakdown: Optional[LapBreakdown],
+    mode: InsightMode = InsightMode.ENGINEER
+) -> Optional[str]:
+    """
+    Generate insight explaining the lap breakdown reconciliation.
+
+    Shows how corners + straights = official gap, providing transparency
+    about where the lap time delta comes from.
+
+    Args:
+        lap_breakdown: LapBreakdown from corner analysis
+        mode: Output mode (ENGINEER/DRIVER)
+
+    Returns:
+        Formatted reconciliation insight string, or None if no data
+    """
+    if lap_breakdown is None:
+        return None
+
+    # Select template based on reconciliation status
+    if lap_breakdown.reconciliation_valid:
+        templates = InsightTemplates.LAP_BREAKDOWN_RECONCILED
+    else:
+        templates = InsightTemplates.LAP_BREAKDOWN_NOT_RECONCILED
+
+    template = templates.get(mode.value, templates.get("engineer", ""))
+
+    if not template:
+        logger.warning(f"No lap breakdown template for {mode.value}")
+        return None
+
+    # Calculate values
+    calculated_total = lap_breakdown.corner_total + lap_breakdown.straight_total
+    error_ms = abs(int(lap_breakdown.reconciliation_error * 1000))
+
+    try:
+        text = template.format(
+            corner_total=lap_breakdown.corner_total,
+            straight_total=lap_breakdown.straight_total,
+            official_gap=lap_breakdown.official_gap,
+            calculated_total=calculated_total,
+            error_ms=error_ms,
+        )
+    except KeyError as e:
+        logger.warning(f"Template formatting error for lap breakdown: {e}")
+        text = (
+            f"Lap Breakdown: Corners {lap_breakdown.corner_total:+.3f}s + "
+            f"Straights {lap_breakdown.straight_total:+.3f}s = "
+            f"Official {lap_breakdown.official_gap:+.3f}s."
+        )
+
+    return text
+
+
+def generate_exit_straight_opportunity(
+    exit_dim: Optional[TechniqueDimension],
+    straight_dim: Optional[StraightLineDimension],
+    mode: InsightMode = InsightMode.ENGINEER
+) -> Optional[str]:
+    """
+    Generate cross-dimension insight for the exit → straight chain.
+
+    This insight explains the relationship between corner exit technique
+    and straight-line performance, providing actionable context.
+
+    Args:
+        exit_dim: Exit TechniqueDimension from profile
+        straight_dim: StraightLineDimension from profile
+        mode: Output mode (ENGINEER/DRIVER)
+
+    Returns:
+        Cross-dimension opportunity insight string, or None if insufficient data
+    """
+    if exit_dim is None or straight_dim is None:
+        return None
+
+    # Look up template by (exit_level, straight_level) tuple
+    key = (exit_dim.level, straight_dim.level)
+    template_dict = InsightTemplates.EXIT_STRAIGHT_OPPORTUNITY.get(key)
+
+    if template_dict is None:
+        # Fall back to NEUTRAL/NEUTRAL if combination not found
+        template_dict = InsightTemplates.EXIT_STRAIGHT_OPPORTUNITY.get(
+            (TechniqueLevel.NEUTRAL, TechniqueLevel.NEUTRAL),
+            {}
+        )
+
+    template = template_dict.get(mode.value, template_dict.get("engineer", ""))
+
+    if not template:
+        logger.warning(f"No exit-straight opportunity template for {key}/{mode.value}")
+        return None
+
+    return template
+
+
+# =============================================================================
 # SUMMARY GENERATION
 # =============================================================================
 
@@ -948,7 +1300,7 @@ def generate_insights(
             profile, confidence_level, session_context
         )
 
-    # Generate dimension insights
+    # Generate dimension insights (4 corner dimensions)
     dimension_insights = []
     for dim_name in ["braking", "apex", "exit", "consistency"]:
         dimension = getattr(profile, dim_name)
@@ -962,17 +1314,36 @@ def generate_insights(
             )
         dimension_insights.append(insight)
 
+    # NEW: Generate straight-line insight (5th dimension)
+    straight_line_insight = None
+    if profile.straight_line is not None:
+        straight_line_insight = generate_straight_line_insight(profile.straight_line, mode)
+        if straight_line_insight:
+            dimension_insights.append(straight_line_insight)
+
+    # NEW: Generate exit→straight opportunity insight
+    exit_straight_text = None
+    if profile.straight_line is not None:
+        exit_straight_text = generate_exit_straight_opportunity(
+            profile.exit, profile.straight_line, mode
+        )
+
     # Generate corner insights
     corner_insights = generate_corner_insights(profile, mode)
 
     # Generate opportunity text
     opportunity_text = generate_opportunity_insights(profile, profile.reference_driver)
 
+    # Combine opportunity texts if we have exit→straight insight
+    if exit_straight_text:
+        opportunity_text = f"{opportunity_text} {exit_straight_text}"
+
     logger.info(
         f"Generated insight for {profile.driver}: "
         f"confidence={confidence_level.value}, "
         f"dimensions={len(dimension_insights)}, "
-        f"corners={len(corner_insights)}"
+        f"corners={len(corner_insights)}, "
+        f"has_straight_line={straight_line_insight is not None}"
     )
 
     insight = NaturalLanguageInsight(

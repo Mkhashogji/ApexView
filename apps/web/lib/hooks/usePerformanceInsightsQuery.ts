@@ -20,6 +20,7 @@ interface UsePerformanceInsightsOptions {
   corners: Corner[] | undefined
   mode?: InsightMode
   sessionPart?: string
+  trackLength?: number
 }
 
 /**
@@ -40,6 +41,7 @@ export function usePerformanceInsightsQuery({
   corners,
   mode = 'engineer',
   sessionPart,
+  trackLength,
 }: UsePerformanceInsightsOptions) {
   return useQuery<PerformanceInsightsResponse, Error>({
     queryKey: queryKeys.ml.performanceInsights(
@@ -56,7 +58,8 @@ export function usePerformanceInsightsQuery({
         compareDrivers,
         corners!,
         mode,
-        sessionPart
+        sessionPart,
+        trackLength
       ),
     // Only enable when all required data is present
     enabled:

@@ -219,6 +219,66 @@ class CornerResultSchema(BaseModel):
 
 
 # =============================================================================
+# Straight-Line Performance Schemas (5th Dimension)
+# =============================================================================
+
+class StraightSegmentSchema(BaseModel):
+    """Delta information for a straight section between corners."""
+    segment_number: int = Field(..., ge=1, description="Sequential segment number")
+    name: str = Field(..., description="Segment name (e.g., 'T6 → T10')")
+    start_distance: float = Field(..., ge=0, description="Start distance in meters")
+    end_distance: float = Field(..., ge=0, description="End distance in meters")
+    delta_change: float = Field(
+        ...,
+        description="Delta change in seconds (positive = compare driver slower)"
+    )
+    length: float = Field(..., ge=0, description="Segment length in meters")
+    primary_factor: str = Field(
+        ...,
+        description="Primary factor: 'aero_efficiency', 'traction', 'balanced', or 'drag'"
+    )
+
+
+class LapBreakdownSchema(BaseModel):
+    """Complete breakdown of lap time delta into corners and straights."""
+    corner_total: float = Field(
+        ...,
+        description="Sum of all corner deltas in seconds"
+    )
+    straight_total: float = Field(
+        ...,
+        description="Sum of all straight deltas in seconds"
+    )
+    official_gap: float = Field(
+        ...,
+        description="Official timing gap in seconds"
+    )
+    track_coverage: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Corner distance / track length ratio (0-1)"
+    )
+    straight_segments: List[StraightSegmentSchema] = Field(
+        default_factory=list,
+        description="Individual straight segment breakdowns"
+    )
+    reconciliation_valid: bool = Field(
+        ...,
+        description="Whether corners + straights ≈ official gap (within 5ms tolerance)"
+    )
+    reconciliation_error: float = Field(
+        ...,
+        ge=0,
+        description="Absolute error between calculated and official gap"
+    )
+    insight_text: str = Field(
+        default="",
+        description="Educational text explaining the breakdown"
+    )
+
+
+# =============================================================================
 # Sector Validation Schemas (V2 Enhancement)
 # =============================================================================
 
@@ -336,6 +396,11 @@ class CornerAnalysisDriverResult(BaseModel):
         default="v1",
         description="Analysis version used: 'v1' or 'v2'"
     )
+    # 5th Dimension: Lap Breakdown
+    lap_breakdown: Optional[LapBreakdownSchema] = Field(
+        None,
+        description="Complete lap breakdown showing corners + straights = official gap"
+    )
 
 
 class CornerAnalysisResponse(BaseModel):
@@ -389,8 +454,53 @@ class TechniqueDimensionSchema(BaseModel):
     )
 
 
+class StraightLineDimensionSchema(BaseModel):
+    """5th Dimension: Straight-line performance analysis."""
+    level: str = Field(
+        ...,
+        description="Classification level: 'strong', 'neutral', or 'weak'"
+    )
+    descriptor: str = Field(
+        ...,
+        description="Human-readable description (e.g., 'Excellent straight-line speed')"
+    )
+    percentile: float = Field(
+        ...,
+        ge=0,
+        le=100,
+        description="Session percentile (0-100, lower = faster on straights)"
+    )
+    raw_delta: float = Field(
+        ...,
+        description="Total straight-line delta in seconds (negative = faster)"
+    )
+    primary_factor: str = Field(
+        ...,
+        description="Primary factor: 'aero_efficiency', 'exit_traction', 'high_drag', 'poor_traction', or 'balanced'"
+    )
+    segment_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of straight segments analyzed"
+    )
+    top_gaining_straights: List[str] = Field(
+        default_factory=list,
+        description="Names of straights where time was gained (up to 3)"
+    )
+    top_losing_straights: List[str] = Field(
+        default_factory=list,
+        description="Names of straights where time was lost (up to 3)"
+    )
+    avg_confidence: float = Field(
+        default=0.0,
+        ge=0,
+        le=1,
+        description="Average confidence (0-1)"
+    )
+
+
 class TechniqueProfileSchema(BaseModel):
-    """Complete technique profile for a driver."""
+    """Complete technique profile for a driver (now with 5 dimensions)."""
     driver: str = Field(..., description="Driver code (e.g., 'PIA')")
     reference_driver: str = Field(
         ...,
@@ -411,6 +521,10 @@ class TechniqueProfileSchema(BaseModel):
     consistency: TechniqueDimensionSchema = Field(
         ...,
         description="Consistency across all corners"
+    )
+    straight_line: Optional[StraightLineDimensionSchema] = Field(
+        None,
+        description="5th Dimension: Straight-line performance (optional, requires lap_breakdown)"
     )
     top_gaining_corners: List[str] = Field(
         default_factory=list,
@@ -438,7 +552,7 @@ class TechniqueProfileSchema(BaseModel):
 
 
 class SessionPercentilesSchema(BaseModel):
-    """Session percentile boundaries for technique classification."""
+    """Session percentile boundaries for technique classification (including 5th dimension)."""
     braking_p30: float = Field(
         ...,
         description="Braking 30th percentile threshold (STRONG boundary)"
@@ -458,6 +572,15 @@ class SessionPercentilesSchema(BaseModel):
     consistency_p70: float = Field(
         ...,
         description="Consistency 70th percentile threshold"
+    )
+    # 5th Dimension: Straight-line percentiles
+    straight_line_p30: Optional[float] = Field(
+        None,
+        description="Straight-line 30th percentile threshold (STRONG boundary)"
+    )
+    straight_line_p70: Optional[float] = Field(
+        None,
+        description="Straight-line 70th percentile threshold (WEAK boundary)"
     )
     driver_count: int = Field(
         ...,
@@ -681,6 +804,10 @@ class PerformanceInsightsRequest(BaseModel):
         default=True,
         description="Whether to include full delta arrays in response"
     )
+    track_length: Optional[float] = Field(
+        None,
+        description="Track length in meters (required for lap breakdown calculation)"
+    )
 
 
 class DriverPerformanceResult(BaseModel):
@@ -729,6 +856,11 @@ class DriverPerformanceResult(BaseModel):
     corner_results: List[CornerResultSchema] = Field(
         default_factory=list,
         description="Detailed results for each corner"
+    )
+    # 5th Dimension: Lap Breakdown (corners + straights = official)
+    lap_breakdown: Optional[LapBreakdownSchema] = Field(
+        None,
+        description="Complete lap breakdown showing corners + straights = official gap"
     )
 
     # Phase 4: Technique Profile

@@ -476,3 +476,214 @@ class TestEdgeCases:
         # Should interpolate to common grid
         assert len(result.distance) == 1000  # Default num_points
         assert abs(result.delta[-1] - 0.200) < 0.001
+
+
+# ============================================================================
+# Test: Three-Tier Algorithm
+# ============================================================================
+
+class TestThreeTierAlgorithm:
+    """Tests for the three-tier delta calculation algorithm."""
+
+    def test_tier1_uses_relative_distance_when_available(self):
+        """Should use Tier 1 when RelativeDistance and Time are present."""
+        distance = list(np.linspace(0, 5000, 100))
+        rel_dist = list(np.linspace(0, 1, 100))
+        time_ref = list(np.linspace(0, 90, 100))
+        time_comp = [t * 1.002 for t in time_ref]  # 0.2% slower
+
+        ref = {
+            'distance': distance,
+            'speed': [250.0] * 100,
+            'relative_distance': rel_dist,
+            'time': time_ref
+        }
+        comp = {
+            'distance': distance,
+            'speed': [245.0] * 100,
+            'relative_distance': rel_dist,
+            'time': time_comp
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.180,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Tier 1 should have scaling_factor = 1.0 and high confidence
+        assert result.scaling_factor == pytest.approx(1.0, abs=1e-6)
+        assert result.confidence >= 0.85
+        assert result.official_gap == pytest.approx(0.180, abs=1e-6)
+
+    def test_tier2_used_when_only_time_available(self):
+        """Should use Tier 2 when only Time is present (no RelativeDistance)."""
+        distance = list(np.linspace(0, 5000, 100))
+        time_ref = list(np.linspace(0, 90, 100))
+        time_comp = [t * 1.002 for t in time_ref]
+
+        ref = {
+            'distance': distance,
+            'speed': [250.0] * 100,
+            'time': time_ref
+            # No relative_distance
+        }
+        comp = {
+            'distance': distance,
+            'speed': [245.0] * 100,
+            'time': time_comp
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.180,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Tier 2 should have scaling_factor = 1.0 and ~0.8 confidence
+        assert result.scaling_factor == pytest.approx(1.0, abs=1e-6)
+        assert result.confidence == pytest.approx(0.8, abs=0.05)
+
+    def test_tier3_fallback_when_no_time(self):
+        """Should fall back to Tier 3 when Time is not available."""
+        distance = list(np.linspace(0, 5000, 100))
+
+        ref = {
+            'distance': distance,
+            'speed': [250.0] * 100
+            # No time, no relative_distance
+        }
+        comp = {
+            'distance': distance,
+            'speed': [245.0] * 100
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.500,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Tier 3 should have lower confidence (capped at 0.6)
+        assert result.confidence <= 0.6
+        # Should still match official gap (via scaling)
+        assert result.delta[-1] == pytest.approx(0.500, abs=0.01)
+
+    def test_tier1_final_delta_matches_official_exactly(self):
+        """Tier 1 should produce delta[-1] == official_gap exactly."""
+        rel_dist = list(np.linspace(0, 1, 1000))
+        time_ref = list(np.linspace(0, 84.892, 1000))
+        # Linear delta growth to simulate comparison driver losing time steadily
+        time_comp = [t + 0.229 * (t / 84.892) for t in time_ref]
+
+        ref = {
+            'distance': list(np.linspace(0, 5826, 1000)),
+            'speed': [250.0] * 1000,
+            'relative_distance': rel_dist,
+            'time': time_ref
+        }
+        comp = {
+            'distance': list(np.linspace(0, 5826, 1000)),
+            'speed': [248.0] * 1000,
+            'relative_distance': rel_dist,
+            'time': time_comp
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=84.892,
+            comp_official_time=85.121,  # +0.229s gap
+            ref_driver='VER',
+            comp_driver='LEC'
+        )
+
+        # Final delta should EXACTLY match official gap
+        assert result.delta[-1] == pytest.approx(0.229, abs=1e-3)
+        assert result.scaling_factor == pytest.approx(1.0, abs=1e-6)
+
+    def test_backward_compatibility_without_new_fields(self):
+        """Should work with old telemetry format (no relative_distance/time)."""
+        distance = list(np.linspace(0, 5000, 100))
+
+        # Old format - only distance and speed
+        ref = {'distance': distance, 'speed': [250.0] * 100}
+        comp = {'distance': distance, 'speed': [245.0] * 100}
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.300,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Should still work via Tier 3
+        assert result.official_gap == pytest.approx(0.300, abs=1e-6)
+        assert len(result.delta) > 0
+        # Final delta should match official gap (via scaling)
+        assert result.delta[-1] == pytest.approx(0.300, abs=0.01)
+
+    def test_tier1_handles_none_relative_distance(self):
+        """Should fall back gracefully when relative_distance is None."""
+        distance = list(np.linspace(0, 5000, 100))
+        time_data = list(np.linspace(0, 90, 100))
+
+        ref = {
+            'distance': distance,
+            'speed': [250.0] * 100,
+            'relative_distance': None,  # Explicitly None
+            'time': time_data
+        }
+        comp = {
+            'distance': distance,
+            'speed': [245.0] * 100,
+            'relative_distance': None,
+            'time': time_data
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.200,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Should use Tier 2 (time only)
+        assert result.scaling_factor == pytest.approx(1.0, abs=1e-6)
+        assert result.confidence == pytest.approx(0.8, abs=0.05)
+
+    def test_tier1_handles_empty_relative_distance(self):
+        """Should fall back gracefully when relative_distance is empty list."""
+        distance = list(np.linspace(0, 5000, 100))
+        time_data = list(np.linspace(0, 90, 100))
+
+        ref = {
+            'distance': distance,
+            'speed': [250.0] * 100,
+            'relative_distance': [],  # Empty list
+            'time': time_data
+        }
+        comp = {
+            'distance': distance,
+            'speed': [245.0] * 100,
+            'relative_distance': [],
+            'time': time_data
+        }
+
+        result = calculate_scaled_delta(
+            ref, comp,
+            ref_official_time=90.000,
+            comp_official_time=90.200,
+            ref_driver='VER',
+            comp_driver='NOR'
+        )
+
+        # Should use Tier 2 (time only) since relative_distance is empty
+        assert result.scaling_factor == pytest.approx(1.0, abs=1e-6)

@@ -299,6 +299,36 @@ export interface CornerAnalysisResponse {
 }
 
 // =============================================================================
+// Straight-Line Performance Types (5th Dimension)
+// =============================================================================
+
+/** Primary factor for straight-line performance */
+export type StraightLineFactor = 'aero_efficiency' | 'traction' | 'balanced' | 'drag'
+
+/** Delta information for a straight section between corners */
+export interface StraightSegment {
+  segment_number: number
+  name: string                    // e.g., "T6 → T10"
+  start_distance: number          // meters
+  end_distance: number            // meters
+  delta_change: number            // seconds (positive = comp slower)
+  length: number                  // meters
+  primary_factor: StraightLineFactor
+}
+
+/** Complete breakdown of lap time delta into corners and straights */
+export interface LapBreakdown {
+  corner_total: number            // Sum of all corner deltas (seconds)
+  straight_total: number          // Sum of all straight deltas (seconds)
+  official_gap: number            // Official timing gap (seconds)
+  track_coverage: number          // Corner distance / track length (0-1)
+  straight_segments: StraightSegment[]
+  reconciliation_valid: boolean   // corners + straights ≈ official gap
+  reconciliation_error: number    // Absolute error (seconds)
+  insight_text: string            // Educational explanation
+}
+
+// =============================================================================
 // Phase 7: Performance Insights Types (Unified Endpoint)
 // =============================================================================
 
@@ -312,6 +342,7 @@ export interface PerformanceInsightsRequest {
   session_part?: string | null
   circuit_name?: string
   include_telemetry?: boolean
+  track_length?: number  // Required for lap breakdown (5th dimension)
 }
 
 /** Complete response from performance insights orchestrator */
@@ -344,6 +375,8 @@ export interface DriverPerformanceResult {
   corners_losing: number
   total_corner_delta: number
   corner_results: PerformanceCornerResult[]
+  // 5th Dimension: Lap Breakdown (corners + straights = official)
+  lap_breakdown?: LapBreakdown
   // Phase 4: Technique Profile
   technique_profile?: TechniqueProfile
   // Phase 5: Natural Language Insight
@@ -363,7 +396,7 @@ export interface PerformanceCornerResult {
   confidence: CornerConfidence
 }
 
-/** Driver technique profile from Phase 4 */
+/** Driver technique profile from Phase 4 (now with 5 dimensions) */
 export interface TechniqueProfile {
   driver: string
   reference_driver: string
@@ -371,12 +404,34 @@ export interface TechniqueProfile {
   apex: TechniqueDimension
   exit: TechniqueDimension
   consistency: TechniqueDimension
+  straight_line?: StraightLineDimension  // 5th dimension (optional for backward compatibility)
   top_gaining_corners: string[]
   top_losing_corners: string[]
   style_summary: string
   overall_confidence: number
   total_corners_analyzed: number
 }
+
+/** 5th Dimension: Straight-line performance analysis */
+export interface StraightLineDimension {
+  level: DimensionLevel
+  descriptor: string
+  percentile: number
+  raw_delta: number  // Total straight-line delta in seconds (negative = faster)
+  primary_factor: StraightLinePrimaryFactor
+  segment_count: number
+  top_gaining_straights: string[]
+  top_losing_straights: string[]
+  avg_confidence: number
+}
+
+/** Primary factors explaining straight-line performance */
+export type StraightLinePrimaryFactor = 
+  | 'aero_efficiency'
+  | 'exit_traction'
+  | 'high_drag'
+  | 'poor_traction'
+  | 'balanced'
 
 /** Single dimension of technique profile */
 export interface TechniqueDimension {
@@ -424,7 +479,7 @@ export interface CornerInsightDetail {
   confidence: string
 }
 
-/** Session percentile boundaries for technique classification */
+/** Session percentile boundaries for technique classification (including 5th dimension) */
 export interface SessionPercentiles {
   braking_p30: number
   braking_p70: number
@@ -434,6 +489,8 @@ export interface SessionPercentiles {
   exit_p70: number
   consistency_p30: number
   consistency_p70: number
+  straight_line_p30?: number  // 5th dimension percentiles
+  straight_line_p70?: number
   driver_count: number
 }
 
@@ -447,6 +504,6 @@ export interface PhaseTimingInfo {
 
 // UI Helper Types for Phase 7
 export type InsightMode = 'engineer' | 'driver'
-export type DimensionType = 'braking' | 'apex' | 'exit' | 'consistency'
+export type DimensionType = 'braking' | 'apex' | 'exit' | 'consistency' | 'straight_line'
 export type DimensionLevel = 'strong' | 'neutral' | 'weak'
 

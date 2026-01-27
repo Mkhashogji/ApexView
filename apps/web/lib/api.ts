@@ -322,7 +322,8 @@ export async function fetchPerformanceInsights(
   compareDrivers: string[],
   corners: Corner[],
   mode: 'engineer' | 'driver' = 'engineer',
-  sessionPart?: string
+  sessionPart?: string,
+  trackLength?: number
 ): Promise<PerformanceInsightsResponse> {
   const response = await fetch(`${ML_SERVICE_URL}/ml/performance-insights`, {
     method: 'POST',
@@ -342,6 +343,7 @@ export async function fetchPerformanceInsights(
       mode,
       session_part: sessionPart ?? null,
       include_telemetry: false, // Don't include large arrays for frontend
+      track_length: trackLength ?? null,
     }),
   })
 

@@ -391,7 +391,6 @@ class FastF1Client:
                         if len(driver_data) > 0:
                             row = driver_data.iloc[0]
                             # Parse list strings back to lists
-                            import json
                             telemetry_responses.append(
                                 TelemetryResponse(
                                     driver=driver,
@@ -402,6 +401,8 @@ class FastF1Client:
                                     throttle=json.loads(row['throttle']),
                                     brake=json.loads(row['brake']),
                                     gear=json.loads(row['gear']),
+                                    relative_distance=json.loads(row['relative_distance']) if pd.notna(row.get('relative_distance')) else None,
+                                    time=json.loads(row['time']) if pd.notna(row.get('time')) else None,
                                     rpm=json.loads(row['rpm']) if pd.notna(row.get('rpm')) else None,
                                     drs=json.loads(row['drs']) if pd.notna(row.get('drs')) else None,
                                 )
@@ -454,25 +455,51 @@ class FastF1Client:
                         gear = telemetry['nGear'].values.astype(int)
                         rpm = telemetry['RPM'].values.astype(int) if 'RPM' in telemetry.columns else None
                         drs = telemetry['DRS'].values.astype(int) if 'DRS' in telemetry.columns else None
-                        
-                        # Downsample if needed
-                        if len(distance) > self.downsample_threshold:
-                            if rpm is not None and drs is not None:
-                                distance, speed, throttle, brake, gear, rpm, drs = downsample_telemetry(
-                                    distance, speed, throttle, brake, gear, rpm, drs,
-                                    max_points=self.downsample_threshold
-                                )
+
+                        # Extract RelativeDistance and Time for Tier 1 delta algorithm
+                        relative_distance = None
+                        time_seconds = None
+
+                        if 'RelativeDistance' in telemetry.columns:
+                            relative_distance = telemetry['RelativeDistance'].values
+
+                        if 'Time' in telemetry.columns:
+                            # FastF1 Time is timedelta, convert to seconds
+                            time_col = telemetry['Time']
+                            if len(time_col) > 0 and hasattr(time_col.iloc[0], 'total_seconds'):
+                                time_seconds = np.array([t.total_seconds() for t in time_col])
                             else:
-                                distance, speed, throttle, brake, gear = downsample_telemetry(
-                                    distance, speed, throttle, brake, gear,
-                                    max_points=self.downsample_threshold
-                                )
+                                time_seconds = time_col.values.astype(float)
+                            # Normalize to start at 0 (lap-relative time)
+                            if time_seconds is not None and len(time_seconds) > 0:
+                                time_seconds = time_seconds - time_seconds[0]
+
+                        # Downsample if needed - use consistent index-based selection
+                        if len(distance) > self.downsample_threshold:
+                            # Create indices for consistent downsampling
+                            indices = np.linspace(0, len(distance) - 1, self.downsample_threshold, dtype=int)
+
+                            # Apply same indices to all arrays
+                            distance = distance[indices]
+                            speed = speed[indices]
+                            throttle = throttle[indices]
+                            brake = brake[indices]
+                            gear = gear[indices]
+
+                            if rpm is not None:
+                                rpm = rpm[indices]
+                            if drs is not None:
+                                drs = drs[indices]
+                            if relative_distance is not None:
+                                relative_distance = relative_distance[indices]
+                            if time_seconds is not None:
+                                time_seconds = time_seconds[indices]
                         
                         # Extract official lap time
                         lap_time_seconds = None
                         if pd.notna(fastest_lap['LapTime']):
                             lap_time_seconds = float(fastest_lap['LapTime'].total_seconds())
-                        
+
                         telemetry_response = TelemetryResponse(
                             driver=driver,
                             lap_number=int(fastest_lap['LapNumber']),
@@ -482,13 +509,14 @@ class FastF1Client:
                             throttle=throttle.tolist(),
                             brake=brake.tolist(),
                             gear=gear.tolist(),
+                            relative_distance=relative_distance.tolist() if relative_distance is not None else None,
+                            time=time_seconds.tolist() if time_seconds is not None else None,
                             rpm=rpm.tolist() if rpm is not None else None,
                             drs=drs.tolist() if drs is not None else None,
                         )
                         telemetry_responses.append(telemetry_response)
                         
                         # Prepare for cache (store as JSON strings for Parquet compatibility)
-                        import json
                         telemetry_data_for_cache.append({
                             'driver': driver,
                             'lap_number': telemetry_response.lap_number,
@@ -498,6 +526,8 @@ class FastF1Client:
                             'throttle': json.dumps(telemetry_response.throttle),
                             'brake': json.dumps(telemetry_response.brake),
                             'gear': json.dumps(telemetry_response.gear),
+                            'relative_distance': json.dumps(telemetry_response.relative_distance) if telemetry_response.relative_distance else None,
+                            'time': json.dumps(telemetry_response.time) if telemetry_response.time else None,
                             'rpm': json.dumps(telemetry_response.rpm) if telemetry_response.rpm else None,
                             'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,
                         })

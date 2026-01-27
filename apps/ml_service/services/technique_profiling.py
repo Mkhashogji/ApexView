@@ -32,7 +32,7 @@ from enum import Enum
 
 import numpy as np
 
-from services.corner_analysis import CornerResult, CornerAnalysisResult
+from services.corner_analysis import CornerResult, CornerAnalysisResult, LapBreakdown, StraightSegment
 
 logger = logging.getLogger("ml_service.technique_profiling")
 
@@ -83,7 +83,21 @@ DIMENSION_DESCRIPTORS: Dict[str, Dict[str, str]] = {
         "STRONG": "Highly consistent",
         "NEUTRAL": "Moderate consistency",
         "WEAK": "Variable performance"
+    },
+    "straight_line": {
+        "STRONG": "Excellent straight-line speed",
+        "NEUTRAL": "Balanced straight-line performance",
+        "WEAK": "Straight-line deficit"
     }
+}
+
+# Primary factor descriptions for straight-line performance (5th dimension)
+STRAIGHT_LINE_FACTORS: Dict[str, str] = {
+    "aero_efficiency": "Low-drag setup maximizing top speed",
+    "exit_traction": "Excellent traction from corner exits",
+    "high_drag": "High-downforce setup compromising straight-line speed",
+    "poor_traction": "Traction deficit limiting acceleration",
+    "balanced": "Balanced straight-line performance",
 }
 
 # Style summary templates based on (braking_level, exit_level) combinations
@@ -133,9 +147,44 @@ class TechniqueDimension:
 
 
 @dataclass
+class StraightLineDimension:
+    """
+    5th Dimension: Straight-line performance analysis.
+
+    Captures time gained/lost on straight sections between corners,
+    providing insight into aero efficiency, traction, and setup choices.
+
+    Note: For straight-line, negative delta = faster = better (gaining time).
+    So STRONG = most negative (low percentile), WEAK = most positive (high percentile).
+
+    Attributes:
+        level: Classification (STRONG/NEUTRAL/WEAK)
+        descriptor: Human-readable description for Phase 5
+        percentile: Session-relative percentile (0-100)
+        raw_delta: Total straight-line delta in seconds (from LapBreakdown.straight_total)
+        primary_factor: Dominant cause ('aero_efficiency', 'exit_traction', 'high_drag', 'poor_traction', 'balanced')
+        segment_count: Number of straight segments analyzed
+        top_gaining_straights: Names of straights where time was gained (up to 3)
+        top_losing_straights: Names of straights where time was lost (up to 3)
+        avg_confidence: Average confidence across segments (0-1)
+    """
+    level: TechniqueLevel
+    descriptor: str
+    percentile: float
+    raw_delta: float
+    primary_factor: str
+    segment_count: int = 0
+    top_gaining_straights: List[str] = field(default_factory=list)
+    top_losing_straights: List[str] = field(default_factory=list)
+    avg_confidence: float = 0.0
+
+
+@dataclass
 class TechniqueProfile:
     """
     Complete technique profile for a driver.
+
+    Now includes 5 dimensions: braking, apex, exit, consistency, and straight_line.
 
     Attributes:
         driver: Driver code (e.g., "PIA")
@@ -144,6 +193,7 @@ class TechniqueProfile:
         apex: Apex technique dimension
         exit: Exit technique dimension
         consistency: Consistency dimension
+        straight_line: Straight-line performance dimension (5th dimension)
         top_gaining_corners: Best 3 corners (names/numbers)
         top_losing_corners: Worst 3 corners (names/numbers)
         style_summary: One-line characterization
@@ -156,6 +206,7 @@ class TechniqueProfile:
     apex: TechniqueDimension
     exit: TechniqueDimension
     consistency: TechniqueDimension
+    straight_line: Optional[StraightLineDimension] = None  # NEW: 5th dimension
     top_gaining_corners: List[str] = field(default_factory=list)
     top_losing_corners: List[str] = field(default_factory=list)
     style_summary: str = ""
@@ -170,6 +221,8 @@ class SessionPercentiles:
 
     Used for session-relative classification. Stores both the P30/P70
     thresholds and the raw values for exact percentile calculation.
+
+    Now includes straight-line percentiles for 5th dimension.
     """
     braking_p30: float
     braking_p70: float
@@ -186,6 +239,11 @@ class SessionPercentiles:
     all_apex: List[float] = field(default_factory=list)
     all_exit: List[float] = field(default_factory=list)
     all_consistency: List[float] = field(default_factory=list)
+
+    # 5th dimension: straight-line percentiles
+    straight_line_p30: float = 0.0
+    straight_line_p70: float = 0.0
+    all_straight_line: List[float] = field(default_factory=list)
 
 
 @dataclass
@@ -385,6 +443,235 @@ def aggregate_by_cause(
         avg_confidence=avg_confidence,
         top_gaining=top_gaining,
         top_losing=top_losing
+    )
+
+
+# ============================================================================
+# Straight-Line Performance Aggregation (5th Dimension)
+# ============================================================================
+
+def determine_straight_line_primary_factor(
+    straight_segments: List[StraightSegment],
+    top_speed_delta: Optional[float] = None,
+    avg_exit_delta: Optional[float] = None
+) -> str:
+    """
+    Determine the primary factor explaining straight-line performance.
+
+    Logic priority:
+    1. If top_speed_delta > +2 km/h → aero_efficiency (low drag)
+    2. If top_speed_delta < -2 km/h → high_drag (high downforce)
+    3. If avg_exit_delta < -0.02s AND gaining on straights → exit_traction
+    4. If avg_exit_delta > +0.02s AND losing on straights → poor_traction
+    5. Otherwise → balanced (or most common segment factor)
+
+    Args:
+        straight_segments: List of StraightSegment from LapBreakdown
+        top_speed_delta: Optional speed difference at top speed trap (km/h)
+        avg_exit_delta: Optional average exit delta from corners
+
+    Returns:
+        Primary factor string: 'aero_efficiency', 'exit_traction', 'high_drag',
+        'poor_traction', or 'balanced'
+    """
+    if not straight_segments:
+        return "balanced"
+
+    # Calculate aggregate performance
+    total_delta = sum(s.delta_change for s in straight_segments)
+    gaining_on_straights = total_delta < 0
+
+    # Count factor occurrences from segments
+    factor_counts: Dict[str, int] = {}
+    for segment in straight_segments:
+        factor = getattr(segment, 'primary_factor', 'balanced')
+        factor_counts[factor] = factor_counts.get(factor, 0) + 1
+
+    # Priority 1: Use top speed delta if available
+    if top_speed_delta is not None:
+        if top_speed_delta > 2.0:
+            logger.debug(f"Primary factor: aero_efficiency (top_speed_delta={top_speed_delta:.1f} km/h)")
+            return "aero_efficiency"
+        elif top_speed_delta < -2.0:
+            logger.debug(f"Primary factor: high_drag (top_speed_delta={top_speed_delta:.1f} km/h)")
+            return "high_drag"
+
+    # Priority 2: Use exit performance correlation
+    if avg_exit_delta is not None:
+        if avg_exit_delta < -0.02 and gaining_on_straights:
+            logger.debug(f"Primary factor: exit_traction (avg_exit_delta={avg_exit_delta:+.3f}s, gaining)")
+            return "exit_traction"
+        elif avg_exit_delta > 0.02 and not gaining_on_straights:
+            logger.debug(f"Primary factor: poor_traction (avg_exit_delta={avg_exit_delta:+.3f}s, losing)")
+            return "poor_traction"
+
+    # Priority 3: Fall back to most common segment factor
+    if factor_counts:
+        most_common = max(factor_counts, key=factor_counts.get)
+        if most_common != "balanced":
+            logger.debug(f"Primary factor: {most_common} (from segment analysis)")
+            return most_common
+
+    return "balanced"
+
+
+def aggregate_straight_line_performance(
+    lap_breakdown: Optional[LapBreakdown],
+    exit_dimension: Optional[TechniqueDimension] = None
+) -> Dict[str, any]:
+    """
+    Aggregate straight-line performance data from LapBreakdown.
+
+    Extracts the straight_total, identifies top gaining/losing segments,
+    and determines the primary performance factor.
+
+    Args:
+        lap_breakdown: LapBreakdown from corner analysis (Phase 3)
+        exit_dimension: Exit TechniqueDimension for correlation analysis
+
+    Returns:
+        Dict containing:
+        - straight_total: Total time delta on straights (seconds)
+        - segment_count: Number of straight segments
+        - primary_factor: Dominant performance factor
+        - top_gaining_straights: Best 3 straights (names, e.g., "T4→T5")
+        - top_losing_straights: Worst 3 straights (names)
+        - avg_confidence: Average confidence (set to 0.8 as straights are derived)
+    """
+    if lap_breakdown is None or not lap_breakdown.straight_segments:
+        logger.debug("No lap_breakdown or straight_segments, returning empty aggregation")
+        return {
+            'straight_total': 0.0,
+            'segment_count': 0,
+            'primary_factor': 'balanced',
+            'top_gaining_straights': [],
+            'top_losing_straights': [],
+            'avg_confidence': 0.0,
+        }
+
+    straight_total = lap_breakdown.straight_total
+    segments = lap_breakdown.straight_segments
+
+    # Sort by delta_change (most negative first = most gain)
+    sorted_segments = sorted(segments, key=lambda s: s.delta_change)
+
+    # Gaining = negative delta (faster), Losing = positive delta (slower)
+    gaining = [s for s in sorted_segments if s.delta_change < -NEUTRAL_THRESHOLD]
+    losing = [s for s in sorted_segments if s.delta_change > NEUTRAL_THRESHOLD]
+
+    # Take top 3 from each
+    top_gaining = [s.name for s in gaining[:3]]
+    top_losing = [s.name for s in list(reversed(losing))[:3]]
+
+    # Determine primary factor using exit correlation if available
+    avg_exit_delta = exit_dimension.raw_value if exit_dimension else None
+    primary_factor = determine_straight_line_primary_factor(
+        segments,
+        top_speed_delta=None,  # Could be passed from telemetry if available
+        avg_exit_delta=avg_exit_delta
+    )
+
+    logger.debug(
+        f"Straight-line aggregated: total={straight_total:+.3f}s, "
+        f"segments={len(segments)}, factor={primary_factor}, "
+        f"gaining={len(gaining)}, losing={len(losing)}"
+    )
+
+    return {
+        'straight_total': straight_total,
+        'segment_count': len(segments),
+        'primary_factor': primary_factor,
+        'top_gaining_straights': top_gaining,
+        'top_losing_straights': top_losing,
+        'avg_confidence': 0.8,  # Derived from delta analysis which has known confidence
+    }
+
+
+def classify_straight_line_dimension(
+    straight_total: float,
+    all_straight_totals: List[float],
+    primary_factor: str,
+    segment_count: int,
+    top_gaining: List[str],
+    top_losing: List[str],
+    avg_confidence: float = 0.8
+) -> StraightLineDimension:
+    """
+    Classify straight-line performance into STRONG/NEUTRAL/WEAK.
+
+    Note: For straight-line, negative delta = faster = better.
+    So STRONG = low percentile (most negative), WEAK = high percentile (most positive).
+
+    Args:
+        straight_total: This driver's straight-line total delta (seconds)
+        all_straight_totals: All drivers' straight-line totals in session
+        primary_factor: Determined primary factor from aggregation
+        segment_count: Number of segments analyzed
+        top_gaining: Top 3 gaining straights (names)
+        top_losing: Top 3 losing straights (names)
+        avg_confidence: Average confidence (0-1)
+
+    Returns:
+        StraightLineDimension with classification
+    """
+    if not all_straight_totals or len(all_straight_totals) < 2:
+        # Not enough data for percentile calculation
+        logger.warning(
+            f"Insufficient data for straight-line percentile: "
+            f"{len(all_straight_totals) if all_straight_totals else 0} drivers"
+        )
+        return StraightLineDimension(
+            level=TechniqueLevel.NEUTRAL,
+            descriptor="Insufficient data for straight-line classification",
+            percentile=50.0,
+            raw_delta=straight_total,
+            primary_factor=primary_factor,
+            segment_count=segment_count,
+            top_gaining_straights=top_gaining,
+            top_losing_straights=top_losing,
+            avg_confidence=avg_confidence,
+        )
+
+    # Calculate exact percentile
+    percentile = calculate_exact_percentile(straight_total, all_straight_totals)
+
+    # Calculate P30/P70 thresholds
+    p30 = float(np.percentile(all_straight_totals, STRONG_PERCENTILE_THRESHOLD))
+    p70 = float(np.percentile(all_straight_totals, WEAK_PERCENTILE_THRESHOLD))
+
+    # Classify: lower (more negative) = better for straight-line
+    if straight_total <= p30:
+        level = TechniqueLevel.STRONG
+    elif straight_total >= p70:
+        level = TechniqueLevel.WEAK
+    else:
+        level = TechniqueLevel.NEUTRAL
+
+    # Get descriptor with factor info
+    base_descriptor = DIMENSION_DESCRIPTORS.get("straight_line", {}).get(
+        level.name, f"{level.name.capitalize()} straight-line performance"
+    )
+    factor_text = STRAIGHT_LINE_FACTORS.get(primary_factor, "")
+    if factor_text and level != TechniqueLevel.NEUTRAL:
+        descriptor = f"{base_descriptor} — {factor_text}"
+    else:
+        descriptor = base_descriptor
+
+    logger.debug(
+        f"Straight-line classified: {level.value} (P{percentile:.0f}), "
+        f"raw={straight_total:+.3f}s, factor={primary_factor}"
+    )
+
+    return StraightLineDimension(
+        level=level,
+        descriptor=descriptor,
+        percentile=percentile,
+        raw_delta=straight_total,
+        primary_factor=primary_factor,
+        segment_count=segment_count,
+        top_gaining_straights=top_gaining,
+        top_losing_straights=top_losing,
+        avg_confidence=avg_confidence,
     )
 
 
@@ -594,9 +881,10 @@ def profile_drivers(
 
     This is the main entry point for technique profiling. It:
     1. Aggregates each driver's corner results by cause type
-    2. Calculates session-wide percentiles
-    3. Classifies each driver's technique dimensions
-    4. Generates style summaries
+    2. Collects straight-line totals for 5th dimension
+    3. Calculates session-wide percentiles (including straight-line)
+    4. Classifies each driver's technique dimensions
+    5. Generates style summaries
 
     Args:
         corner_results_by_driver: Dict mapping driver code to CornerAnalysisResult
@@ -631,6 +919,9 @@ def profile_drivers(
 
     # Stage 1: Aggregate each driver's corner results
     all_aggregates: List[DriverAggregates] = []
+    # NEW: Collect straight-line data for 5th dimension
+    straight_line_data_by_driver: Dict[str, Dict[str, any]] = {}
+    all_straight_totals: List[float] = []
 
     for driver, result in corner_results_by_driver.items():
         aggregates = aggregate_by_cause(
@@ -640,24 +931,57 @@ def profile_drivers(
         aggregates.driver = driver
         all_aggregates.append(aggregates)
 
-        logger.debug(
-            f"Aggregated {driver}: braking={aggregates.braking_total:+.3f}s, "
-            f"exit={aggregates.exit_total:+.3f}s, consistency={aggregates.consistency:.3f}"
-        )
+        # NEW: Aggregate straight-line performance if lap_breakdown exists
+        if result.lap_breakdown is not None:
+            straight_agg = aggregate_straight_line_performance(
+                result.lap_breakdown,
+                exit_dimension=None  # Will be set later after exit classification
+            )
+            straight_line_data_by_driver[driver] = straight_agg
+            all_straight_totals.append(straight_agg['straight_total'])
+            logger.debug(
+                f"Aggregated {driver}: braking={aggregates.braking_total:+.3f}s, "
+                f"exit={aggregates.exit_total:+.3f}s, consistency={aggregates.consistency:.3f}, "
+                f"straight_line={straight_agg['straight_total']:+.3f}s"
+            )
+        else:
+            logger.debug(
+                f"Aggregated {driver}: braking={aggregates.braking_total:+.3f}s, "
+                f"exit={aggregates.exit_total:+.3f}s, consistency={aggregates.consistency:.3f}"
+            )
 
-    # Stage 2: Calculate session percentiles
+    # Stage 2: Calculate session percentiles (including straight-line)
     session_percentiles = calculate_session_percentiles(all_aggregates)
+
+    # NEW: Add straight-line percentiles to session percentiles
+    if all_straight_totals and len(all_straight_totals) >= 2:
+        session_percentiles.straight_line_p30 = float(
+            np.percentile(all_straight_totals, STRONG_PERCENTILE_THRESHOLD)
+        )
+        session_percentiles.straight_line_p70 = float(
+            np.percentile(all_straight_totals, WEAK_PERCENTILE_THRESHOLD)
+        )
+        session_percentiles.all_straight_line = all_straight_totals
+    elif all_straight_totals:
+        # Single value case
+        session_percentiles.straight_line_p30 = all_straight_totals[0]
+        session_percentiles.straight_line_p70 = all_straight_totals[0]
+        session_percentiles.all_straight_line = all_straight_totals
 
     logger.debug(
         f"Session percentiles (n={session_percentiles.driver_count}): "
         f"braking P30={session_percentiles.braking_p30:+.3f}s, "
-        f"P70={session_percentiles.braking_p70:+.3f}s"
+        f"P70={session_percentiles.braking_p70:+.3f}s, "
+        f"straight_line P30={session_percentiles.straight_line_p30:+.3f}s, "
+        f"P70={session_percentiles.straight_line_p70:+.3f}s"
     )
 
     # Stage 3 & 4: Classify each driver and build profiles
     profiles: List[TechniqueProfile] = []
 
     for aggregates in all_aggregates:
+        driver = aggregates.driver
+
         # Classify braking dimension
         braking = classify_dimension(
             value=aggregates.braking_total,
@@ -702,16 +1026,40 @@ def profile_drivers(
             avg_confidence=aggregates.avg_confidence
         )
 
+        # NEW: Classify straight-line dimension (5th dimension)
+        straight_line_dim = None
+        if driver in straight_line_data_by_driver:
+            straight_data = straight_line_data_by_driver[driver]
+
+            # Re-aggregate with exit dimension for correlation analysis
+            corner_result = corner_results_by_driver.get(driver)
+            if corner_result and corner_result.lap_breakdown:
+                straight_data = aggregate_straight_line_performance(
+                    corner_result.lap_breakdown,
+                    exit_dimension=exit_dim
+                )
+
+            straight_line_dim = classify_straight_line_dimension(
+                straight_total=straight_data['straight_total'],
+                all_straight_totals=all_straight_totals,
+                primary_factor=straight_data['primary_factor'],
+                segment_count=straight_data['segment_count'],
+                top_gaining=straight_data['top_gaining_straights'],
+                top_losing=straight_data['top_losing_straights'],
+                avg_confidence=straight_data['avg_confidence'],
+            )
+
         # Generate style summary
         style_summary = generate_style_summary(braking, exit_dim, apex, consistency)
 
         profile = TechniqueProfile(
-            driver=aggregates.driver,
+            driver=driver,
             reference_driver=reference_driver,
             braking=braking,
             apex=apex,
             exit=exit_dim,
             consistency=consistency,
+            straight_line=straight_line_dim,  # NEW: 5th dimension
             top_gaining_corners=aggregates.top_gaining,
             top_losing_corners=aggregates.top_losing,
             style_summary=style_summary,
@@ -721,12 +1069,22 @@ def profile_drivers(
 
         profiles.append(profile)
 
-        logger.info(
-            f"Profile for {aggregates.driver}: "
-            f"braking={braking.level.value} (P{braking.percentile:.0f}), "
-            f"exit={exit_dim.level.value} (P{exit_dim.percentile:.0f}), "
-            f"style='{style_summary}'"
-        )
+        # Enhanced logging with straight-line
+        if straight_line_dim:
+            logger.info(
+                f"Profile for {driver}: "
+                f"braking={braking.level.value} (P{braking.percentile:.0f}), "
+                f"exit={exit_dim.level.value} (P{exit_dim.percentile:.0f}), "
+                f"straight_line={straight_line_dim.level.value} (P{straight_line_dim.percentile:.0f}), "
+                f"style='{style_summary}'"
+            )
+        else:
+            logger.info(
+                f"Profile for {driver}: "
+                f"braking={braking.level.value} (P{braking.percentile:.0f}), "
+                f"exit={exit_dim.level.value} (P{exit_dim.percentile:.0f}), "
+                f"style='{style_summary}'"
+            )
 
     return profiles, session_percentiles
 

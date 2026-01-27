@@ -4,13 +4,15 @@ import { useState, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 // Hooks
-import { 
-  useSessionsQuery, 
-  useTelemetryQuery, 
-  useDeltaQuery, 
+import {
+  useSessionsQuery,
+  useTelemetryQuery,
+  useDeltaQuery,
   useSectorsQuery,
   useTrackQuery,
   useLapsQuery,
+  useScaledDeltaQuery,
+  useCornerAnalysisQuery,
 } from '@/lib/hooks'
 
 // Components
@@ -18,7 +20,9 @@ import { QualifyingSidebar } from '@/components/qualifying/QualifyingSidebar'
 import { TelemetryLine } from '@/components/charts/TelemetryLine'
 import { DeltaPlot } from '@/components/charts/DeltaPlot'
 import { SectorCards } from '@/components/panels/SectorCards'
-import { AIInsights } from '@/components/panels/AIInsights'
+import { ScalingMetadataPanel } from '@/components/panels/ScalingMetadataPanel'
+import { CornerBreakdownPanel } from '@/components/panels/CornerBreakdownPanel'
+import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsightsPanel'
 
 // Types
 import { Telemetry, QualifyingSessionPart } from '@/../../packages/models/src/types'
@@ -123,10 +127,26 @@ export function QualifyingContent() {
     isLoading: isTrackLoading 
   } = useTrackQuery(round, season)
 
-  const { 
-    data: deltaData, 
-    isLoading: isDeltaLoading 
+  const {
+    data: deltaData,
+    isLoading: isDeltaLoading
   } = useDeltaQuery(sessionId, referenceDriver, compareDrivers, qualifyingPart)
+
+  // Phase 2: Scaled Delta Query
+  const {
+    data: scaledDeltaData,
+    isLoading: isScaledDeltaLoading,
+    isError: isScaledDeltaError,
+    error: scaledDeltaError,
+  } = useScaledDeltaQuery(sessionId, referenceDriver, compareDrivers, qualifyingPart)
+
+  // Phase 3: Corner Analysis Query
+  const {
+    data: cornerAnalysisData,
+    isLoading: isCornerAnalysisLoading,
+    isError: isCornerAnalysisError,
+    error: cornerAnalysisError,
+  } = useCornerAnalysisQuery(sessionId, referenceDriver, compareDrivers, trackData?.corners, qualifyingPart)
 
   // Combined loading state - wait for ALL data (including laps for completeness)
   const isLoading = 
@@ -377,12 +397,29 @@ export function QualifyingContent() {
                 />
               </div>
 
-              {/* AI Insights - Full Width */}
-              <AIInsights
+              {/* Phase 2: Scaled Delta Analysis Metadata */}
+              <ScalingMetadataPanel
+                results={scaledDeltaData?.results ?? []}
+                referenceDriver={referenceDriver}
+                isLoading={isScaledDeltaLoading}
+                error={isScaledDeltaError ? (scaledDeltaError as Error)?.message : undefined}
+              />
+
+              {/* Phase 3: Corner Analysis Breakdown */}
+              <CornerBreakdownPanel
+                results={cornerAnalysisData?.results ?? []}
+                referenceDriver={referenceDriver}
+                isLoading={isCornerAnalysisLoading}
+                error={isCornerAnalysisError ? (cornerAnalysisError as Error)?.message : undefined}
+              />
+
+              {/* Performance Insights - Phase 7 (replaces AIInsights) */}
+              <PerformanceInsightsPanel
                 sessionId={sessionId}
-                sectorData={sectorsData ?? []}
                 referenceDriver={referenceDriver}
                 selectedDrivers={selectedDrivers}
+                corners={trackData?.corners ?? []}
+                sessionPart={qualifyingPart}
               />
             </>
           ) : (

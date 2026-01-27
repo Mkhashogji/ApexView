@@ -30,6 +30,8 @@ pip-delete-this-directory.txt
 # FastF1 Cache
 data/cache/*
 !data/cache/.gitkeep
+fastf1_cache/
+**/fastf1_cache/
 
 # Environment
 .env
@@ -70,6 +72,13 @@ docker-compose.override.yml
 *.lock
 *.bak
 
+# Test files (temporary)
+test_*.json
+
+# Windows reserved names (prevent accidental creation)
+nul
+
 # TypeScript build cache
 tsbuildinfo.json
+*.tsbuildinfo
 

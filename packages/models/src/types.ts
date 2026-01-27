@@ -197,3 +197,256 @@ export interface ClusteringResponse {
   }
 }
 
+// =============================================================================
+// Phase 2: Scaled Delta Types
+// =============================================================================
+
+/** Request for scaled delta calculation */
+export interface ScaledDeltaRequest {
+  sessionId: string
+  referenceDriver: string
+  compareDrivers: string[]
+  sessionPart?: string
+}
+
+/** Single driver comparison result with scaling metadata */
+export interface ScaledDeltaDriverResult {
+  referenceDriver: string
+  compareDriver: string
+  distance: number[]       // Common distance grid (meters)
+  delta: number[]          // Scaled delta (matches official timing)
+  rawDelta: number[]       // Original telemetry-derived delta
+  officialGap: number      // Official timing gap (ground truth from FIA)
+  telemetryGap: number     // Raw telemetry-calculated gap
+  scalingFactor: number    // Multiplier: officialGap / telemetryGap
+  confidence: number       // 0-1 score based on scaling factor deviation
+}
+
+/** Complete response from scaled delta endpoint */
+export interface ScaledDeltaResponse {
+  sessionId: string
+  referenceDriver: string
+  results: ScaledDeltaDriverResult[]
+  metadata: {
+    sessionPart?: string
+    driversAnalyzed: number
+    driversFailed?: number
+    errors?: string[]
+  }
+}
+
+// =============================================================================
+// Phase 3: Corner Analysis Types
+// =============================================================================
+
+/** Input for a corner to analyze */
+export interface CornerInput {
+  cornerNumber: number
+  name?: string
+  apexDistance: number
+  cornerType: 'left' | 'right'
+}
+
+/** Cause of time gain/loss at a corner */
+export type CornerCause = 'braking' | 'apex' | 'exit' | 'multiple' | 'unknown'
+
+/** Confidence level for corner analysis */
+export type CornerConfidence = 'high' | 'medium' | 'low'
+
+/** Result of analyzing a single corner */
+export interface CornerResult {
+  cornerNumber: number
+  name?: string
+  apexDistance: number
+  brakeDistance: number
+  zoneStart: number
+  zoneEnd: number
+  deltaChange: number  // positive = compare driver slower
+  cause: CornerCause
+  confidence: CornerConfidence
+}
+
+/** Corner analysis result for a single driver comparison */
+export interface CornerAnalysisDriverResult {
+  compareDriver: string
+  cornerResults: CornerResult[]
+  totalDeltaChange: number
+  cornersGaining: number
+  cornersLosing: number
+}
+
+/** Request for corner analysis */
+export interface CornerAnalysisRequest {
+  sessionId: string
+  referenceDriver: string
+  compareDrivers: string[]
+  corners: CornerInput[]
+  sessionPart?: string
+}
+
+/** Complete response from corner analysis endpoint */
+export interface CornerAnalysisResponse {
+  sessionId: string
+  referenceDriver: string
+  results: CornerAnalysisDriverResult[]
+  metadata: {
+    sessionPart?: string
+    driversAnalyzed: number
+    cornersAnalyzed: number
+    driversFailed?: number
+    errors?: string[]
+  }
+}
+
+// =============================================================================
+// Phase 7: Performance Insights Types (Unified Endpoint)
+// =============================================================================
+
+/** Request for unified performance insights (orchestrates Phases 2-5) */
+export interface PerformanceInsightsRequest {
+  session_id: string
+  reference_driver: string
+  compare_drivers: string[]
+  corners: CornerInput[]
+  mode?: 'engineer' | 'driver'
+  session_part?: string | null
+  circuit_name?: string
+  include_telemetry?: boolean
+}
+
+/** Complete response from performance insights orchestrator */
+export interface PerformanceInsightsResponse {
+  session_id: string
+  reference_driver: string
+  circuit_name?: string
+  mode: string
+  results: DriverPerformanceResult[]
+  session_percentiles?: SessionPercentiles
+  total_drivers_requested: number
+  total_drivers_processed: number
+  total_corners: number
+  phase_timing: PhaseTimingInfo[]
+  total_duration_ms: number
+  errors: string[]
+  warnings: string[]
+}
+
+/** Complete performance analysis for a single driver comparison */
+export interface DriverPerformanceResult {
+  driver: string
+  // Phase 2: Scaled Delta
+  official_gap: number
+  scaling_confidence: number
+  delta?: number[]
+  distance?: number[]
+  // Phase 3: Corner Analysis Summary
+  corners_gaining: number
+  corners_losing: number
+  total_corner_delta: number
+  corner_results: PerformanceCornerResult[]
+  // Phase 4: Technique Profile
+  technique_profile?: TechniqueProfile
+  // Phase 5: Natural Language Insight
+  insight?: NaturalLanguageInsight
+}
+
+/** Corner result detail for performance insights */
+export interface PerformanceCornerResult {
+  corner_number: number
+  name?: string
+  apex_distance: number
+  brake_distance: number
+  zone_start: number
+  zone_end: number
+  delta_change: number
+  cause: CornerCause
+  confidence: CornerConfidence
+}
+
+/** Driver technique profile from Phase 4 */
+export interface TechniqueProfile {
+  driver: string
+  reference_driver: string
+  braking: TechniqueDimension
+  apex: TechniqueDimension
+  exit: TechniqueDimension
+  consistency: TechniqueDimension
+  top_gaining_corners: string[]
+  top_losing_corners: string[]
+  style_summary: string
+  overall_confidence: number
+  total_corners_analyzed: number
+}
+
+/** Single dimension of technique profile */
+export interface TechniqueDimension {
+  level: DimensionLevel
+  descriptor: string
+  percentile: number
+  raw_value: number
+  corner_count: number
+  avg_confidence: number
+}
+
+/** Natural language insight from Phase 5 */
+export interface NaturalLanguageInsight {
+  driver: string
+  reference_driver: string
+  mode: 'engineer' | 'driver'
+  confidence_level: 'high' | 'medium' | 'low' | 'insufficient'
+  summary: string
+  dimension_insights: DimensionInsightDetail[]
+  corner_insights: CornerInsightDetail[]
+  opportunity_text: string
+  hedging_prefix: string
+  total_corners: number
+  session_context: Record<string, string>
+  style_summary: string
+}
+
+/** Dimension insight detail */
+export interface DimensionInsightDetail {
+  dimension: DimensionType
+  level: DimensionLevel
+  percentile: number
+  text: string
+  raw_value_ms: number
+  corner_count: number
+}
+
+/** Corner insight detail */
+export interface CornerInsightDetail {
+  corner_name: string
+  delta_ms: number
+  direction: 'gaining' | 'losing'
+  cause: string
+  text: string
+  confidence: string
+}
+
+/** Session percentile boundaries for technique classification */
+export interface SessionPercentiles {
+  braking_p30: number
+  braking_p70: number
+  apex_p30: number
+  apex_p70: number
+  exit_p30: number
+  exit_p70: number
+  consistency_p30: number
+  consistency_p70: number
+  driver_count: number
+}
+
+/** Timing information for a single phase execution */
+export interface PhaseTimingInfo {
+  phase: string
+  duration_ms: number
+  success: boolean
+  error?: string
+}
+
+// UI Helper Types for Phase 7
+export type InsightMode = 'engineer' | 'driver'
+export type DimensionType = 'braking' | 'apex' | 'exit' | 'consistency'
+export type DimensionLevel = 'strong' | 'neutral' | 'weak'
+

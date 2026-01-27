@@ -14,12 +14,15 @@ export { useTrackQuery, useDRSZones, useCorners, useSectorBoundaries } from './u
 export { useTrackIntelligence } from './useTrackIntelligence'
 
 // ML service hooks
-export { 
-  useMLInsightsQuery, 
-  useLapSimilarityQuery, 
+export {
+  useMLInsightsQuery,
+  useLapSimilarityQuery,
   useDriverClusteringQuery,
   useAllMLInsights,
 } from './useMLInsightsQuery'
+export { useScaledDeltaQuery } from './useScaledDeltaQuery'
+export { useCornerAnalysisQuery } from './useCornerAnalysisQuery'
+export { usePerformanceInsightsQuery } from './usePerformanceInsightsQuery'
 
 // Query key factory
 export { queryKeys } from './queryKeys'

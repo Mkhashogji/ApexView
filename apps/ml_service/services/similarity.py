@@ -1,7 +1,10 @@
 """Lap similarity calculation using cosine similarity."""
+import logging
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Tuple
+
+logger = logging.getLogger("ml_service.similarity")
 
 
 def align_telemetry_arrays(

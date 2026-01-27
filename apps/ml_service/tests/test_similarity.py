@@ -1,7 +1,7 @@
 """Tests for lap similarity calculations."""
 import pytest
 import numpy as np
-from ml_service.services.similarity import (
+from services.similarity import (
     compute_lap_similarity,
     align_telemetry_arrays,
     extract_telemetry_features

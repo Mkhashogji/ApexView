@@ -55,6 +55,7 @@ class TelemetryResponse(CamelCaseModel):
     """
     driver: str
     lap_number: int
+    lap_time: Optional[float] = None  # Official lap time in seconds
     distance: List[float]
     speed: List[float]
     throttle: List[float]

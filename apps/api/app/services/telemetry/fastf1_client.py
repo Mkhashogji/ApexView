@@ -1,10 +1,13 @@
 import fastf1
 import json
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Literal
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 from app.core.cache import enable_cache
 from app.core.config import settings
 from app.models.dto import (
@@ -96,10 +99,76 @@ class FastF1Client:
                         # Driver didn't participate in this session part
                         return laps.iloc[0:0]
             except Exception as e:
-                print(f"Time-based filtering failed: {e}")
-        
+                logger.warning(f"Time-based filtering failed: {e}")
+
         # Fallback: return all laps if filtering fails
         return laps
+
+    def _filter_valid_laps(self, laps) -> "pd.DataFrame":
+        """
+        Filter out invalid laps to ensure data quality.
+
+        Removes:
+        - Laps deleted for track limit violations
+        - Pit in laps (entry to pit lane)
+        - Pit out laps (exit from pit lane)
+
+        This ensures only valid, representative laps are used for analysis.
+
+        Args:
+            laps: FastF1 Laps DataFrame
+
+        Returns:
+            Filtered DataFrame with only valid laps.
+            Falls back to original if all laps would be filtered.
+        """
+        if laps is None or len(laps) == 0:
+            return laps
+
+        filtered = laps.copy()
+        original_count = len(filtered)
+
+        # Step 1: Filter deleted laps (track limits violations)
+        if 'Deleted' in filtered.columns:
+            # Keep laps where Deleted is False OR NaN (older data compatibility)
+            deleted_mask = (filtered['Deleted'] == False) | (filtered['Deleted'].isna())
+            filtered = filtered[deleted_mask]
+            deleted_count = original_count - len(filtered)
+            if deleted_count > 0:
+                logger.debug(f"Filtered {deleted_count} deleted laps")
+
+        # Step 2: Filter pit in laps
+        if 'PitInTime' in filtered.columns:
+            pre_pit_count = len(filtered)
+            filtered = filtered[filtered['PitInTime'].isna()]
+            pit_in_removed = pre_pit_count - len(filtered)
+            if pit_in_removed > 0:
+                logger.debug(f"Filtered {pit_in_removed} pit-in laps")
+
+        # Step 3: Filter pit out laps
+        if 'PitOutTime' in filtered.columns:
+            pre_pit_count = len(filtered)
+            filtered = filtered[filtered['PitOutTime'].isna()]
+            pit_out_removed = pre_pit_count - len(filtered)
+            if pit_out_removed > 0:
+                logger.debug(f"Filtered {pit_out_removed} pit-out laps")
+
+        # Step 4: Fallback - if all laps filtered, return original with warning
+        if len(filtered) == 0:
+            logger.warning(
+                f"All {original_count} laps were invalid (deleted/pit). "
+                f"Falling back to unfiltered laps."
+            )
+            return laps
+
+        final_count = len(filtered)
+        if final_count < original_count:
+            logger.info(
+                f"Lap filtering: {original_count} -> {final_count} valid laps "
+                f"({original_count - final_count} removed)"
+            )
+
+        return filtered
     
     def _parse_session_id(self, session: str):
         """
@@ -153,13 +222,13 @@ class FastF1Client:
                         )
                     )
                 except Exception as e:
-                    print(f"Skipping session {session_name}: {e}")
+                    logger.debug(f"Skipping session {session_name}: {e}")
                     continue
             
             return sessions
         
         except Exception as e:
-            print(f"Error loading sessions: {e}")
+            logger.error(f"Error loading sessions: {e}", exc_info=True)
             return []
     
     def _get_session_type(self, session_name: str):
@@ -215,7 +284,7 @@ class FastF1Client:
                             is_personal_best=bool(row.get('is_personal_best', True)),
                         )
                     )
-                print(f"✓ Loaded laps from Parquet cache for {session}")
+                logger.info(f"Loaded laps from Parquet cache for {session}")
                 return lap_responses
             
             # Cache miss - fetch from FastF1
@@ -237,8 +306,14 @@ class FastF1Client:
                 driver_laps = race_session.laps.pick_driver(driver)
                 if len(driver_laps) == 0:
                     continue
-                
-                fastest_lap = driver_laps.pick_fastest()
+
+                # Filter out deleted and pit laps for data quality
+                valid_laps = self._filter_valid_laps(driver_laps)
+                if len(valid_laps) == 0:
+                    logger.warning(f"No valid laps for driver {driver} after filtering")
+                    continue
+
+                fastest_lap = valid_laps.pick_fastest()
                 
                 if fastest_lap is not None and not fastest_lap.empty:
                     lap_response = LapResponse(
@@ -271,12 +346,12 @@ class FastF1Client:
             if lap_data_for_cache:
                 cache_df = pd.DataFrame(lap_data_for_cache)
                 self.cache.write(cache_df, session, "laps", drivers=drivers_str)
-                print(f"✓ Cached laps to Parquet for {session}")
+                logger.info(f"Cached laps to Parquet for {session}")
             
             return lap_responses
         
         except Exception as e:
-            print(f"Error loading laps: {e}")
+            logger.error(f"Error loading laps: {e}", exc_info=True)
             return []
     
     async def get_fastest_laps(self, session: str):
@@ -321,6 +396,7 @@ class FastF1Client:
                                 TelemetryResponse(
                                     driver=driver,
                                     lap_number=int(row['lap_number']),
+                                    lap_time=float(row['lap_time']) if pd.notna(row.get('lap_time')) else None,
                                     distance=json.loads(row['distance']),
                                     speed=json.loads(row['speed']),
                                     throttle=json.loads(row['throttle']),
@@ -330,7 +406,7 @@ class FastF1Client:
                                     drs=json.loads(row['drs']) if pd.notna(row.get('drs')) else None,
                                 )
                             )
-                    print(f"✓ Loaded telemetry from Parquet cache for {session}")
+                    logger.info(f"Loaded telemetry from Parquet cache for {session}")
                     return telemetry_responses
             
             # Fetch from FastF1
@@ -356,9 +432,15 @@ class FastF1Client:
                 filtered_laps = self._filter_laps_by_session_part(driver_laps, session_part, session_status)
                 if len(filtered_laps) == 0:
                     continue
-                
-                fastest_lap = filtered_laps.pick_fastest()
-                
+
+                # Filter out deleted and pit laps for data quality
+                valid_laps = self._filter_valid_laps(filtered_laps)
+                if len(valid_laps) == 0:
+                    logger.warning(f"No valid laps for driver {driver} after filtering")
+                    continue
+
+                fastest_lap = valid_laps.pick_fastest()
+
                 if fastest_lap is not None and not fastest_lap.empty:
                     # Get telemetry
                     telemetry = fastest_lap.get_telemetry()
@@ -386,9 +468,15 @@ class FastF1Client:
                                     max_points=self.downsample_threshold
                                 )
                         
+                        # Extract official lap time
+                        lap_time_seconds = None
+                        if pd.notna(fastest_lap['LapTime']):
+                            lap_time_seconds = float(fastest_lap['LapTime'].total_seconds())
+                        
                         telemetry_response = TelemetryResponse(
                             driver=driver,
                             lap_number=int(fastest_lap['LapNumber']),
+                            lap_time=lap_time_seconds,
                             distance=distance.tolist(),
                             speed=speed.tolist(),
                             throttle=throttle.tolist(),
@@ -404,6 +492,7 @@ class FastF1Client:
                         telemetry_data_for_cache.append({
                             'driver': driver,
                             'lap_number': telemetry_response.lap_number,
+                            'lap_time': telemetry_response.lap_time,
                             'distance': json.dumps(telemetry_response.distance),
                             'speed': json.dumps(telemetry_response.speed),
                             'throttle': json.dumps(telemetry_response.throttle),
@@ -417,12 +506,12 @@ class FastF1Client:
             if telemetry_data_for_cache:
                 cache_df = pd.DataFrame(telemetry_data_for_cache)
                 self.cache.write(cache_df, session, "telemetry", drivers=drivers_str, lap_type=lap_type)
-                print(f"✓ Cached telemetry to Parquet for {session}")
+                logger.info(f"Cached telemetry to Parquet for {session}")
             
             return telemetry_responses
         
         except Exception as e:
-            print(f"Error loading telemetry: {e}")
+            logger.error(f"Error loading telemetry: {e}", exc_info=True)
             return []
     
     async def get_delta_analysis(
@@ -459,8 +548,14 @@ class FastF1Client:
             ref_filtered = self._filter_laps_by_session_part(ref_laps, session_part, session_status)
             if len(ref_filtered) == 0:
                 return []
-            
-            ref_fastest = ref_filtered.pick_fastest()
+
+            # Filter out deleted and pit laps for reference driver
+            ref_valid = self._filter_valid_laps(ref_filtered)
+            if len(ref_valid) == 0:
+                logger.warning(f"No valid laps for reference driver {reference_driver}")
+                return []
+
+            ref_fastest = ref_valid.pick_fastest()
             ref_telemetry = ref_fastest.get_telemetry()
             
             delta_responses = []
@@ -474,8 +569,14 @@ class FastF1Client:
                 comp_filtered = self._filter_laps_by_session_part(comp_laps, session_part, session_status)
                 if len(comp_filtered) == 0:
                     continue
-                
-                comp_fastest = comp_filtered.pick_fastest()
+
+                # Filter out deleted and pit laps for comparison driver
+                comp_valid = self._filter_valid_laps(comp_filtered)
+                if len(comp_valid) == 0:
+                    logger.warning(f"No valid laps for comparison driver {compare_driver}")
+                    continue
+
+                comp_fastest = comp_valid.pick_fastest()
                 comp_telemetry = comp_fastest.get_telemetry()
                 
                 # Calculate delta
@@ -493,7 +594,7 @@ class FastF1Client:
             return delta_responses
         
         except Exception as e:
-            print(f"Error calculating delta: {e}")
+            logger.error(f"Error calculating delta: {e}", exc_info=True)
             return []
     
     async def get_sectors(
@@ -531,9 +632,15 @@ class FastF1Client:
                 filtered_laps = self._filter_laps_by_session_part(driver_laps, session_part, session_status)
                 if len(filtered_laps) == 0:
                     continue
-                
-                fastest_lap = filtered_laps.pick_fastest()
-                
+
+                # Filter out deleted and pit laps for data quality
+                valid_laps = self._filter_valid_laps(filtered_laps)
+                if len(valid_laps) == 0:
+                    logger.warning(f"No valid laps for driver {driver} after filtering")
+                    continue
+
+                fastest_lap = valid_laps.pick_fastest()
+
                 if fastest_lap is not None and not fastest_lap.empty:
                     s1 = float(fastest_lap['Sector1Time'].total_seconds()) if pd.notna(fastest_lap['Sector1Time']) else None
                     s2 = float(fastest_lap['Sector2Time'].total_seconds()) if pd.notna(fastest_lap['Sector2Time']) else None
@@ -554,7 +661,7 @@ class FastF1Client:
             return sector_times
         
         except Exception as e:
-            print(f"Error getting sectors: {e}")
+            logger.error(f"Error getting sectors: {e}", exc_info=True)
             return []
     
     async def get_track_info(self, season: int, round: int) -> TrackResponse:
@@ -623,7 +730,7 @@ class FastF1Client:
             )
             
         except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
-            print(f"Track data not available: {e}, falling back to FastF1")
+            logger.warning(f"Track data not available: {e}, falling back to FastF1")
             # Fallback to basic FastF1 event info
             try:
                 event = fastf1.get_event(season, round)

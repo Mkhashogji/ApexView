@@ -44,6 +44,28 @@ export const queryKeys = {
       ['ml', 'similarity', sessionId, { drivers: [driver1, driver2].sort() }] as const,
     clustering: (sessionId: string, drivers: string[], nClusters: number) =>
       ['ml', 'clustering', sessionId, { drivers: drivers.sort(), nClusters }] as const,
+    scaledDelta: (
+      sessionId: string,
+      refDriver: string,
+      compareDrivers: string[],
+      sessionPart?: string
+    ) =>
+      ['ml', 'scaledDelta', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
+    cornerAnalysis: (
+      sessionId: string,
+      refDriver: string,
+      compareDrivers: string[],
+      sessionPart?: string
+    ) =>
+      ['ml', 'cornerAnalysis', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
+    performanceInsights: (
+      sessionId: string,
+      refDriver: string,
+      compareDrivers: string[],
+      mode: 'engineer' | 'driver',
+      sessionPart?: string
+    ) =>
+      ['ml', 'performanceInsights', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), mode, sessionPart }] as const,
   },
 } as const
 

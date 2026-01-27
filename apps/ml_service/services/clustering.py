@@ -1,9 +1,12 @@
 """Driver style clustering using PCA and KMeans."""
+import logging
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from typing import List, Dict, Tuple, Any
+
+logger = logging.getLogger("ml_service.clustering")
 
 
 def cluster_driving_styles(

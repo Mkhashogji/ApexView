@@ -33,11 +33,10 @@ module.exports = {
         'purple-sector': '#A855F7',
       },
       fontFamily: {
-        // Montserrat for headings, Inter for body text
-        heading: ['Montserrat', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
         formula: ['var(--font-formula)', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        mono: ['var(--font-mono)', 'Fira Code', 'monospace'],
       },
       boxShadow: {
         // Red glow for active elements

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import type { Corner, InsightMode } from '@/../../packages/models/src/types'
-import { usePerformanceInsightsQuery } from '@/lib/hooks'
+import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'
 import { ModeToggle } from './ModeToggle'
 import { DriverInsightCard } from './DriverInsightCard'
 

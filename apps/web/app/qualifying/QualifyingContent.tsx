@@ -4,15 +4,13 @@ import { useState, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 // Hooks
-import {
-  useSessionsQuery,
-  useTelemetryQuery,
-  useSectorsQuery,
-  useTrackQuery,
-  useLapsQuery,
-  useScaledDeltaQuery,
-  useCornerAnalysisQuery,
-} from '@/lib/hooks'
+import { useSessionsQuery } from '@/lib/hooks/useSessionsQuery'
+import { useTelemetryQuery } from '@/lib/hooks/useTelemetryQuery'
+import { useSectorsQuery } from '@/lib/hooks/useSectorsQuery'
+import { useTrackQuery } from '@/lib/hooks/useTrackQuery'
+import { useLapsQuery } from '@/lib/hooks/useLapsQuery'
+import { useScaledDeltaQuery } from '@/lib/hooks/useScaledDeltaQuery'
+import { useCornerAnalysisQuery } from '@/lib/hooks/useCornerAnalysisQuery'
 
 // Components
 import { QualifyingSidebar } from '@/components/qualifying/QualifyingSidebar'
@@ -25,12 +23,6 @@ import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsight
 
 // Types
 import { Telemetry, QualifyingSessionPart, DeltaData } from '@/../../packages/models/src/types'
-
-// Data
-import raceCalendarData from '@/data/race-calendar-2025.json'
-
-// Race calendar lookup
-const RACE_CALENDAR = raceCalendarData.races
 
 // Default values
 const DEFAULT_DRIVERS = ['VER', 'NOR', 'PIA']
@@ -95,35 +87,40 @@ export function QualifyingContent() {
     [selectedDrivers, referenceDriver]
   )
 
-  // Queries with loading/error states destructured
-  const { 
-    data: sessionsData, 
+  // Queries with loading/error/placeholder states destructured
+  const {
+    data: sessionsData,
     isLoading: isSessionsLoading,
-    isError: isSessionsError 
+    isError: isSessionsError,
+    isPlaceholderData: isSessionsPlaceholder,
   } = useSessionsQuery(season, round)
 
-  const { 
-    data: telemetryData, 
+  const {
+    data: telemetryData,
     isLoading: isTelemetryLoading,
     isError: isTelemetryError,
-    refetch: refetchTelemetry 
+    isPlaceholderData: isTelemetryPlaceholder,
+    refetch: refetchTelemetry
   } = useTelemetryQuery(sessionId, selectedDrivers, qualifyingPart)
 
-  const { 
-    data: sectorsData, 
+  const {
+    data: sectorsData,
     isLoading: isSectorsLoading,
     isError: isSectorsError,
-    refetch: refetchSectors 
+    isPlaceholderData: isSectorsPlaceholder,
+    refetch: refetchSectors
   } = useSectorsQuery(sessionId, selectedDrivers, qualifyingPart)
 
-  const { 
-    data: lapsData, 
-    isLoading: isLapsLoading 
+  const {
+    data: lapsData,
+    isLoading: isLapsLoading,
+    isPlaceholderData: isLapsPlaceholder,
   } = useLapsQuery(sessionId, selectedDrivers)
 
   const {
     data: trackData,
-    isLoading: isTrackLoading
+    isLoading: isTrackLoading,
+    isPlaceholderData: isTrackPlaceholder,
   } = useTrackQuery(round, season)
 
   // Phase 2: Scaled Delta Query (provides accurate delta for DeltaPlot)
@@ -131,6 +128,7 @@ export function QualifyingContent() {
     data: scaledDeltaData,
     isLoading: isScaledDeltaLoading,
     isError: isScaledDeltaError,
+    isPlaceholderData: isScaledDeltaPlaceholder,
     error: scaledDeltaError,
   } = useScaledDeltaQuery(sessionId, referenceDriver, compareDrivers, qualifyingPart)
 
@@ -139,29 +137,15 @@ export function QualifyingContent() {
     data: cornerAnalysisData,
     isLoading: isCornerAnalysisLoading,
     isError: isCornerAnalysisError,
+    isPlaceholderData: isCornerAnalysisPlaceholder,
     error: cornerAnalysisError,
-  } = useCornerAnalysisQuery(sessionId, referenceDriver, compareDrivers, trackData?.corners, qualifyingPart)
+  } = useCornerAnalysisQuery(sessionId, referenceDriver, compareDrivers, trackData?.corners ?? [], qualifyingPart)
 
-  // Combined loading state - wait for ALL data (including laps for completeness)
-  const isLoading =
-    isSessionsLoading ||
-    isTelemetryLoading ||
-    isSectorsLoading ||
-    isScaledDeltaLoading ||  // Use scaled delta (Tier 1) instead of old delta
-    isTrackLoading ||
-    isLapsLoading
-
-  // Combined error state
-  const hasError = 
-    isTelemetryError || 
-    isSectorsError || 
-    isSessionsError
+  // Aggregate placeholder state for transition visual indicator
+  const isAnyPlaceholder = isTelemetryPlaceholder || isSectorsPlaceholder || isTrackPlaceholder || isScaledDeltaPlaceholder
 
   // Derived data - safe access with guards
   const isSprintWeekend = sessionsData?.some(s => s?.isSprintWeekend) ?? false
-  const currentSession = sessionsData?.find(s => 
-    s?.sessionType === 'Qualifying' || s?.sessionType === 'Sprint Qualifying'
-  )
 
   // Convert telemetry array to Map for TelemetryLine
   const telemetryMap = useMemo(() => {
@@ -230,125 +214,8 @@ export function QualifyingContent() {
     setChartXRange(range)
   }, [])
 
-  // GUARD: Show loading skeleton while data is being fetched
-  if (isLoading) {
-    // DEBUG: Remove after confirming fix works
-    console.log('[QualifyingPage] Loading state - waiting for data...')
-    return (
-      <div className="space-y-6">
-        {/* Header skeleton */}
-        <header className="border-l-4 border-f1red pl-4">
-          <div className="h-10 w-72 bg-f1gray/30 rounded animate-pulse" />
-          <div className="mt-2 h-5 w-48 bg-f1gray/20 rounded animate-pulse" />
-        </header>
-        
-        {/* Filters skeleton */}
-        <div className="card-panel space-y-4">
-          <div className="flex gap-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-10 w-16 bg-f1gray/30 rounded animate-pulse" />
-            ))}
-          </div>
-          <div className="h-12 w-full bg-f1gray/20 rounded animate-pulse" />
-        </div>
-        
-        {/* Charts skeleton - 2x2 grid */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="card-panel h-96 skeleton" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // GUARD: Show error state if any critical query failed
-  if (hasError) {
-    // DEBUG: Remove after confirming fix works
-    console.log('[QualifyingPage] Error state - query failed')
-    return (
-      <div className="space-y-6">
-        <header className="border-l-4 border-f1red pl-4">
-          <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
-            Qualifying Analysis
-          </h1>
-        </header>
-        
-        <div className="card-panel border-red-500/50 bg-red-500/10 text-center py-12">
-          <h3 className="text-lg font-semibold text-red-400 mb-2">
-            Failed to Load Data
-          </h3>
-          <p className="text-gray-400 mb-4">
-            Could not fetch qualifying data. Please try again.
-          </p>
-          <button
-            onClick={() => {
-              refetchTelemetry()
-              refetchSectors()
-            }}
-            className="rounded-md bg-f1red px-6 py-2 text-sm font-medium hover:bg-f1red/80 focus-ring"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // GUARD: Verify critical data exists (defensive programming)
-  if (!telemetryData || !sectorsData || !trackData) {
-    // DEBUG: Remove after confirming fix works
-    console.log('[QualifyingPage] Data existence check - waiting for data...', {
-      hasTelemetry: !!telemetryData,
-      telemetryLength: telemetryData?.length ?? 'N/A',
-      hasSectors: !!sectorsData,
-      sectorsLength: sectorsData?.length ?? 'N/A',
-      hasTrack: !!trackData,
-      trackLength: trackData?.length ?? 'N/A',
-      trackDrsZones: trackData?.drsZones?.length ?? 'N/A',
-    })
-    return (
-      <div className="space-y-6">
-        <header className="border-l-4 border-f1red pl-4">
-          <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
-            Qualifying Analysis
-          </h1>
-        </header>
-        
-        <div className="card-panel text-center py-12">
-          <p className="text-gray-400">Waiting for data...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // DEBUG: Remove after confirming fix works
-  console.log('[QualifyingPage] Rendering with data - all guards passed', {
-    telemetryMapSize: telemetryMap.size,
-    sectorsDataLength: sectorsData?.length ?? 0,
-    scaledDeltaLength: transformedDeltaData.length,
-    trackDataExists: !!trackData,
-    trackLength: trackData?.length ?? 'undefined',
-    trackDrsZones: trackData?.drsZones?.length ?? 0,
-    trackCorners: trackData?.corners?.length ?? 0,
-    trackSectors: trackData?.sectors?.length ?? 0,
-  })
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <header className="border-l-4 border-f1red pl-4">
-        <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
-          Qualifying Analysis
-        </h1>
-        <p className="mt-2 text-gray-400">
-          {RACE_CALENDAR.find(r => r.round === round)?.name || currentSession?.circuitName || 'Grand Prix'} 
-          {' · '}{season} Season · Round {round}
-        </p>
-      </header>
-
-      {/* Main Layout: Sidebar + Content */}
-      <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Sidebar */}
         <QualifyingSidebar
           sessionPart={sessionPart}
@@ -361,66 +228,113 @@ export function QualifyingContent() {
           maxDrivers={6}
         />
 
-        {/* Main Content Area */}
-        <main className="flex-1 min-w-0 space-y-6">
-          {selectedDrivers.length > 0 ? (
-            <>
-              {/* Telemetry Trace + Sector Breakdown Row */}
-              <div className="flex flex-col xl:flex-row gap-6">
-                {/* Telemetry Chart - Takes most width */}
-                <div className="flex-1 card-panel min-w-0">
-                  <h2 className="card-panel-header">Telemetry Trace</h2>
-                  <TelemetryLine
-                    telemetryData={telemetryMap}
-                    selectedDrivers={selectedDrivers}
-                    drsZones={trackData?.drsZones ?? []}
-                    corners={trackData?.corners ?? []}
+      {/* Main Content Area — progressive loading per section */}
+      <main className="flex-1 min-w-0 space-y-6">
+        {selectedDrivers.length > 0 ? (
+          <>
+            {/* Telemetry Trace + Sector Breakdown Row */}
+            <div className="flex flex-col xl:flex-row gap-6">
+              {/* Telemetry Chart — loads when telemetry + track data ready */}
+              <div className="flex-1 card-panel min-w-0">
+                <h2 className="card-panel-header">Telemetry Trace</h2>
+                {(isTelemetryLoading || isTrackLoading) && !telemetryData ? (
+                  <div className="h-96 skeleton rounded-lg" />
+                ) : isTelemetryError ? (
+                  <div className="h-96 flex items-center justify-center text-red-400 text-sm">
+                    Failed to load telemetry.{' '}
+                    <button onClick={() => refetchTelemetry()} className="underline ml-1">Retry</button>
+                  </div>
+                ) : telemetryData && trackData ? (
+                  <div className={`transition-opacity duration-300 ${isTelemetryPlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
+                    <TelemetryLine
+                      telemetryData={telemetryMap}
+                      selectedDrivers={selectedDrivers}
+                      drsZones={trackData?.drsZones ?? []}
+                      corners={trackData?.corners ?? []}
+                      trackLength={trackData?.length ?? undefined}
+                      onRangeChange={handleChartRangeChange}
+                      xRange={chartXRange}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-96 flex items-center justify-center text-gray-500 text-sm">
+                    Waiting for data...
+                  </div>
+                )}
+              </div>
+
+              {/* Sector Breakdown — loads when sectors data ready */}
+              <div className="xl:w-80 xl:flex-shrink-0 card-panel">
+                <h2 className="card-panel-header">Sector Breakdown</h2>
+                {isSectorsLoading && !sectorsData ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="h-8 skeleton rounded" />
+                    ))}
+                  </div>
+                ) : isSectorsError ? (
+                  <div className="text-red-400 text-sm py-4">
+                    Failed to load sectors.{' '}
+                    <button onClick={() => refetchSectors()} className="underline ml-1">Retry</button>
+                  </div>
+                ) : (
+                  <div className={`transition-opacity duration-300 ${isSectorsPlaceholder ? 'opacity-50' : ''}`}>
+                    <SectorCards
+                      sectorData={sectorsData ?? []}
+                      referenceDriver={referenceDriver}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Delta to Reference — loads when scaled delta ready */}
+            <div className="card-panel">
+              <h2 className="card-panel-header">
+                Delta to Reference ({referenceDriver})
+              </h2>
+              {(isScaledDeltaLoading || isTrackLoading) && !scaledDeltaData ? (
+                <div className="h-96 skeleton rounded-lg" />
+              ) : isScaledDeltaError ? (
+                <div className="h-96 flex items-center justify-center text-red-400 text-sm">
+                  Failed to load delta data: {(scaledDeltaError as Error)?.message}
+                </div>
+              ) : (
+                <div className={`transition-opacity duration-300 ${isScaledDeltaPlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
+                  <DeltaPlot
+                    deltaData={transformedDeltaData}
+                    referenceDriver={referenceDriver}
+                    sectors={trackData?.sectors ?? []}
                     trackLength={trackData?.length ?? undefined}
                     onRangeChange={handleChartRangeChange}
                     xRange={chartXRange}
                   />
                 </div>
+              )}
+            </div>
 
-                {/* Sector Breakdown - Fixed width on larger screens */}
-                <div className="xl:w-80 xl:flex-shrink-0 card-panel">
-                  <h2 className="card-panel-header">Sector Breakdown</h2>
-                  <SectorCards
-                    sectorData={sectorsData ?? []}
-                    referenceDriver={referenceDriver}
-                  />
-                </div>
-              </div>
-
-              {/* Delta to Reference - Full Width (using accurate Tier 1 scaled delta) */}
-              <div className="card-panel">
-                <h2 className="card-panel-header">Delta to Reference ({referenceDriver})</h2>
-                <DeltaPlot
-                  deltaData={transformedDeltaData}
-                  referenceDriver={referenceDriver}
-                  sectors={trackData?.sectors ?? []}
-                  trackLength={trackData?.length ?? undefined}
-                  onRangeChange={handleChartRangeChange}
-                  xRange={chartXRange}
-                />
-              </div>
-
-              {/* Phase 2: Scaled Delta Analysis Metadata */}
+            {/* Phase 2: Scaled Delta Analysis Metadata — self-contained loading */}
+            <div className="content-defer">
               <ScalingMetadataPanel
                 results={scaledDeltaData?.results ?? []}
                 referenceDriver={referenceDriver}
                 isLoading={isScaledDeltaLoading}
                 error={isScaledDeltaError ? (scaledDeltaError as Error)?.message : undefined}
               />
+            </div>
 
-              {/* Phase 3: Corner Analysis Breakdown */}
+            {/* Phase 3: Corner Analysis Breakdown — self-contained loading */}
+            <div className="content-defer">
               <CornerBreakdownPanel
                 results={cornerAnalysisData?.results ?? []}
                 referenceDriver={referenceDriver}
                 isLoading={isCornerAnalysisLoading}
                 error={isCornerAnalysisError ? (cornerAnalysisError as Error)?.message : undefined}
               />
+            </div>
 
-              {/* Performance Insights - Phase 7 (replaces AIInsights) */}
+            {/* Performance Insights — Phase 7, self-contained loading */}
+            <div className="content-defer">
               <PerformanceInsightsPanel
                 sessionId={sessionId}
                 referenceDriver={referenceDriver}
@@ -429,15 +343,14 @@ export function QualifyingContent() {
                 sessionPart={qualifyingPart}
                 trackLength={trackData?.length}
               />
-            </>
-          ) : (
-            /* Empty State */
-            <div className="card-panel text-center py-12">
-              <p className="text-gray-400">Select drivers from the sidebar to begin analysis</p>
             </div>
-          )}
-        </main>
-      </div>
+          </>
+        ) : (
+          <div className="card-panel text-center py-12">
+            <p className="text-gray-400">Select drivers from the sidebar to begin analysis</p>
+          </div>
+        )}
+      </main>
     </div>
   )
 }

@@ -3,12 +3,8 @@
 import { DeltaData, SectorInfo } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { formatDelta } from '@/lib/formatters'
-import dynamic from 'next/dynamic'
+import Plot from './PlotlyLazy'
 import { useMemo, useCallback } from 'react'
-import type { PlotRelayoutEvent } from 'plotly.js'
-
-// Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
 interface DeltaPlotProps {
   /** Delta data for each driver comparison */
@@ -174,7 +170,7 @@ export function DeltaPlot({
   }, [trackLength, finalDeltas])
 
   // Handle relayout event for zoom/pan sync
-  const handleRelayout = useCallback((event: PlotRelayoutEvent) => {
+  const handleRelayout = useCallback((event: Record<string, unknown>) => {
     if (!onRangeChange) return
 
     if ('xaxis.range[0]' in event && 'xaxis.range[1]' in event) {

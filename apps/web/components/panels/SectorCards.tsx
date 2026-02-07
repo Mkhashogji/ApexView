@@ -164,10 +164,7 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
             </tr>
           </thead>
           <tbody>
-            {theoreticalBestLaps.map((data, index) => {
-              const isFirstRow = index === 0
-              
-              return (
+            {theoreticalBestLaps.map((data) => (
                 <tr 
                   key={data.driver} 
                   className="border-b border-f1gray/20"
@@ -184,11 +181,11 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
                     </div>
                   </td>
                   
-                  {/* Sector 1 - Show time for first row, delta for others */}
+                  {/* Sector 1 - Absolute time for fastest, delta for others */}
                   <td className={`py-2 text-right font-mono text-sm ${
                     isFastestSector(data.driver, 1) ? 'text-purple-sector font-bold' : ''
                   }`}>
-                    {isFirstRow 
+                    {isFastestSector(data.driver, 1)
                       ? formatSectorTime(data.bestSector1)
                       : <span className={getDeltaColorClass(data.bestSector1 - fastestS1)}>
                           {formatDelta(data.bestSector1 - fastestS1)}
@@ -200,7 +197,7 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
                   <td className={`py-2 text-right font-mono text-sm ${
                     isFastestSector(data.driver, 2) ? 'text-purple-sector font-bold' : ''
                   }`}>
-                    {isFirstRow 
+                    {isFastestSector(data.driver, 2)
                       ? formatSectorTime(data.bestSector2)
                       : <span className={getDeltaColorClass(data.bestSector2 - fastestS2)}>
                           {formatDelta(data.bestSector2 - fastestS2)}
@@ -212,7 +209,7 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
                   <td className={`py-2 text-right font-mono text-sm ${
                     isFastestSector(data.driver, 3) ? 'text-purple-sector font-bold' : ''
                   }`}>
-                    {isFirstRow 
+                    {isFastestSector(data.driver, 3)
                       ? formatSectorTime(data.bestSector3)
                       : <span className={getDeltaColorClass(data.bestSector3 - fastestS3)}>
                           {formatDelta(data.bestSector3 - fastestS3)}
@@ -220,8 +217,7 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
                     }
                   </td>
                 </tr>
-              )
-            })}
+              ))}
           </tbody>
         </table>
       </div>

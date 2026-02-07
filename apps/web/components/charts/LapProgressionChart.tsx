@@ -3,11 +3,8 @@
 import { Lap } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { formatLapTime } from '@/lib/formatters'
-import dynamic from 'next/dynamic'
+import Plot from './PlotlyLazy'
 import { useMemo } from 'react'
-
-// Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
 interface LapProgressionChartProps {
   /** Lap data for selected drivers */

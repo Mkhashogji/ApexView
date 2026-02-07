@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import raceCalendarData from '@/data/race-calendar-2025.json'
 
@@ -23,6 +23,7 @@ const RACE_CALENDAR: Race[] = raceCalendarData.races
  */
 export function RaceWeekendSelector() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
@@ -69,9 +70,11 @@ export function RaceWeekendSelector() {
     const params = new URLSearchParams(searchParams.toString())
     params.set('round', String(round))
     params.set('season', String(currentSeason))
-    
-    // Navigate to current page with new params
-    router.push(`${pathname}?${params.toString()}`)
+
+    // Navigate with startTransition to keep UI responsive during round switch
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
     setIsOpen(false)
   }
 
@@ -96,14 +99,18 @@ export function RaceWeekendSelector() {
         <span className="text-gray-400">{currentSeason}</span>
         <span className="text-white">•</span>
         <span className="text-white">{currentRace?.shortName || 'Select Race'}</span>
-        <svg 
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        {isPending ? (
+          <div className="h-4 w-4 rounded-full border-2 border-f1red border-t-transparent animate-spin" />
+        ) : (
+          <svg
+            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
       </button>
 
       {/* Dropdown */}

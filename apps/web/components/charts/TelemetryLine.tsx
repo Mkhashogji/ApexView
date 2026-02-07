@@ -3,12 +3,8 @@
 import { Telemetry, DRSZone, Corner } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo, getDriverTCam, getTeammateDrivers } from '@/lib/drivers'
 import { getDrsSegments } from '@/lib/utils/drsZones'
-import dynamic from 'next/dynamic'
+import Plot from './PlotlyLazy'
 import { useState, useMemo, useCallback } from 'react'
-import type { PlotRelayoutEvent } from 'plotly.js'
-
-// Dynamically import Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
 /** Available telemetry channels */
 type TelemetryChannel = 'speed' | 'throttle' | 'brake' | 'gear' | 'rpm' | 'drs'
@@ -201,7 +197,7 @@ export function TelemetryLine({
   }, [corners])
 
   // Handle relayout event for zoom/pan sync
-  const handleRelayout = useCallback((event: PlotRelayoutEvent) => {
+  const handleRelayout = useCallback((event: Record<string, unknown>) => {
     if (!onRangeChange) return
 
     if ('xaxis.range[0]' in event && 'xaxis.range[1]' in event) {

@@ -8,7 +8,7 @@
  * - Phase 5: Natural language insights
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { fetchPerformanceInsights } from '@/lib/api'
 import { queryKeys } from './queryKeys'
 import type { Corner, PerformanceInsightsResponse, InsightMode } from '@/../../packages/models/src/types'
@@ -68,9 +68,6 @@ export function usePerformanceInsightsQuery({
       compareDrivers.length > 0 &&
       !!corners &&
       corners.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes - F1 data doesn't change frequently
-    gcTime: 30 * 60 * 1000, // 30 minutes cache retention
-    retry: 2,
-    refetchOnWindowFocus: false, // F1 session data is static
+    placeholderData: keepPreviousData,
   })
 }

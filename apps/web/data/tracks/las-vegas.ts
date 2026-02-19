@@ -378,4 +378,6 @@ export const lasVegasTrackIntelligence: TrackIntelligence = {
       description: 'Racing under the neon lights of Las Vegas — coldest weekend on calendar',
     },
   ],
+
+  fuelEffectPerKg: 0.031,
 }

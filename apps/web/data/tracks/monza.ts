@@ -382,5 +382,6 @@ export const monzaTrackIntelligence: TrackIntelligence = {
       description: '2025 broke fastest qualifying lap, fastest race, and fastest race lap records',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.028,
+}

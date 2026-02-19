@@ -401,5 +401,6 @@ export const singaporeTrackIntelligence: TrackIntelligence = {
       description: 'Marina Bay city center with iconic skyline, bumpy surface, wall proximity',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.036,
+}

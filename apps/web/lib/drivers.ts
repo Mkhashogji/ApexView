@@ -88,3 +88,26 @@ export function getTeammateDrivers(driverCode: string): string[] {
   return getDriversByTeam(driver.team).map(d => d.abbreviation)
 }
 
+/**
+ * Resolve team color for either a driver abbreviation or a team name.
+ * In driver mode, identifier is a driver abbreviation (e.g., 'VER') — direct lookup.
+ * In team mode, identifier is a team name (e.g., 'Red Bull Racing') — resolve via
+ * first driver on that team.
+ *
+ * Used by Phase 3 Tyre Degradation components where the analysis mode
+ * determines whether identifiers are drivers or teams.
+ */
+export function getTeamColorForMode(
+  identifier: string,
+  mode: 'driver' | 'team',
+): string {
+  if (mode === 'driver') {
+    return getTeamColor(identifier)
+  }
+  // In team mode, identifier is team name — get first driver on that team
+  const teamDrivers = getDriversByTeam(identifier)
+  return teamDrivers.length > 0
+    ? getTeamColor(teamDrivers[0].abbreviation)
+    : '#FFFFFF'
+}
+

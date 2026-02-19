@@ -379,5 +379,6 @@ export const silverstoneTrackIntelligence: TrackIntelligence = {
       description: '75 years of history — hosted the first-ever F1 World Championship race in 1950.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.028,
+}

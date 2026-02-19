@@ -405,5 +405,6 @@ sectors: [
       description: 'C1-C3 selection. Extreme tyre stress demands hardest rubber.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.029,
+}

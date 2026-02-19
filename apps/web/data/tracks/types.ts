@@ -390,4 +390,8 @@ export interface TrackIntelligence {
   
   /** Summary characteristic tags */
   definingCharacteristics: DefiningCharacteristic[]
+
+  /** Fuel effect per kilogram in seconds. Used for race pace fuel correction.
+   *  Range: 0.028-0.036 s/kg depending on circuit characteristics. */
+  fuelEffectPerKg?: number
 }

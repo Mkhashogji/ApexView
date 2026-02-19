@@ -390,5 +390,6 @@ export const spainTrackIntelligence: TrackIntelligence = {
       description: "Final 'Spanish GP' (1991-2025). Hosts 'Barcelona-Catalunya GP' 2026; future uncertain.",
     },
   ],
-}
 
+  fuelEffectPerKg: 0.033,
+}

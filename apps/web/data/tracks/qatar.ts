@@ -352,4 +352,6 @@ export const qatarTrackIntelligence: TrackIntelligence = {
       description: 'Pit timing and tyre choice often decide results',
     },
   ],
+
+  fuelEffectPerKg: 0.032,
 }

@@ -2,7 +2,7 @@
  * Type declarations for plotly packages used with the minimal bundle.
  */
 
-declare module 'plotly.js-basic-dist-min' {
+declare module 'plotly.js-cartesian-dist-min' {
   const Plotly: object
   export default Plotly
 }

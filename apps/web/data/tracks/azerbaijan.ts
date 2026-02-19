@@ -378,5 +378,6 @@ export const azerbaijanTrackIntelligence: TrackIntelligence = {
       description: 'History of dramatic, chaotic races with unexpected results',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.032,
+}

@@ -395,5 +395,6 @@ export const austriaTrackIntelligence: TrackIntelligence = {
         'Three DRS zones with heavy braking at T1 and T3 create multiple passing opportunities.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.031,
+}

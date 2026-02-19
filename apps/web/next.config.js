@@ -18,7 +18,7 @@ const nextConfig = {
           ...config.optimization.splitChunks?.cacheGroups,
           // Isolate Plotly into its own chunk — loaded only by chart components
           plotly: {
-            test: /[\\/]node_modules[\\/](plotly\.js|plotly\.js-basic-dist-min|react-plotly\.js)[\\/]/,
+            test: /[\\/]node_modules[\\/](plotly\.js|plotly\.js-cartesian-dist-min|react-plotly\.js)[\\/]/,
             name: 'plotly',
             chunks: 'all',
             priority: 30,

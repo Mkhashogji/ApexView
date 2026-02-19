@@ -399,5 +399,6 @@ export const canadaTrackIntelligence: TrackIntelligence = {
         'Changeable Canadian weather can disrupt any race plan; rain always possible.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.034,
+}

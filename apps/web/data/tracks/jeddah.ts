@@ -429,5 +429,6 @@ export const jeddahTrackIntelligence: TrackIntelligence = {
       description: 'Pirelli 4/5 Lateral rating. Fast sweepers through S2 demand exceptional cornering grip.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.031,
+}

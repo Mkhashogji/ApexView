@@ -381,5 +381,6 @@ export const usaTrackIntelligence: TrackIntelligence = {
       description: '133-foot (41m) climb to Turn 1 creates spectacular uphill braking zone',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.033,
+}

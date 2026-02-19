@@ -12,6 +12,10 @@ import {
   ScaledDeltaResponse,
   CornerAnalysisResponse,
   PerformanceInsightsResponse,
+  RacePaceResponse,
+  TyreDegradationResponse,
+  PitStopAnalysisResponse,
+  TeamPerformanceResponse,
 } from '@/../../packages/models/src/types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -110,6 +114,57 @@ export async function fetchSectors(
 
 export async function fetchTrack(round: number, season: number = 2025): Promise<Track> {
   return fetchApi<Track>(`${API_BASE_URL}/track/${round}?season=${season}`)
+}
+
+// ============================================================================
+// Race Analysis
+// ============================================================================
+
+export async function fetchRacePace(
+  sessionId: string,
+  fuelEffect?: number
+): Promise<RacePaceResponse> {
+  const params = new URLSearchParams({ session: sessionId })
+  if (fuelEffect !== undefined) {
+    params.set('fuel_effect', fuelEffect.toString())
+  }
+  return fetchApi<RacePaceResponse>(`${API_BASE_URL}/race/pace?${params}`)
+}
+
+export async function fetchTyreDegradation(
+  sessionId: string,
+  fuelEffect?: number,
+  mode: string = 'driver',
+): Promise<TyreDegradationResponse> {
+  const params = new URLSearchParams({ session: sessionId, mode })
+  if (fuelEffect !== undefined) {
+    params.set('fuel_effect', fuelEffect.toString())
+  }
+  return fetchApi<TyreDegradationResponse>(
+    `${API_BASE_URL}/race/tyre-degradation?${params}`
+  )
+}
+
+export async function fetchPitStops(
+  sessionId: string,
+): Promise<PitStopAnalysisResponse> {
+  const params = new URLSearchParams({ session: sessionId })
+  return fetchApi<PitStopAnalysisResponse>(
+    `${API_BASE_URL}/race/pit-stops?${params}`
+  )
+}
+
+export async function fetchTeamPerformance(
+  sessionId: string,
+  fuelEffect?: number,
+): Promise<TeamPerformanceResponse> {
+  const params = new URLSearchParams({ session: sessionId })
+  if (fuelEffect !== undefined) {
+    params.set('fuel_effect', fuelEffect.toString())
+  }
+  return fetchApi<TeamPerformanceResponse>(
+    `${API_BASE_URL}/race/team-performance?${params}`
+  )
 }
 
 // ============================================================================

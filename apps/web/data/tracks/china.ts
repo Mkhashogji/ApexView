@@ -421,5 +421,6 @@ export const chinaTrackIntelligence: TrackIntelligence = {
       description: 'Layout inspired by Chinese character meaning "upward".',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.032,
+}

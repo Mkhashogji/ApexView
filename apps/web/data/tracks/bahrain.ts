@@ -422,5 +422,6 @@ export const bahrainTrackIntelligence: TrackIntelligence = {
       description: 'Three DRS zones with unique T1 braking zone detection point.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.034,
+}

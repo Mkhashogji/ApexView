@@ -35,6 +35,18 @@ export const queryKeys = {
     detail: (round: number) => 
       ['track', 'detail', round] as const,
   },
+  // Race Analysis query keys
+  race: {
+    all: ['race'] as const,
+    pace: (sessionId: string, fuelEffect?: number) =>
+      ['race', 'pace', sessionId, { fuelEffect }] as const,
+    tyreDeg: (sessionId: string, fuelEffect?: number, mode?: string) =>
+      ['race', 'tyreDeg', sessionId, { fuelEffect, mode }] as const,
+    pitStops: (sessionId: string) =>
+      ['race', 'pitStops', sessionId] as const,
+    teamPerformance: (sessionId: string, fuelEffect?: number) =>
+      ['race', 'teamPerformance', sessionId, { fuelEffect }] as const,
+  },
   // ML Service query keys
   ml: {
     all: ['ml'] as const,

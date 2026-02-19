@@ -354,6 +354,117 @@ class FastF1Client:
             logger.error(f"Error loading laps: {e}", exc_info=True)
             return []
     
+    async def get_race_laps(self, session: str) -> dict:
+        """
+        Get ALL laps for a race session (not just fastest).
+        Returns dict with 'laps' (list of lap dicts) and 'finishing_positions'
+        (driver abbreviation → final race position).
+        Classification and enrichment are applied by RaceDataService.
+        """
+        try:
+            # Try Parquet cache first
+            cached_df = self.cache.read(session, "race_laps")
+            if cached_df is not None:
+                logger.info(f"Loaded race laps from Parquet cache for {session}")
+                records = cached_df.to_dict('records')
+                # Convert NaN back to None
+                for r in records:
+                    for k, v in r.items():
+                        if isinstance(v, float) and (v != v):  # NaN check
+                            r[k] = None
+                # Derive finishing positions from last-lap positions in cached data
+                finishing_positions = self._derive_finishing_positions_from_laps(records)
+                return {'laps': records, 'finishing_positions': finishing_positions}
+
+            # Cache miss — fetch from FastF1
+            season, round_num, session_name = self._parse_session_id(session)
+            race_session = fastf1.get_session(season, round_num, session_name)
+            race_session.load()
+
+            # Extract finishing positions from session results
+            finishing_positions = {}
+            if hasattr(race_session, 'results') and race_session.results is not None and len(race_session.results) > 0:
+                for _, res in race_session.results.iterrows():
+                    abbr = str(res.get('Abbreviation', ''))
+                    pos = res.get('Position', None)
+                    if abbr and pos is not None:
+                        try:
+                            finishing_positions[abbr] = int(pos)
+                        except (ValueError, TypeError):
+                            pass
+
+            all_laps = race_session.laps
+            if all_laps is None or len(all_laps) == 0:
+                logger.warning(f"No laps found for race session {session}")
+                return {'laps': [], 'finishing_positions': finishing_positions}
+
+            result = []
+            for _, lap in all_laps.iterrows():
+                lap_time = None
+                if pd.notna(lap.get('LapTime')):
+                    lap_time = float(lap['LapTime'].total_seconds())
+
+                pit_in = None
+                if pd.notna(lap.get('PitInTime')):
+                    pit_in = float(lap['PitInTime'].total_seconds())
+
+                pit_out = None
+                if pd.notna(lap.get('PitOutTime')):
+                    pit_out = float(lap['PitOutTime'].total_seconds())
+
+                result.append({
+                    'driver': str(lap['Driver']),
+                    'team': str(lap['Team']) if pd.notna(lap.get('Team')) else None,
+                    'lap_number': int(lap['LapNumber']),
+                    'lap_time': lap_time,
+                    'sector1_time': float(lap['Sector1Time'].total_seconds()) if pd.notna(lap.get('Sector1Time')) else None,
+                    'sector2_time': float(lap['Sector2Time'].total_seconds()) if pd.notna(lap.get('Sector2Time')) else None,
+                    'sector3_time': float(lap['Sector3Time'].total_seconds()) if pd.notna(lap.get('Sector3Time')) else None,
+                    'compound': str(lap['Compound']) if pd.notna(lap.get('Compound')) else None,
+                    'tyre_life': int(lap['TyreLife']) if pd.notna(lap.get('TyreLife')) else None,
+                    'stint': int(lap['Stint']) if 'Stint' in lap.index and pd.notna(lap.get('Stint')) else None,
+                    'position': int(lap['Position']) if pd.notna(lap.get('Position')) else None,
+                    'pit_in_time': pit_in,
+                    'pit_out_time': pit_out,
+                    'track_status': str(lap['TrackStatus']) if pd.notna(lap.get('TrackStatus')) else '1',
+                    'is_personal_best': bool(lap.get('IsPersonalBest', False)) if pd.notna(lap.get('IsPersonalBest')) else False,
+                    'cumulative_time': float(lap['Time'].total_seconds()) if pd.notna(lap.get('Time')) else None,
+                    'speed_trap': float(lap['SpeedST']) if pd.notna(lap.get('SpeedST')) else None,
+                    'speed_i1': float(lap['SpeedI1']) if pd.notna(lap.get('SpeedI1')) else None,
+                    'speed_i2': float(lap['SpeedI2']) if pd.notna(lap.get('SpeedI2')) else None,
+                    'speed_fl': float(lap['SpeedFL']) if pd.notna(lap.get('SpeedFL')) else None,
+                })
+
+            # Write to Parquet cache
+            if result:
+                cache_df = pd.DataFrame(result)
+                self.cache.write(cache_df, session, "race_laps")
+                logger.info(f"Cached {len(result)} race laps to Parquet for {session}")
+
+            return {'laps': result, 'finishing_positions': finishing_positions}
+
+        except Exception as e:
+            logger.error(f"Error loading race laps: {e}", exc_info=True)
+            return {'laps': [], 'finishing_positions': {}}
+
+    def _derive_finishing_positions_from_laps(self, laps: list) -> dict:
+        """Derive finishing positions from lap data when session.results is unavailable (cache hit)."""
+        if not laps:
+            return {}
+        # Find the last lap number for each driver and use their position
+        driver_last_lap = {}
+        for lap in laps:
+            driver = lap.get('driver')
+            lap_num = lap.get('lap_number', 0)
+            if driver and lap_num > driver_last_lap.get(driver, {}).get('lap_number', 0):
+                driver_last_lap[driver] = lap
+        positions = {}
+        for driver, lap in driver_last_lap.items():
+            pos = lap.get('position')
+            if pos is not None:
+                positions[driver] = int(pos)
+        return positions
+
     async def get_fastest_laps(self, session: str):
         """Get fastest lap for each driver in a session."""
         return await self.get_laps(session, [])  # Empty list returns all drivers

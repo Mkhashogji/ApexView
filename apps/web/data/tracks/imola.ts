@@ -414,5 +414,6 @@ export const imolaTrackIntelligence: TrackIntelligence = {
       description: '1994 transformed F1 safety. Senna and Ratzenberger memorials remain.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.031,
+}

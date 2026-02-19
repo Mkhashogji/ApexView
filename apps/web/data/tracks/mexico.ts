@@ -385,5 +385,6 @@ export const mexicoTrackIntelligence: TrackIntelligence = {
       description: 'Maximum track evolution reshapes competitive order through weekend',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.031,
+}

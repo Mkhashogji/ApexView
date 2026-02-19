@@ -387,5 +387,6 @@ export const zandvoortTrackIntelligence: TrackIntelligence = {
       description: 'Verstappen\'s home race creates iconic atmosphere with sea of orange supporters',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.032,
+}

@@ -361,4 +361,6 @@ export const abuDhabiTrackIntelligence: TrackIntelligence = {
       description: 'Day-to-night transition creates spectacular visuals and evolving track conditions',
     },
   ],
+
+  fuelEffectPerKg: 0.033,
 }

@@ -404,5 +404,6 @@ export const monacoTrackIntelligence: TrackIntelligence = {
       description: 'Part of motorsport Triple Crown. Senna 6 wins. Graham Hill only Triple Crown winner.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.036,
+}

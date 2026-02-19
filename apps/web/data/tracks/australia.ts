@@ -439,5 +439,6 @@ export const australiaTrackIntelligence: TrackIntelligence = {
       description: 'First competitive test reveals true pecking order.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.032,
+}

@@ -393,5 +393,6 @@ export const belgiumTrackIntelligence: TrackIntelligence = {
       description: 'F1\'s longest circuit with 68-69% full throttle tests engine reliability.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.029,
+}

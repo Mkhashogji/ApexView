@@ -208,6 +208,89 @@ class MockDataService:
         
         return sector_times
 
+    async def get_race_laps(self, session: str) -> dict:
+        """
+        Generate synthetic race lap data for development/testing.
+        Returns dict with 'laps' (~228 laps) and 'finishing_positions'.
+        """
+        drivers = [
+            ('VER', 'Red Bull Racing'),
+            ('NOR', 'McLaren'),
+            ('LEC', 'Ferrari'),
+            ('HAM', 'Mercedes'),
+        ]
+        total_laps = 57
+        result = []
+
+        for driver_idx, (driver, team) in enumerate(drivers):
+            # Base pace varies by driver (faster drivers have lower base)
+            base_time = 92.0 + driver_idx * 0.3
+            stint_boundary = 25  # Pit on lap 25
+
+            for lap_num in range(1, total_laps + 1):
+                # Determine stint and compound
+                if lap_num <= stint_boundary:
+                    stint = 1
+                    compound = 'MEDIUM'
+                    tyre_life = lap_num
+                else:
+                    stint = 2
+                    compound = 'HARD'
+                    tyre_life = lap_num - stint_boundary
+
+                # Lap time with tyre degradation and small random variation
+                deg = 0.02 * tyre_life  # 0.02s per lap of tyre age
+                variation = np.random.normal(0, 0.15)
+                lap_time = base_time + deg + variation
+
+                pit_in = None
+                pit_out = None
+                track_status = '1'
+                position = driver_idx + 1
+
+                # Pit stop on stint boundary
+                if lap_num == stint_boundary:
+                    pit_in = lap_time * lap_num  # Approximate session time
+                    lap_time += 20.0  # Pit lane adds ~20s
+
+                if lap_num == stint_boundary + 1:
+                    pit_out = lap_time * lap_num
+
+                # Safety car on laps 15-16
+                if lap_num in (15, 16):
+                    track_status = '4'
+                    lap_time = 120.0 + np.random.normal(0, 0.5)
+
+                # One anomalous lap per driver
+                if lap_num == 40 and driver_idx == 0:
+                    lap_time = base_time * 1.15  # 15% slower
+
+                result.append({
+                    'driver': driver,
+                    'team': team,
+                    'lap_number': lap_num,
+                    'lap_time': round(lap_time, 3),
+                    'sector1_time': round(lap_time * 0.30, 3),
+                    'sector2_time': round(lap_time * 0.38, 3),
+                    'sector3_time': round(lap_time * 0.32, 3),
+                    'compound': compound,
+                    'tyre_life': tyre_life,
+                    'stint': stint,
+                    'position': position,
+                    'pit_in_time': pit_in,
+                    'pit_out_time': pit_out,
+                    'track_status': track_status,
+                    'is_personal_best': False,
+                    'cumulative_time': round(5400.0 + (lap_num * base_time) + (driver_idx * 2.0 * lap_num), 3),
+                    'speed_trap': round(310.0 + driver_idx * 2.0 + np.random.normal(0, 1.5), 1),
+                    'speed_i1': round(280.0 + driver_idx * 1.5 + np.random.normal(0, 1.0), 1),
+                    'speed_i2': round(265.0 + driver_idx * 1.0 + np.random.normal(0, 1.2), 1),
+                    'speed_fl': round(290.0 + driver_idx * 1.8 + np.random.normal(0, 1.3), 1),
+                })
+
+        finishing_positions = {driver: idx + 1 for idx, (driver, _) in enumerate(drivers)}
+        return {'laps': result, 'finishing_positions': finishing_positions}
+
     async def get_track_info(self, season: int, round: int) -> TrackResponse:
         """Get track layout and information (mock)."""
         return TrackResponse(

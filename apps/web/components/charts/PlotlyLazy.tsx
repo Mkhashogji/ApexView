@@ -12,16 +12,17 @@ export interface PlotProps {
   className?: string
   onRelayout?: (event: Record<string, unknown>) => void
   onHover?: (event: Record<string, unknown>) => void
+  onUnhover?: (event: Record<string, unknown>) => void
   onClick?: (event: Record<string, unknown>) => void
   useResizeHandler?: boolean
 }
 
-// Create Plot component using the minimal plotly.js distribution
-// This reduces the bundle from ~3.5 MiB (full) to ~300 KiB (basic-min)
+// Create Plot component using the cartesian plotly.js distribution
+// Includes scatter, bar, box, histogram, violin — ~800 KiB (vs ~3.5 MiB full)
 const PlotlyLazy = dynamic(
   () =>
     Promise.all([
-      import('plotly.js-basic-dist-min'),
+      import('plotly.js-cartesian-dist-min'),
       import('react-plotly.js/factory'),
     ]).then(([Plotly, { default: createPlotlyComponent }]) =>
       createPlotlyComponent(Plotly.default || Plotly)

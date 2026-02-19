@@ -364,4 +364,6 @@ export const brazilTrackIntelligence: TrackIntelligence = {
       description: 'Multiple viable pit strategies with very high track evolution',
     },
   ],
+
+  fuelEffectPerKg: 0.033,
 }

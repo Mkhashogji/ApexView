@@ -507,3 +507,226 @@ export type InsightMode = 'engineer' | 'driver'
 export type DimensionType = 'braking' | 'apex' | 'exit' | 'consistency' | 'straight_line'
 export type DimensionLevel = 'strong' | 'neutral' | 'weak'
 
+// =============================================================================
+// Race Page Types (Phase 1)
+// =============================================================================
+
+export type LapClassification =
+  | 'RACING'
+  | 'IN_LAP'
+  | 'OUT_LAP'
+  | 'SAFETY_CAR'
+  | 'VSC'
+  | 'RED_FLAG'
+  | 'FORMATION'
+  | 'ANOMALY'
+
+export interface RaceLapData {
+  lapNumber: number
+  driver: string
+  team?: string
+  position?: number
+  lapTime?: number
+  sector1Time?: number
+  sector2Time?: number
+  sector3Time?: number
+  compound?: TyreCompound
+  tyreLife?: number
+  stint?: number
+  classification: LapClassification
+  isWarmUp: boolean
+  fuelCorrectedTime?: number
+  inTraffic: boolean
+  gapToCarAhead?: number
+  isPersonalBest: boolean
+  trackStatus?: string
+  pitInTime?: number
+  pitOutTime?: number
+  cumulativeTime?: number
+}
+
+export interface RaceStintData {
+  driver: string
+  team?: string
+  stintNumber: number
+  compound?: TyreCompound
+  startLap: number
+  endLap: number
+  lapCount: number
+}
+
+export interface PitStopData {
+  driver: string
+  team?: string
+  stopNumber: number
+  lapNumber: number
+  pitLaneTime?: number
+  isAnomaly: boolean
+}
+
+// =============================================================================
+// Race Page Types (Phase 4: Pit Stop Analysis)
+// =============================================================================
+
+export interface TeamPitStopAggregate {
+  team: string
+  averagePitLaneTime: number
+  stopCount: number
+  consistency: number | null
+  consistencyType: 'iqr' | 'range' | null
+}
+
+export interface DriverPitStopAggregate {
+  driver: string
+  team: string
+  averagePitLaneTime: number
+  stopCount: number
+}
+
+export interface GapToFastest {
+  team: string
+  gapToFastest: number
+}
+
+export interface PitStopQuickestInsight {
+  team: string
+  averageTime: number
+  percentageFaster: number
+  gridAverage: number
+}
+
+export interface PitStopConsistencyInsight {
+  team: string
+  consistency: number
+  consistencyType: 'iqr' | 'range'
+}
+
+export interface PitStopInsights {
+  quickest: PitStopQuickestInsight | null
+  mostConsistent: PitStopConsistencyInsight | null
+}
+
+export interface AnomalyNote {
+  driver: string
+  team: string
+  stopNumber: number
+  lapNumber: number
+  pitLaneTime: number | null
+}
+
+export interface PitStopAnalysisResponse {
+  stops: PitStopData[]
+  teamAggregates: TeamPitStopAggregate[]
+  driverAggregates: DriverPitStopAggregate[]
+  gapToFastest: GapToFastest[]
+  gridAverage: number
+  fastestTeam: string | null
+  insights: PitStopInsights
+  anomalyNotes: AnomalyNote[]
+}
+
+export interface DriverPaceData {
+  driver: string
+  team?: string
+  minTime: number
+  q1: number
+  median: number
+  mean: number
+  q3: number
+  maxTime: number
+  outliers: number[]
+  gapToFastest: number
+  tyreStrategy: string[]
+  consistencyScore?: number
+  lapsInTraffic: number
+  totalRacingLaps: number
+  finishingPosition?: number
+}
+
+export interface RacePaceResponse {
+  sessionId: string
+  drivers: DriverPaceData[]
+}
+
+// =============================================================================
+// Race Page Types (Phase 3: Tyre Degradation)
+// =============================================================================
+
+export interface RegressionLineData {
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+  slope: number
+  intercept: number
+  rSquared: number
+}
+
+export interface DegradationDataPoint {
+  tyreAge: number
+  fuelAdjustedTime: number
+  rawTime: number
+  lapNumber: number
+  driver: string
+  team: string
+  stintNumber: number
+}
+
+export interface DriverDegradationData {
+  identifier: string
+  team: string
+  dataPoints: DegradationDataPoint[]
+  regression: RegressionLineData | null
+  wearRate: number | null
+  usableLapCount: number
+  totalStintLaps: number
+  warmUpLapsExcluded: number
+}
+
+export interface CompoundDegradation {
+  compound: TyreCompound
+  drivers: DriverDegradationData[]
+}
+
+export interface TyreDegradationResponse {
+  sessionId: string
+  mode: 'driver' | 'team'
+  compounds: CompoundDegradation[]
+  compoundOrder: string[]
+}
+
+// =============================================================================
+// Race Page Types (Phase 5: Team Performance Quadrant)
+// =============================================================================
+
+export interface TeamPerformanceData {
+  team: string
+  topSpeed: number                    // km/h (mean of SpeedST)
+  meanSpeed: number                   // km/h (track_length / fuel_corrected_time * 3.6)
+  topSpeedDelta: number               // km/h vs field average
+  meanSpeedDelta: number              // km/h vs field average
+}
+
+export interface TeamPerformanceFieldAverages {
+  topSpeed: number
+  meanSpeed: number
+}
+
+export interface TeamPerfInsightEntry {
+  team: string
+  value: number
+  delta: number
+}
+
+export interface TeamPerformanceInsights {
+  fastestOnStraights: TeamPerfInsightEntry | null
+  highestMeanSpeed: TeamPerfInsightEntry | null
+}
+
+export interface TeamPerformanceResponse {
+  sessionId: string
+  teams: TeamPerformanceData[]
+  fieldAverages: TeamPerformanceFieldAverages
+  insights: TeamPerformanceInsights
+}
+

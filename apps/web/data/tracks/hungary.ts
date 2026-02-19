@@ -388,5 +388,6 @@ export const hungaryTrackIntelligence: TrackIntelligence = {
       description: 'Lewis Hamilton holds most wins (8), poles (9), and podiums (13) at Hungary',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.035,
+}

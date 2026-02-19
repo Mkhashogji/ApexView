@@ -427,5 +427,6 @@ export const miamiTrackIntelligence: TrackIntelligence = {
       description: 'Hosts Sprint format. 2025 Sprint rain-affected; Norris won shortened race.',
     },
   ],
-}
 
+  fuelEffectPerKg: 0.033,
+}

@@ -391,7 +391,11 @@ export function RacePaceBoxPlot({ data, fuelCorrected }: RacePaceBoxPlotProps) {
                 : `+${d.gapToFastest.toFixed(3)}s`
             const compoundLetters = (d.tyreStrategy || []).map(shortCompound)
             const pos =
-              d.finishingPosition != null ? `P${d.finishingPosition}` : ''
+              d.status === 'DNF'
+                ? 'DNF'
+                : d.finishingPosition != null
+                  ? `P${d.finishingPosition}`
+                  : ''
 
             return (
               <div
@@ -421,7 +425,7 @@ export function RacePaceBoxPlot({ data, fuelCorrected }: RacePaceBoxPlotProps) {
                       </span>
                     ))}
                   </div>
-                  <div className="text-[11px] text-gray-500">{pos}</div>
+                  <div className={`text-[11px] ${pos === 'DNF' ? 'text-red-400' : 'text-gray-500'}`}>{pos}</div>
                 </div>
               </div>
             )
@@ -692,9 +696,9 @@ function CustomTooltip({
         <div className="flex items-center gap-2 mb-2">
           <span className="font-bold text-white text-sm">{d.driver}</span>
           <span className="text-xs text-gray-500">{d.team ?? ''}</span>
-          {d.finishingPosition != null && (
-            <span className="ml-auto text-xs text-gray-500">
-              P{d.finishingPosition}
+          {(d.status === 'DNF' || d.finishingPosition != null) && (
+            <span className={`ml-auto text-xs ${d.status === 'DNF' ? 'text-red-400' : 'text-gray-500'}`}>
+              {d.status === 'DNF' ? 'DNF' : `P${d.finishingPosition}`}
             </span>
           )}
         </div>

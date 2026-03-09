@@ -16,6 +16,11 @@ import {
   TyreDegradationResponse,
   PitStopAnalysisResponse,
   TeamPerformanceResponse,
+  PracticeLongRunResponse,
+  PracticeProgressionResponse,
+  PracticeSectorAnalysisResponse,
+  PracticeSessionsResponse,
+  PracticeShortRunResponse,
 } from '@/../../packages/models/src/types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -164,6 +169,70 @@ export async function fetchTeamPerformance(
   }
   return fetchApi<TeamPerformanceResponse>(
     `${API_BASE_URL}/race/team-performance?${params}`
+  )
+}
+
+// ============================================================================
+// Practice Analysis
+// ============================================================================
+
+export async function fetchPracticeSessions(
+  year: number,
+  roundNum: number,
+): Promise<PracticeSessionsResponse> {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    round_num: roundNum.toString(),
+  })
+  return fetchApi<PracticeSessionsResponse>(
+    `${API_BASE_URL}/practice/sessions?${params}`
+  )
+}
+
+export async function fetchLongRuns(
+  sessionId: string,
+  fuelEffect?: number,
+): Promise<PracticeLongRunResponse> {
+  const params = new URLSearchParams({ session: sessionId })
+  if (fuelEffect !== undefined && fuelEffect > 0) {
+    params.set('fuel_effect', fuelEffect.toString())
+  }
+  return fetchApi<PracticeLongRunResponse>(
+    `${API_BASE_URL}/practice/long-runs?${params}`
+  )
+}
+
+export async function fetchShortRuns(
+  sessionId: string,
+  fuelEffect?: number,
+): Promise<PracticeShortRunResponse> {
+  const params = new URLSearchParams({ session: sessionId })
+  if (fuelEffect !== undefined && fuelEffect > 0) {
+    params.set('fuel_effect', fuelEffect.toString())
+  }
+  return fetchApi<PracticeShortRunResponse>(
+    `${API_BASE_URL}/practice/short-runs?${params}`
+  )
+}
+
+export async function fetchSectorAnalysis(
+  sessionId: string,
+): Promise<PracticeSectorAnalysisResponse> {
+  return fetchApi<PracticeSectorAnalysisResponse>(
+    `${API_BASE_URL}/practice/sector-analysis?session=${sessionId}`
+  )
+}
+
+export async function fetchProgression(
+  year: number,
+  roundNum: number,
+): Promise<PracticeProgressionResponse> {
+  const params = new URLSearchParams({
+    year: year.toString(),
+    round_num: roundNum.toString(),
+  })
+  return fetchApi<PracticeProgressionResponse>(
+    `${API_BASE_URL}/practice/progression?${params}`
   )
 }
 

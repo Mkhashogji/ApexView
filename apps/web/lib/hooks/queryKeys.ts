@@ -47,6 +47,22 @@ export const queryKeys = {
     teamPerformance: (sessionId: string, fuelEffect?: number) =>
       ['race', 'teamPerformance', sessionId, { fuelEffect }] as const,
   },
+  // Practice Analysis query keys
+  practice: {
+    all: ['practice'] as const,
+    sessions: (year: number, round: number) =>
+      ['practice', 'sessions', { year, round }] as const,
+    longRuns: (sessionId: string, fuelEffect?: number) =>
+      ['practice', 'longRuns', sessionId, { fuelEffect }] as const,
+    shortRuns: (sessionId: string, fuelEffect?: number) =>
+      ['practice', 'shortRuns', sessionId, { fuelEffect }] as const,
+    sectorAnalysis: (sessionId: string) =>
+      ['practice', 'sectorAnalysis', sessionId] as const,
+    circuitSVG: (round: number) =>
+      ['practice', 'circuitSVG', round] as const,
+    progression: (year: number, round: number) =>
+      ['practice', 'progression', { year, round }] as const,
+  },
   // ML Service query keys
   ml: {
     all: ['ml'] as const,

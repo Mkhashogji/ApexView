@@ -641,6 +641,7 @@ export interface DriverPaceData {
   lapsInTraffic: number
   totalRacingLaps: number
   finishingPosition?: number
+  status?: string
 }
 
 export interface RacePaceResponse {
@@ -728,5 +729,172 @@ export interface TeamPerformanceResponse {
   teams: TeamPerformanceData[]
   fieldAverages: TeamPerformanceFieldAverages
   insights: TeamPerformanceInsights
+}
+
+
+// =============================================================================
+// Practice Page Types (Phase 1: Long Run Pace)
+// =============================================================================
+
+export type PracticeLapClassification =
+  | 'RACING'
+  | 'IN_LAP'
+  | 'OUT_LAP'
+  | 'RED_FLAG'
+  | 'ANOMALY'
+
+export interface PracticeStintStats {
+  lowerfence: number
+  q1: number
+  median: number
+  q3: number
+  upperfence: number
+  mean: number
+  stdDev: number
+}
+
+export interface PracticeLapPoint {
+  lapNumber: number
+  lapTime: number
+  compound?: string
+  tyreLife?: number
+  inTraffic: boolean
+}
+
+export interface PracticeLongRunStint {
+  driver: string
+  team?: string
+  stintNumber: number
+  displayStintNumber: number
+  compound?: string
+  validLapCount: number
+  totalLapCount: number
+  stats: PracticeStintStats
+  averageTime: number
+  gapToFastest: number
+  degradationHint?: number | null
+  cleanAirPct: number
+  lapTimes: PracticeLapPoint[]
+}
+
+export interface PracticeLongRunResponse {
+  sessionId: string
+  fuelCorrected: boolean
+  stints: PracticeLongRunStint[]
+  sessionBestAverage?: number | null
+  totalLongRunsDetected: number
+  stintsFilteredCount: number
+}
+
+export interface PracticeSessionsResponse {
+  year: number
+  roundNum: number
+  sessions: string[]
+}
+
+// =============================================================================
+// Practice Page Types (Phase 2: Short Run / Best Lap)
+// =============================================================================
+
+export interface PracticeShortRunDriver {
+  driver: string
+  team: string
+  bestLapTime: number
+  compound: string
+  tyreLife: number
+  gapToP1: number
+  stintCount: number
+  position: number
+  // Session verification (null when unavailable)
+  sessionBestTime: number | null
+  sessionBestSource: string | null // 'fastf1_flag' | 'computed_minimum'
+  sessionBestFromShortRun: boolean | null
+  sessionBestCompound: string | null
+}
+
+export interface PracticeShortRunResponse {
+  sessionId: string
+  fuelCorrected: boolean
+  drivers: PracticeShortRunDriver[]
+  sessionBestLap: number | null
+  totalDrivers: number
+  verificationAvailable: boolean
+}
+
+// =============================================================================
+// Practice Page Types (Sector Analysis)
+// =============================================================================
+
+export interface PracticeSectorDriver {
+  driver: string
+  team: string
+  position: number
+  lapTime: number
+  sector1: number | null
+  sector2: number | null
+  sector3: number | null
+  bestSector1: number | null
+  bestSector2: number | null
+  bestSector3: number | null
+  theoreticalBest: number | null
+  potentialGain: number | null
+  compound: string | null
+}
+
+export interface PracticeSectorSummary {
+  fastestSector1: number | null
+  fastestSector1Driver: string | null
+  fastestSector2: number | null
+  fastestSector2Driver: string | null
+  fastestSector3: number | null
+  fastestSector3Driver: string | null
+  theoreticalBestTime: number | null
+  actualBestTime: number | null
+  theoreticalGain: number | null
+}
+
+export interface PracticeSpeedTrapDriver {
+  driver: string
+  team: string
+  speedTrap: number | null
+  speedI1: number | null
+  speedI2: number | null
+  speedFl: number | null
+}
+
+export interface PracticeSectorAnalysisResponse {
+  sessionId: string
+  drivers: PracticeSectorDriver[]
+  summary: PracticeSectorSummary
+  speedTraps: PracticeSpeedTrapDriver[]
+  totalDrivers: number
+}
+
+// =============================================================================
+// Practice Page Types (Phase 3: Session Progression)
+// =============================================================================
+
+export interface PracticeProgressionEntry {
+  session: string                 // 'FP1' | 'FP2' | 'FP3'
+  bestLapTime: number             // Raw lap time in seconds
+  compound: string                // Tyre compound
+  tyreLife: number                // Tyre age at best lap
+  gapToSessionBest: number        // Seconds behind session P1 (0 for P1)
+  source: string                  // 'fastf1_flag' | 'computed_minimum'
+}
+
+export interface PracticeProgressionDriver {
+  driver: string                  // 3-letter abbreviation
+  team: string                    // Full team name
+  sessions: PracticeProgressionEntry[]  // 1–3 entries
+}
+
+export interface PracticeProgressionResponse {
+  year: number
+  roundNum: number
+  availableSessions: string[]     // e.g. ['FP1', 'FP2', 'FP3']
+  isSprintWeekend: boolean
+  drivers: PracticeProgressionDriver[]
+  totalDrivers: number
 }
 

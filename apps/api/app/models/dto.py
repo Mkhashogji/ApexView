@@ -264,6 +264,7 @@ class DriverPaceResponse(CamelCaseModel):
     laps_in_traffic: int = 0
     total_racing_laps: int
     finishing_position: Optional[int] = None
+    status: Optional[str] = None
 
 
 class RacePaceResponse(CamelCaseModel):
@@ -364,3 +365,184 @@ class TeamPerformanceResponse(CamelCaseModel):
     teams: List[TeamPerformanceData]
     field_averages: TeamPerformanceFieldAverages
     insights: TeamPerformanceInsights
+
+
+# =============================================================================
+# Practice Page DTOs (Phase 1: Long Run Pace)
+# =============================================================================
+
+
+class PracticeStintStats(CamelCaseModel):
+    """Box plot and distribution statistics for a single practice stint."""
+    lowerfence: float
+    q1: float
+    median: float
+    q3: float
+    upperfence: float
+    mean: float
+    std_dev: float
+
+
+class PracticeLapPoint(CamelCaseModel):
+    """Single lap data point within a long-run stint, for violin overlay."""
+    lap_number: int
+    lap_time: float
+    compound: Optional[str] = None
+    tyre_life: Optional[int] = None
+    in_traffic: bool = False
+
+
+class PracticeLongRunStint(CamelCaseModel):
+    """One long-run stint with pre-computed stats and enrichments."""
+    driver: str
+    team: Optional[str] = None
+    stint_number: int
+    display_stint_number: int = 1
+    compound: Optional[str] = None
+    valid_lap_count: int
+    total_lap_count: int
+    stats: PracticeStintStats
+    average_time: float
+    gap_to_fastest: float
+    degradation_hint: Optional[float] = None
+    clean_air_pct: float
+    lap_times: List['PracticeLapPoint'] = []
+
+
+class PracticeLongRunResponse(CamelCaseModel):
+    """Complete response for the /practice/long-runs endpoint."""
+    session_id: str
+    fuel_corrected: bool
+    stints: List[PracticeLongRunStint]
+    session_best_average: Optional[float] = None
+    total_long_runs_detected: int = 0
+    stints_filtered_count: int = 0
+
+
+class PracticeSessionsResponse(CamelCaseModel):
+    """Available practice sessions for a race weekend."""
+    year: int
+    round_num: int
+    sessions: List[str]
+
+
+# =============================================================================
+# Practice Page DTOs (Phase 2: Short Run / Best Lap)
+# =============================================================================
+
+
+class PracticeShortRunDriver(CamelCaseModel):
+    """Per-driver best lap result from short run stints."""
+    driver: str
+    team: str
+    best_lap_time: float
+    compound: str
+    tyre_life: int
+    gap_to_p1: float
+    stint_count: int
+    position: int
+    # Session verification fields (None when verification unavailable)
+    session_best_time: Optional[float] = None
+    session_best_source: Optional[str] = None  # 'fastf1_flag' | 'computed_minimum'
+    session_best_from_short_run: Optional[bool] = None
+    session_best_compound: Optional[str] = None
+
+
+class PracticeShortRunResponse(CamelCaseModel):
+    """Response for GET /practice/short-runs endpoint."""
+    session_id: str
+    fuel_corrected: bool
+    drivers: List[PracticeShortRunDriver]
+    session_best_lap: Optional[float] = None
+    total_drivers: int
+    verification_available: bool = False
+
+
+# =============================================================================
+# Practice Page DTOs (Sector Analysis)
+# =============================================================================
+
+
+class PracticeSectorDriver(CamelCaseModel):
+    """Per-driver sector breakdown from session-best lap + best individual sectors."""
+    driver: str
+    team: str
+    position: int
+    lap_time: float  # Session-best lap time
+    # Sectors from session-best lap
+    sector1: Optional[float] = None
+    sector2: Optional[float] = None
+    sector3: Optional[float] = None
+    # Best individual sectors (may come from different laps)
+    best_sector1: Optional[float] = None
+    best_sector2: Optional[float] = None
+    best_sector3: Optional[float] = None
+    # Theoretical best (sum of best individual sectors)
+    theoretical_best: Optional[float] = None
+    potential_gain: Optional[float] = None  # lap_time - theoretical_best
+    # Compound on session-best lap
+    compound: Optional[str] = None
+
+
+class PracticeSectorSummary(CamelCaseModel):
+    """Session-level sector summary."""
+    fastest_sector1: Optional[float] = None
+    fastest_sector1_driver: Optional[str] = None
+    fastest_sector2: Optional[float] = None
+    fastest_sector2_driver: Optional[str] = None
+    fastest_sector3: Optional[float] = None
+    fastest_sector3_driver: Optional[str] = None
+    theoretical_best_time: Optional[float] = None
+    actual_best_time: Optional[float] = None
+    theoretical_gain: Optional[float] = None
+
+
+class PracticeSpeedTrapDriver(CamelCaseModel):
+    """Per-driver maximum speed trap readings."""
+    driver: str
+    team: str
+    speed_trap: Optional[float] = None
+    speed_i1: Optional[float] = None
+    speed_i2: Optional[float] = None
+    speed_fl: Optional[float] = None
+
+
+class PracticeSectorAnalysisResponse(CamelCaseModel):
+    """Complete response for GET /practice/sector-analysis."""
+    session_id: str
+    drivers: List[PracticeSectorDriver]
+    summary: PracticeSectorSummary
+    speed_traps: List[PracticeSpeedTrapDriver]
+    total_drivers: int
+
+
+# =============================================================================
+# Practice Page DTOs (Phase 3: Session Progression)
+# =============================================================================
+
+
+class PracticeProgressionEntry(CamelCaseModel):
+    """A single driver's best lap data for one FP session."""
+    session: str                    # 'FP1', 'FP2', or 'FP3'
+    best_lap_time: float            # Raw lap time in seconds
+    compound: str                   # Tyre compound used on best lap
+    tyre_life: int                  # Tyre age at best lap
+    gap_to_session_best: float      # Seconds behind session fastest (0.0 for P1)
+    source: str                     # 'fastf1_flag' | 'computed_minimum'
+
+
+class PracticeProgressionDriver(CamelCaseModel):
+    """All session entries for one driver across the practice weekend."""
+    driver: str                     # 3-letter abbreviation e.g. 'VER'
+    team: str                       # Full team name e.g. 'Red Bull Racing'
+    sessions: List[PracticeProgressionEntry]  # 1-3 entries depending on availability
+
+
+class PracticeProgressionResponse(CamelCaseModel):
+    """Response for GET /practice/progression — full weekend view."""
+    year: int
+    round_num: int
+    available_sessions: List[str]   # e.g. ['FP1', 'FP2', 'FP3'] or ['FP1']
+    is_sprint_weekend: bool         # True if only FP1 available
+    drivers: List[PracticeProgressionDriver]
+    total_drivers: int

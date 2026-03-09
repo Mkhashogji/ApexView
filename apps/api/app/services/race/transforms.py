@@ -31,6 +31,8 @@ def classify_race_laps(laps: List[Dict]) -> List[Dict]:
     - IQR-based: time > Q3 + 1.5 * IQR
     - Percentage cap: time > 1.10 * driver_median
     Either condition → ANOMALY (OR logic).
+    Outlier thresholds are computed per driver per compound so that
+    wet-tyre laps are not compared against dry-tyre baselines.
 
     Warm-up: first 2 laps of each stint (tyre_life <= 2) get is_warm_up=True.
     """
@@ -75,24 +77,27 @@ def classify_race_laps(laps: List[Dict]) -> List[Dict]:
         if lap_time is None:
             lap['classification'] = 'FORMATION'
 
-    # Phase 2: Outlier detection on RACING laps (per driver)
-    driver_racing_times: Dict[str, List[float]] = defaultdict(list)
+    # Phase 2: Outlier detection on RACING laps (per driver per compound)
+    # Using (driver, compound) groups ensures wet-tyre laps are compared
+    # against wet-tyre baselines, not dry-tyre baselines.
+    driver_compound_times: Dict[tuple, List[float]] = defaultdict(list)
     for lap in laps:
         if lap['classification'] == 'RACING' and lap.get('lap_time') is not None:
-            driver_racing_times[lap['driver']].append(lap['lap_time'])
+            key = (lap['driver'], lap.get('compound'))
+            driver_compound_times[key].append(lap['lap_time'])
 
-    driver_stats: Dict[str, Dict] = {}
-    for driver, times in driver_racing_times.items():
+    group_stats: Dict[tuple, Dict] = {}
+    for key, times in driver_compound_times.items():
         if len(times) < 4:
             # Not enough data for meaningful outlier detection
-            driver_stats[driver] = {'q1': 0, 'q3': float('inf'), 'iqr_upper': float('inf'), 'median': float('inf')}
+            group_stats[key] = {'q1': 0, 'q3': float('inf'), 'iqr_upper': float('inf'), 'median': float('inf')}
             continue
         arr = np.array(times)
         q1 = float(np.percentile(arr, 25))
         q3 = float(np.percentile(arr, 75))
         iqr = q3 - q1
         median = float(np.median(arr))
-        driver_stats[driver] = {
+        group_stats[key] = {
             'q1': q1,
             'q3': q3,
             'iqr_upper': q3 + 1.5 * iqr,
@@ -102,7 +107,8 @@ def classify_race_laps(laps: List[Dict]) -> List[Dict]:
     for lap in laps:
         if lap['classification'] != 'RACING' or lap.get('lap_time') is None:
             continue
-        stats = driver_stats.get(lap['driver'])
+        key = (lap['driver'], lap.get('compound'))
+        stats = group_stats.get(key)
         if stats is None:
             continue
         lt = lap['lap_time']

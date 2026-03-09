@@ -54,14 +54,16 @@ async def get_processed_race_data(
     data_service = get_data_service()
     raw_result = await data_service.get_race_laps(session_id)
 
-    # Unpack: get_race_laps returns dict with 'laps' and 'finishing_positions'
+    # Unpack: get_race_laps returns dict with 'laps', 'finishing_positions', and 'driver_statuses'
     if isinstance(raw_result, dict):
         raw_laps = raw_result.get('laps', [])
         finishing_positions = raw_result.get('finishing_positions', {})
+        driver_statuses = raw_result.get('driver_statuses', {})
     else:
         # Backward compatibility: if still returns a list
         raw_laps = raw_result if raw_result else []
         finishing_positions = {}
+        driver_statuses = {}
 
     if not raw_laps:
         logger.warning(f"No race laps returned for {session_id}")
@@ -73,6 +75,7 @@ async def get_processed_race_data(
             'fuel_effect_per_kg': fuel_effect_per_kg,
             'session_id': session_id,
             'finishing_positions': finishing_positions,
+            'driver_statuses': driver_statuses,
         }
 
     # 2. Determine total race laps
@@ -103,6 +106,7 @@ async def get_processed_race_data(
         'fuel_effect_per_kg': fuel_effect_per_kg,
         'session_id': session_id,
         'finishing_positions': finishing_positions,
+        'driver_statuses': driver_statuses,
     }
 
     _race_data_cache[cache_key] = result
@@ -219,6 +223,30 @@ def extract_pit_stops(laps: List[Dict]) -> List[PitStopResponse]:
     return pit_stops
 
 
+# Statuses that indicate a driver completed the race
+_FINISHED_STATUSES = {'Finished', '+1 Lap', '+2 Laps', '+3 Laps', '+4 Laps', '+5 Laps', '+6 Laps'}
+
+
+def _resolve_finishing_position(driver: str, positions: Dict, statuses: Dict) -> Optional[int]:
+    """Return finishing position only for drivers who actually finished the race."""
+    status = statuses.get(driver, '')
+    # If we have an explicit status, check if it indicates a finish
+    if status and status not in _FINISHED_STATUSES:
+        return None
+    return positions.get(driver)
+
+
+def _resolve_status(driver: str, statuses: Dict) -> Optional[str]:
+    """Return a display-friendly status string (DNF, Finished, +1 Lap, etc.)."""
+    status = statuses.get(driver)
+    if not status:
+        return None
+    if status in _FINISHED_STATUSES:
+        return status
+    # Any other status is a retirement/DNF — normalise to 'DNF'
+    return 'DNF'
+
+
 def compute_race_pace_stats(race_data: Dict) -> RacePaceResponse:
     """
     Compute per-driver box plot statistics from processed race data.
@@ -235,6 +263,7 @@ def compute_race_pace_stats(race_data: Dict) -> RacePaceResponse:
     stints = race_data.get('stints', [])
     session_id = race_data.get('session_id', '')
     finishing_positions = race_data.get('finishing_positions', {})
+    driver_statuses = race_data.get('driver_statuses', {})
 
     if not laps:
         return RacePaceResponse(session_id=session_id, drivers=[])
@@ -245,11 +274,33 @@ def compute_race_pace_stats(race_data: Dict) -> RacePaceResponse:
         if lap.get('classification') in ('RACING', 'ANOMALY') and lap.get('lap_time') is not None:
             driver_laps[lap['driver']].append(lap)
 
-    # Build tyre strategy per driver from stints
+    # Build tyre strategy per driver from stints.
+    #
+    # Phantom-stint handling: FastF1 increments stint numbers on SC/VSC/red
+    # flag restarts even when the compound doesn't change, creating 1-lap
+    # "phantom" stints.  However, drivers *do* legitimately pit for a fresh
+    # set of the same compound (e.g. M-H-H is a real 2-stop strategy).
+    #
+    # Rule: merge a stint into the previous entry only when BOTH conditions
+    # are true:  (a) same compound as the previous entry, AND (b) the stint
+    # is ≤ 2 laps long.  A ≤ 2-lap stint on the same compound is never a
+    # deliberate strategy choice — it is always an SC/red-flag artefact.
+    # Different-compound stints are always kept regardless of length (they
+    # represent a genuine compound change, even if it happened under SC).
+    VALID_COMPOUNDS = {'SOFT', 'MEDIUM', 'HARD', 'INTERMEDIATE', 'WET'}
     driver_stints: Dict[str, List[str]] = defaultdict(list)
-    for stint in stints:
-        if stint.compound:
-            driver_stints[stint.driver].append(stint.compound)
+    for stint in sorted(stints, key=lambda s: (s.driver, s.stint_number)):
+        compound = stint.compound
+        if not compound or compound not in VALID_COMPOUNDS:
+            continue
+        driver_list = driver_stints[stint.driver]
+        if not driver_list:
+            driver_list.append(compound)
+            continue
+        # Merge phantom stints: same compound AND very short (≤ 2 laps)
+        if driver_list[-1] == compound and stint.lap_count <= 2:
+            continue  # absorb into previous stint
+        driver_list.append(compound)
 
     # Get team mapping
     driver_teams: Dict[str, str] = {}
@@ -318,7 +369,8 @@ def compute_race_pace_stats(race_data: Dict) -> RacePaceResponse:
             consistency_score=consistency_score,
             laps_in_traffic=laps_in_traffic,
             total_racing_laps=len(racing_times),
-            finishing_position=finishing_positions.get(driver),
+            finishing_position=_resolve_finishing_position(driver, finishing_positions, driver_statuses),
+            status=_resolve_status(driver, driver_statuses),
         ))
 
     # Sort by mean ascending (fastest first) — matches industry convention

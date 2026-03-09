@@ -50,6 +50,7 @@ async def compute_tyre_degradation(
         if lap['classification'] == 'RACING'
         and not lap.get('is_warm_up', False)
         and lap.get('fuel_corrected_time') is not None
+        and lap.get('tyre_life') is not None
     ]
 
     logger.info(
@@ -117,7 +118,7 @@ def _compute_per_group(laps: List[dict], mode: str) -> List[dict]:
         # Build data points for response
         data_points = [
             {
-                'tyre_age': lap.get('tyre_life', 0),
+                'tyre_age': lap.get('tyre_life') or 0,
                 'fuel_adjusted_time': lap['fuel_corrected_time'],
                 'raw_time': lap['lap_time'],
                 'lap_number': lap['lap_number'],

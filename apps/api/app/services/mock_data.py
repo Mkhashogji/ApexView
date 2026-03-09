@@ -3,7 +3,7 @@
 import json
 import numpy as np
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 from app.models.dto import (
     SessionResponse,
     LapResponse,
@@ -290,6 +290,97 @@ class MockDataService:
 
         finishing_positions = {driver: idx + 1 for idx, (driver, _) in enumerate(drivers)}
         return {'laps': result, 'finishing_positions': finishing_positions}
+
+    async def get_practice_laps(self, session: str) -> dict:
+        """
+        Generate synthetic practice session lap data for development/testing.
+        Returns dict with 'laps' (~120 laps: 4 drivers × 30 laps each).
+        Practice sessions have multiple stints with mixed compounds.
+        """
+        drivers = [
+            ('VER', 'Red Bull Racing'),
+            ('NOR', 'McLaren'),
+            ('LEC', 'Ferrari'),
+            ('HAM', 'Mercedes'),
+        ]
+        result = []
+
+        for driver_idx, (driver, team) in enumerate(drivers):
+            # Base pace varies by driver
+            base_time = 92.0 + driver_idx * 0.3
+
+            # Stint 1: laps 1-12 on MEDIUM (installation + long run)
+            # Stint 2: laps 13-20 on SOFT (short runs)
+            # Stint 3: laps 21-30 on HARD (long run)
+            stints = [
+                (1, 1, 12, 'MEDIUM'),
+                (2, 13, 20, 'SOFT'),
+                (3, 21, 30, 'HARD'),
+            ]
+
+            for stint_num, start_lap, end_lap, compound in stints:
+                for lap_num in range(start_lap, end_lap + 1):
+                    tyre_life = lap_num - start_lap + 1
+
+                    # Tyre degradation
+                    deg = 0.02 * tyre_life
+                    variation = np.random.normal(0, 0.15)
+                    lap_time = base_time + deg + variation
+
+                    pit_in = None
+                    pit_out = None
+                    track_status = '1'
+
+                    # Pit stops at stint boundaries
+                    if lap_num == end_lap and stint_num < 3:
+                        pit_in = lap_time * lap_num
+                        lap_time += 20.0
+
+                    if lap_num == start_lap and stint_num > 1:
+                        pit_out = lap_time * lap_num
+                        lap_time += 5.0  # Out-lap slower
+
+                    # One anomalous lap per driver (lap 8)
+                    if lap_num == 8 and driver_idx == 0:
+                        lap_time = base_time * 1.15
+
+                    result.append({
+                        'driver': driver,
+                        'team': team,
+                        'lap_number': lap_num,
+                        'lap_time': round(lap_time, 3),
+                        'sector1_time': round(lap_time * 0.30, 3),
+                        'sector2_time': round(lap_time * 0.38, 3),
+                        'sector3_time': round(lap_time * 0.32, 3),
+                        'compound': compound,
+                        'tyre_life': tyre_life,
+                        'stint': stint_num,
+                        'position': None,  # Practice has no positional data
+                        'pit_in_time': pit_in,
+                        'pit_out_time': pit_out,
+                        'track_status': track_status,
+                        'is_personal_best': False,
+                        'cumulative_time': None,  # Often unavailable in practice
+                        'speed_trap': round(310.0 + driver_idx * 2.0 + np.random.normal(0, 1.5), 1),
+                        'speed_i1': round(280.0 + driver_idx * 1.5 + np.random.normal(0, 1.0), 1),
+                        'speed_i2': round(265.0 + driver_idx * 1.0 + np.random.normal(0, 1.2), 1),
+                        'speed_fl': round(290.0 + driver_idx * 1.8 + np.random.normal(0, 1.3), 1),
+                    })
+
+        # Set is_personal_best on each driver's fastest valid lap
+        # (exclude pit laps to mimic real FastF1 behaviour)
+        driver_fastest: Dict[str, tuple] = {}  # {driver: (lap_time, index)}
+        for idx, lap in enumerate(result):
+            if lap['pit_in_time'] is not None or lap['pit_out_time'] is not None:
+                continue
+            driver = lap['driver']
+            lt = lap['lap_time']
+            if driver not in driver_fastest or lt < driver_fastest[driver][0]:
+                driver_fastest[driver] = (lt, idx)
+        for _, (_, idx) in driver_fastest.items():
+            result[idx]['is_personal_best'] = True
+
+        return {'laps': result}
 
     async def get_track_info(self, season: int, round: int) -> TrackResponse:
         """Get track layout and information (mock)."""

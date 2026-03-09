@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "process.chdir('apps/web');require('next/dist/bin/next')"],
+      "port": 3000
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import sessions, laps, telemetry, track, ml, race
+from app.routes import sessions, laps, telemetry, track, ml, race, practice
 from app.core.config import settings
 
 app = FastAPI(
@@ -25,6 +25,7 @@ app.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
 app.include_router(track.router, prefix="/track", tags=["track"])
 app.include_router(ml.router, prefix="/ml", tags=["ml"])
 app.include_router(race.router, prefix="/race", tags=["race"])
+app.include_router(practice.router, prefix="/practice", tags=["practice"])
 
 
 @app.get("/")

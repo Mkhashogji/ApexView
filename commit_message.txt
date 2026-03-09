@@ -1,117 +1,241 @@
-feat(ai-insights): Complete Refined AI Architecture with 5th dimension and confidence improvements
+feat(practice): Complete Practice Page — three-phase analytical platform
 
-Deliver mathematical closure for performance analysis: corner_total + straight_total = official_gap.
-Users can now see exactly where time is gained or lost across the entire lap, not just in corners.
+The Practice page is a full data analysis platform for Formula 1 practice
+weekends, covering race simulation pace, qualifying simulation pace, sector-
+level timing, circuit layout context, and how driver performance evolved
+across each practice session. It is built using the same architecture as the
+Race and Qualifying pages: a FastAPI backend that processes and caches session
+data, React Query on the frontend to keep that data from being re-fetched
+unnecessarily, and a progressive rendering pipeline that displays a loading
+skeleton immediately while chart data loads in the background. Each panel is
+isolated behind its own error boundary so that a failure in one panel does
+not break the rest of the page. The page delivers five analytical panels
+across three implementation phases, all reading from a single shared data
+pipeline introduced in Phase 1.
 
-## Phase 2 — Delta Analysis: Three-Tier Algorithm
+---
 
-**Purpose**: Provide accurate, scalable delta traces that match official FIA timing regardless of
-telemetry quality.
+Phase 1 — Data Foundation & Long Run Pace Comparison
 
-**Logic**: Telemetry sampling rates vary; a tiered approach automatically selects the best available
-method. Tier 1 uses RelativeDistance (0-1 normalized position) with time pre-scaling to guarantee
-delta[-1] equals official_gap. Lower tiers degrade gracefully when data is incomplete.
+Purpose: establish the practice data pipeline and deliver the primary
+analytical panel, which compares each driver's race-simulation pace across
+a session.
 
-**Implementation**: Added _calculate_with_relative_distance() as Tier 1 (confidence >=0.9),
-_calculate_with_time_only() as Tier 2 (~0.8), speed integration as Tier 3 (<=0.6). Extended FastF1
-client to extract RelativeDistance and Time fields, propagated through API DTO to delta_analysis.
+A dedicated backend service module was built for practice data. It
+classifies every lap into one of five categories — RACING, IN_LAP, OUT_LAP,
+RED_FLAG, or ANOMALY — so that only genuine racing laps feed into the
+analysis. It applies within-stint fuel correction (using a 1.6 kg/lap fuel
+burn rate) to account for the fact that lighter cars at the end of a long
+run naturally lap faster than heavier ones at the start, making raw times
+misleading for pace comparison. It also derives a clean-air percentage for
+each stint by checking the gap to the car ahead: laps run in heavy traffic
+are flagged separately because a driver behind another car cannot show their
+true pace. A long run is defined as a stint of at least 4 laps
+(LONG_RUN_MIN_LAPS = 4); shorter stints are classified as short runs and
+used in Phase 2 instead.
 
-## Phase 3 — Corner Analysis: Confidence Improvements + Straight-Line Integration
+The central function, get_processed_practice_data(), processes an entire
+session once and caches the result. Every subsequent phase reads from this
+cache rather than re-loading raw data from FastF1, which keeps response
+times fast across all five endpoints. A new get_practice_laps() method was
+added to the FastF1 client layer, following the same pattern as the existing
+get_race_laps() but without finishing positions, which are not relevant in
+practice. Two API endpoints were added: GET /practice/sessions (to retrieve
+which sessions are available for a given race weekend) and GET
+/practice/long-runs (to serve long-run stint data for the panel).
 
-**Purpose**: Improve corner analysis confidence levels through three targeted fixes, and close the
-reconciliation gap where corner totals didn't match official timing.
+The Long Run Pace panel visualises each driver's stint as a violin plot — a
+chart shape that shows not just average pace but the full distribution of lap
+times within a stint. A wide violin at a given lap time means many laps were
+recorded near that pace; a narrow shape means the driver was highly
+consistent. The violin body is coloured by team and the individual lap dots
+inside it are coloured by tyre compound, so compound strategy is immediately
+visible alongside pace. Raw lap time arrays are sent from the backend so that
+the frontend can compute the violin shape (Kernel Density Estimation — the
+statistical method that generates the smooth curve) directly, preserving the
+full distribution rather than reducing it to a summary statistic like an
+average. Each stint also carries two contextual indicators: a degradation
+hint (the difference in average pace between the opening two laps and the
+closing two laps of a stint, computed only when at least 4 laps are
+available) and a clean-air percentage badge showing how much of the stint
+was run without traffic ahead. Compound filter tabs (ALL / SOFT / MEDIUM /
+HARD) let users reduce visual clutter by focusing on one compound at a time.
+The fuel correction toggle defaults to OFF so users see raw times by default
+and opt in to corrected times deliberately. Sprint weekends, which have only
+one practice session, show FP1 only with no session selector. On standard
+weekends, the session selector tabs (FP1 / FP2 / FP3) reuse the same CSS
+tab pattern established on the Qualifying page.
 
-**Confidence Improvements**: Before the fixes, confidence distributions were low-dominated across
-most circuits, with occasional medium or high results depending on corner characteristics. We
-implemented three distinct changes that work together:
+Testing: 40 backend transform tests verify lap classification and fuel
+correction logic. 74 data service tests cover the pipeline, caching
+behaviour, and degradation calculations. Validation also included live
+Docker endpoint checks, a TypeScript zero-error build, and manual visual
+inspection of the violin plots to confirm correct y-axis orientation, stint
+labelling, compound colouring, and outlier exclusion.
 
-1. **Off-by-one bug fix** (lines 277-281): The brake gradient array measures change FROM index i
-   TO i+1, but the original code checked brake threshold at index i against gradient[i]. Fixed by
-   checking zone_brake[i+1] against gradient[i] to correctly detect when brake reaches threshold
-   with sufficient gradient leading into it.
+---
 
-2. **V2 deceleration-based detection**: FastF1's brake pressure signal is often boolean-like
-   (0 or 100). The V2 algorithm uses physics-based deceleration: a = (v2^2 - v1^2) / (2 * delta_d),
-   detecting braking zones by actual speed reduction rather than unreliable pressure data.
-   Implemented in detect_braking_zone_v2() with configurable deceleration thresholds.
+Phase 2 — Short Run / Best Lap, Sector Analysis, and Circuit Map
 
-3. **Delta accuracy confidence boost**: Added _boost_confidence_from_delta_accuracy() function
-   that leverages the 100% accurate scaled delta trace. When delta_scaling_factor is approximately 1.0
-   (Tier 1) and delta_confidence >= 0.95, corner confidence is boosted from low to medium—because
-   even if zone boundaries have +/-10m uncertainty, the delta values within that zone are
-   mathematically correct.
+Purpose: add three further panels — qualifying simulation rankings, sector
+timing breakdown, and a circuit map — all reading from the same Phase 1
+pipeline with no changes to Phase 1 code.
 
-After implementation, distributions shifted toward medium and high confidence for corners with
-clear braking events, while circuits with complex throttle/brake overlap may still produce mixed
-results—this variation is expected given external factors we cannot fully control.
+A key design decision in this phase was how to determine each driver's
+session-best lap reliably. The backend uses FastF1's is_personal_best flag
+for this, but applies it at the session level rather than per-driver: either
+all drivers in a session use the flag-based best lap, or all fall back to
+the computed minimum. This all-or-nothing approach avoids a fuel correction
+inversion problem that emerged during development — adjusting raw lap times
+for fuel weight within a stint could cause a driver's corrected times to rank
+in a different order from their official FIA timing, producing results
+inconsistent with what appeared on the timing tower. Using the official
+flag-based best laps as the single authoritative source resolves this. Two
+new endpoints were added: GET /practice/short-runs and
+GET /practice/sector-analysis.
 
-**Straight-Line Integration**: Users previously asked "corners show +0.2s but the gap is +0.5s—
-where's the other +0.3s?" Straight-line segments between corners now capture this missing delta,
-providing full lap accountability with mathematical reconciliation.
+Short Run / Best Lap panel: a ranked horizontal bar chart showing each
+driver's session-best lap time in order from fastest to slowest. Each bar
+includes a verification badge (a tick for laps confirmed as short-run
+qualifying simulations, an asterisk where only long-run data was available
+for that driver) so users can see how confident the ranking is. The gap to
+the session-fastest driver is annotated alongside each bar, with a compound
+badge showing which tyre the lap was set on. When a user opens the panel on
+FP2 — a session typically used for long-run race simulation rather than
+qualifying pace — the empty state names FP1 and FP3 explicitly as better
+sessions for this analysis.
 
-**Implementation**: 
-- Implemented analyze_corners_v2() with deceleration-based braking zone detection
-- Added _boost_confidence_from_delta_accuracy() for delta-aware confidence boosting
-- Added StraightSegment and LapBreakdown dataclasses
-- Added calculate_straight_segments() and calculate_lap_breakdown() with 5ms reconciliation tolerance
-- Added sanity checks hiding analysis when scale factors are extreme or corner deltas exceed +/-0.5s
+Sector Analysis panel: a three-part panel that breaks session pace down to
+its components. The first part is a sector times table showing each driver's
+best time in each of the three track sectors, with the outright fastest time
+per sector highlighted in purple and all other times colour-coded relative
+to it. The second part is a theoretical best lap card — the sum of the
+fastest sector 1 from any driver, the fastest sector 2 from any driver, and
+the fastest sector 3 from any driver — giving a reference time that no
+single driver actually achieved but that represents the ceiling of pace
+available in the session. The third part is a speed trap bar chart showing
+the maximum recorded trap speed per driver (SpeedST measurement point). The
+sector table and the theoretical best lap use two separate data structures
+maintained in parallel inside compute_sector_analysis(): the session-best
+lap index (which determines each driver's row in the table) and a per-driver
+accumulator that independently tracks each driver's fastest individual
+sector time regardless of which lap it came from.
 
-## Phase 4 — Technique Profiling: 5th Dimension
+Circuit Map panel: SVG vector layouts for all 24 circuits on the 2025
+Formula 1 calendar, sourced from Gumroad f1-track-vectors. The three track
+sectors are colour-highlighted on each layout using dynamic colours drawn
+from the Track Intelligence page, with a defined fallback set for circuits
+where those colours are unavailable. The SVG structure was pre-inspected
+across 7 circuits before implementation to confirm a consistent internal
+format; each circuit is rendered as 6 path elements (3 grey base paths and
+3 coloured overlay paths, one per sector). The circuit map lookup file
+(circuitMap.ts) was corrected to match the actual asset naming convention
+used in the SVG bundle, with 16 of 24 entries updated from placeholder names.
+The legend showing the fastest driver in each sector is fed from the same
+sector analysis query used by the timing table above.
 
-**Purpose**: Extend the 4-dimension technique profile (braking, apex, exit, consistency) with
-straight-line performance to explain setup trade-offs and aero characteristics.
+Testing: 41 short run tests and 17 sector analysis tests. A dedicated
+regression guard test — test_official_ranking_overrides_fuel_corrected_
+stint_ordering — confirms that official FIA timing order is always preserved
+when it conflicts with fuel-corrected stint ordering, protecting the core
+data integrity decision made in this phase. All 4 endpoints were verified
+live in Docker with cross-endpoint data consistency checks.
 
-**Logic**: Straight-line delta is inverted (negative = faster = STRONG). Session-relative percentiles
-ensure classification adapts to competitive context. Primary factor attribution distinguishes
-aero efficiency from exit traction based on segment characteristics.
+---
 
-**Implementation**: Added StraightLineDimension dataclass with percentile, primary_factor, and
-top gaining/losing straights. Added determine_straight_line_primary_factor() (priority: top_speed
-then exit_correlation then segment_factors), aggregate_straight_line_performance(), and
-classify_straight_line_dimension(). Extended profile_drivers() to produce 5-dimension profiles.
+Phase 3 — Session Progression & Performance Optimisation
 
-## Phase 5 — Insight Generation: Straight-Line Templates
+Purpose: complete the Practice page with a panel that shows how each
+driver's competitive position changed across the full practice weekend, and
+apply a performance optimisation pass to ensure the page loads quickly.
 
-**Purpose**: Generate human-readable explanations for the 5th dimension following anti-hallucination
-principles (template-based, data-bound, no LLM generation).
+The Session Progression panel answers a question the single-session panels
+cannot: did a driver improve their pace from FP1 to FP2 to FP3, or fall
+back? It plots each driver's gap to the session-fastest driver in each
+practice session, so a driver who improved across the weekend shows as an
+upward trend on the chart.
 
-**Logic**: Dual-mode output serves engineers (metrics-heavy) and drivers (action-oriented). Cross-
-dimension analysis (exit x straight) reveals setup anomalies and technique opportunities.
+The backend function compute_progression_stats() first checks which practice
+sessions actually took place for the selected race weekend before loading any
+data. This avoids unnecessary data calls for sprint weekends, where FP2 and
+FP3 do not take place. For each available session, raw lap times are used
+without fuel correction so that gaps are comparable across sessions that may
+have been held on different days with different track conditions. The gap for
+each driver is computed relative to the fastest time within that individual
+session — not across the whole weekend — so that natural track evolution
+(rubber laid down, track temperature changes) does not distort the
+comparison. If one session fails to load, results for the remaining sessions
+are still returned rather than the whole panel failing. Drivers who did not
+participate in a particular session due to a mid-weekend substitution simply
+do not appear in that session's data. One new endpoint was added: GET
+/practice/progression, which accepts a year and round number but no session
+parameter, because it covers the full weekend rather than a single session.
 
-**Implementation**: Added STRAIGHT_LINE_ENGINEER/DRIVER, PRIMARY_FACTOR, LAP_BREAKDOWN, and
-EXIT_STRAIGHT_OPPORTUNITY template sets. Added generate_straight_line_insight(),
-generate_lap_breakdown_insight(), and generate_exit_straight_opportunity().
+The chart uses two overlaid traces per driver: a team-coloured connecting
+line showing the trend across sessions, and individual data points coloured
+by the tyre compound used in each session's best lap. The y-axis is inverted
+using an explicit reversed range so that gap = 0 (the session fastest) sits
+at the top and improvement reads as an upward movement — consistent with how
+progress is naturally understood. For sprint weekends where only FP1 takes
+place and a trend line would carry no meaningful information, the panel falls
+back to a simple ranked driver list for that single session. The driver and
+team filter selector was updated with a new inline display mode to fix a
+clipping issue: the original dropdown was being cut off by a browser paint
+optimisation applied to panels that are off-screen before the user scrolls
+to them. URL state is preserved for the selected filter mode and active
+drivers using sp-prefixed query parameters (?spMode, ?spDrivers), consistent
+with the URL state approach used across other pages in the application.
 
-## Phase 6 — API Orchestration: track_length Flow
+Performance optimisation: the four panels below the fold — Short Run, Sector
+Analysis, Circuit Map, and Session Progression — are deferred so they do not
+begin loading until they scroll into the viewport. This keeps the initial
+page load focused on the Long Run Pace panel at the top of the page. The
+Session Progression panel uses a slightly different layout structure from the
+other three: its outer container carries the scroll-trigger while its inner
+container holds the visible card. This split was necessary to prevent the
+filter selector from being clipped by the same browser paint optimisation
+that originally caused the dropdown issue, and mirrors the pattern used on
+the Tyre Degradation panel on the Race page. Two loading
+skeleton cards were also added for Sector Analysis and Session Progression so
+that the full page structure is shown during the initial load before data
+arrives.
 
-**Purpose**: Enable the 5th dimension by propagating track_length from Track Intelligence through
-the entire stack to corner analysis.
+Testing: 11 session progression tests covering a full 3-session weekend,
+sprint weekends, the zero-gap guard for the session leader, mid-weekend
+driver substitutions, session ordering, driver sorting, empty session
+handling, exception recovery, floating point precision, and enforcement of
+raw (uncorrected) times for all cross-session gap calculations. Full API
+suite: 313 tests across 11 test files, 0 regressions. TypeScript: zero
+compilation errors. Docker: all 5 practice endpoints verified live with 7
+cross-validation checks, including a cross-endpoint consistency check
+confirming that the FP2 times returned by the progression endpoint match the
+FP2 rankings returned by the short runs endpoint. Frontend: deferred loading
+confirmed on all 4 below-fold panels, API URL construction verified via
+network logs, and component structure validated via accessibility snapshot.
 
-**Logic**: Without track_length, straight segments cannot be calculated (no way to identify the
-gap from last corner to start/finish). Graceful degradation returns null for 5th dimension fields
-while preserving all other analysis.
+---
 
-**Implementation**: Added track_length to PerformanceInsightsConfig and Pydantic schemas. Added
-LapBreakdownSchema, StraightSegmentSchema, and serialization helpers. Wired track_length through
-run_phase3_corner() to analyze_corners_v2().
+Accompanying Race Page Fixes
 
-**Root Cause Resolved**: track_length not propagated — lap_breakdown silently returned null.
+Four small improvements to the Race page are included in this commit. They
+were developed during the Practice page implementation period, address gaps
+that surfaced during cross-page testing, and do not alter the Race page's
+existing analytical results or its test suite.
 
-## Phase 7 — Frontend: LapBreakdownPanel
+DNF and driver status support: the race data service now reads each driver's
+final session status from FastF1 and passes it through to the frontend. This
+allows drivers who retired from the race to be labelled clearly in the pace
+distribution panel — their final lap is displayed in red with a DNF marker,
+distinguishing it from genuine race pace. Previously, retirement laps were
+indistinguishable from normal laps in the visualisation.
 
-**Purpose**: Visualize the reconciliation equation showing how corner and straight performance
-combine to produce the official gap.
+Per-compound outlier detection: the race transforms layer previously computed
+a single outlier threshold per driver across all their laps regardless of
+compound. It now groups by driver and compound together, which prevents a
+driver's wet-tyre laps (inherently slower) from distorting the threshold
+calculated from their dry-tyre laps, or vice versa.
 
-**Implementation**: Created LapBreakdownPanel (197 lines) with track coverage bar and collapsible
-straight segments. Added TypeScript interfaces for StraightSegment, LapBreakdown, and
-StraightLineDimension. Established 8-file parameter flow: Track Intelligence to QualifyingContent
-to PerformanceInsightsPanel to usePerformanceInsightsQuery to fetchPerformanceInsights to ML API
-to PerformanceInsightsConfig to analyze_corners_v2 to calculate_lap_breakdown to LapBreakdownPanel.
-
-## Testing and Verification
-
-- 301 tests passing (32 new straight-line integration tests)
-- Corner analysis confidence distributions improved across tested circuits, with expected
-  variation based on circuit and corner characteristics
-- Live API calls confirm reconciliation_valid=true
-- Graceful degradation verified: missing track_length returns null without breaking other analysis
+Null tyre life guard: a defensive null check was added in the tyre
+degradation service for cases where FastF1 does not return a tyre_life value
+for a stint. Previously this could cause an unhandled error; it now falls
+back gracefully without breaking the rest of the degradation calculation.

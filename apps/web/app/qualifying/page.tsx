@@ -1,7 +1,22 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { QualifyingContent } from './QualifyingContent'
 import { QualifyingSubtitle } from './QualifyingSubtitle'
 import { QualifyingPageSkeleton } from '@/components/skeletons/QualifyingPageSkeleton'
+
+export const metadata: Metadata = {
+  title: 'Qualifying Analysis | ApexView',
+  description:
+    'Analyse Formula 1 qualifying sector deltas, mini-sector heatmaps, ' +
+    'and AI-generated driver technique profiles across the 2025 season.',
+  openGraph: {
+    title: 'Qualifying Analysis | ApexView',
+    description:
+      'Sector-level qualifying analysis, lap delta comparisons, and driver ' +
+      'technique profiling for every round of the 2025 Formula 1 season.',
+    type: 'website',
+  },
+}
 
 /**
  * Qualifying Analysis Page — Server Component

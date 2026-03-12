@@ -67,9 +67,11 @@ export default function SectorMapPanel({
   // ── Circuit name for header ───────────────────────────────────────
   const circuitName = getRaceCircuitName(round)
 
-  // If SVG loading is complete and no data is available, render nothing.
-  // This handles rounds with no mapped SVG or fetch failures gracefully.
-  const noSVG = !svgLoading && !svgData
+  // Only show "not available" when the query has actually completed with no data.
+  // A disabled query (isVisible=false) has isLoading=false and data=undefined in
+  // React Query v5 — without the isVisible guard, this falsely triggers the empty
+  // state before the panel ever scrolls into view.
+  const noSVG = isVisible && !svgLoading && !svgData
 
   return (
     <div ref={containerRef} className="card-panel content-defer">
@@ -85,8 +87,8 @@ export default function SectorMapPanel({
         )}
       </div>
 
-      {/* Loading skeleton */}
-      {svgLoading && (
+      {/* Loading skeleton — shown while not yet visible or while fetching */}
+      {(svgLoading || !isVisible) && !svgData && (
         <div className="animate-pulse">
           <div className="h-[300px] bg-f1gray/10 rounded-lg" />
         </div>

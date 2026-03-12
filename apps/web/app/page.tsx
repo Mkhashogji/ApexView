@@ -1,34 +1,64 @@
-import { SessionSummary } from '@/components/panels/SessionSummary'
+import type { Metadata } from 'next'
+import { Suspense } from 'react'
+import HomePageSkeleton from './HomePageSkeleton'
+import HomeContent from './HomeContent'
+import raceCalendarData from '@/data/race-calendar-2025.json'
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: 'ApexView | Formula 1 Data Analytics',
+  description:
+    'Explore Formula 1 race strategy, qualifying pace, practice performance, ' +
+    'and circuit intelligence across the full 2025 season.',
+  openGraph: {
+    title: 'ApexView | Formula 1 Data Analytics',
+    description:
+      'Race strategy, qualifying analysis, practice performance, and circuit ' +
+      'intelligence for every round of the 2025 Formula 1 season.',
+    type: 'website',
+  },
+}
+
+/** Season-level statistics derived from the static race calendar JSON. */
+export interface SeasonStats {
+  season: number
+  totalRounds: number
+  nextRaceName: string
+  nextRaceRound: number | null
+}
+
+/**
+ * Derives season-level stats from the race calendar at build/SSR time.
+ * Finds the next upcoming race by comparing race dates against today's date.
+ * If all races have passed, returns "Season Complete" with null round.
+ */
+function deriveSeasonStats(
+  races: typeof raceCalendarData.races
+): SeasonStats {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const nextRace = races.find((race) => {
+    const raceDate = new Date(race.date)
+    raceDate.setHours(0, 0, 0, 0)
+    return raceDate >= today
+  })
+
+  return {
+    season: raceCalendarData.season,
+    totalRounds: races.length,
+    nextRaceName: nextRace ? nextRace.name : 'Season Complete',
+    nextRaceRound: nextRace ? nextRace.round : null,
+  }
+}
+
+export default function HomePage() {
+  const seasonStats = deriveSeasonStats(raceCalendarData.races)
+
   return (
-    <div className="space-y-8">
-      <div className="border-l-4 border-f1red pl-4">
-        <h1 className="text-4xl font-bold">Weekend Overview</h1>
-        <p className="mt-2 text-gray-400">
-          Current season race weekend analysis and insights
-        </p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border border-f1gray bg-f1gray/20 p-6">
-          <h2 className="text-xl font-semibold">Latest Session</h2>
-          <p className="mt-2 text-sm text-gray-400">Loading session data...</p>
-        </div>
-        
-        <div className="rounded-lg border border-f1gray bg-f1gray/20 p-6">
-          <h2 className="text-xl font-semibold">Quick Stats</h2>
-          <p className="mt-2 text-sm text-gray-400">Performance metrics</p>
-        </div>
-        
-        <div className="rounded-lg border border-f1gray bg-f1gray/20 p-6">
-          <h2 className="text-xl font-semibold">Track Info</h2>
-          <p className="mt-2 text-sm text-gray-400">Circuit details</p>
-        </div>
-      </div>
-
-      <SessionSummary />
+    <div className="space-y-12 py-8">
+      <Suspense fallback={<HomePageSkeleton />}>
+        <HomeContent seasonStats={seasonStats} />
+      </Suspense>
     </div>
   )
 }
-

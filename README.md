@@ -21,6 +21,8 @@ f1-engineering-app/
 │   │   ├── app/                # App Router pages
 │   │   ├── components/         # React components
 │   │   │   ├── panels/         # Analysis panels (PerformanceInsights, CornerBreakdown, etc.)
+│   │   │   ├── race/           # Race panels (RacePaceBoxPlot, TyreDegradation, PitStop, etc.)
+│   │   │   ├── practice/       # Practice panels (LongRun, ShortRun, Sector, Progression)
 │   │   │   └── track/          # Track Intelligence components
 │   │   ├── lib/                # API clients, hooks, utilities
 │   │   └── data/               # Track intelligence data (24 circuit analyses)
@@ -31,7 +33,7 @@ f1-engineering-app/
 │       ├── core/               # Logging, circuit configs (24 circuits)
 │       ├── models/             # Pydantic schemas
 │       ├── services/           # Analysis modules (Phases 2-6)
-│       └── tests/              # 264 unit tests
+│       └── tests/              # 271 tests (8 active files)
 ├── packages/
 │   ├── ui/                     # Shared React components
 │   └── models/                 # Shared TypeScript types
@@ -116,7 +118,7 @@ The ML service implements an 8-phase analysis pipeline for qualifying telemetry 
 | 5 | `services/insight_generation.py` | Template-based natural language insights (anti-hallucination) |
 | 6 | `services/performance_orchestrator.py` | Unified BFF endpoint chaining Phases 2-5 |
 | 7 | Frontend components | PerformanceInsightsPanel, CornerBreakdownPanel |
-| 8 | Testing & validation | 264 tests, multi-circuit validation |
+| 8 | Testing & validation | 271 tests, multi-circuit validation |
 
 #### ML Service Endpoints
 
@@ -172,19 +174,23 @@ CIRCUIT_CONFIGS = {
 - Natural language performance insights in Engineer and Driver modes
 - Session part filtering (Q1/Q2/Q3)
 
-### Race Analysis (Planned)
+### Race Analysis
 
-- Stint management and tyre degradation tracking
-- Pace evolution throughout the race
-- Position changes and overtake analysis
-- Pit stop strategy evaluation
+- Race pace distribution box plots with fuel correction toggle and team-coloured styling
+- Tyre degradation analysis with fuel-adjusted scatter plots and server-side linear regression
+- Pit stop analysis with three views: by team, by driver, and gap-to-fastest
+- Team performance quadrant with aerodynamic setup philosophy (SpeedST vs mean speed)
+- DNF status handling with finishing position resolution
+- Per-compound outlier detection for accurate lap classification
 
-### Practice Sessions (Planned)
+### Practice Sessions
 
-- Long run analysis with fuel correction
-- Telemetry consistency evaluation
-- Setup comparison insights
-- Tyre compound performance comparison
+- Long run pace comparison with violin charts, stint summary cards, and compound-coloured dots
+- Short run / best lap ranking with session-best verification indicators
+- Sector analysis with sector times table, purple sector highlighting, and speed trap bar chart
+- SVG track maps with colour-coded sector overlays for all 24 circuits
+- Cross-session progression showing gap-to-session-best across FP1/FP2/FP3
+- Fuel correction toggle with circuit-specific correction factors from Track Intelligence
 
 ---
 
@@ -236,7 +242,11 @@ docker-compose down
 ### Running Tests
 
 ```bash
-# ML service tests (264 tests)
+# API tests (313 tests)
+cd apps/api
+python -m pytest tests/ -v
+
+# ML service tests (271 tests)
 cd apps/ml_service
 python -m pytest tests/ -v
 
@@ -252,12 +262,21 @@ pnpm test
 
 | Component | Purpose |
 |-----------|---------|
-| `PerformanceInsightsPanel` | Unified performance analysis with technique profiles and insights |
+| `PerformanceInsightsPanel` | Unified qualifying performance analysis with technique profiles and insights |
 | `DriverInsightCard` | Individual driver technique breakdown with dimension bars |
 | `CornerBreakdownPanel` | Corner-by-corner delta table with cause attribution |
 | `ScalingMetadataPanel` | Delta confidence and scaling factor indicators |
-| `TelemetryChart` | Speed/throttle/brake trace visualization |
-| `DeltaChart` | Cumulative time delta visualization |
+| `TelemetryChart` | Speed/throttle/brake trace visualisation |
+| `DeltaChart` | Cumulative time delta visualisation |
+| `RacePaceBoxPlot` | Race pace distribution with fuel correction toggle |
+| `TyreDegradationPanel` | Fuel-adjusted tyre wear scatter plots with linear regression |
+| `PitStopPanel` | Pit stop analysis with by-team, by-driver, gap-to-fastest views |
+| `TeamPerformancePanel` | Aerodynamic setup quadrant chart (SpeedST vs mean speed) |
+| `LongRunPacePanel` | Practice long run violin charts with stint summary cards |
+| `ShortRunPanel` | Practice best lap ranking with verification indicators |
+| `SectorAnalysisPanel` | Practice sector times table + speed trap bar chart |
+| `SectorMapPanel` | SVG track overlay with colour-coded sector highlighting |
+| `SessionProgressionPanel` | Cross-session pace progression (connected dot plot) |
 
 ### Track Intelligence Components
 
@@ -273,12 +292,22 @@ pnpm test
 
 | Hook | Purpose |
 |------|---------|
-| `usePerformanceInsightsQuery` | Fetches unified performance data |
+| `usePerformanceInsightsQuery` | Fetches unified qualifying performance data |
 | `useCornerAnalysisQuery` | Fetches corner breakdown data |
 | `useScaledDeltaQuery` | Fetches scaled delta data |
 | `useTelemetryQuery` | Fetches telemetry traces |
 | `useSectorsQuery` | Fetches sector times |
 | `useTrackIntelligence` | Fetches track intelligence data |
+| `useRacePaceQuery` | Fetches race pace box plot data |
+| `useTyreDegradationQuery` | Fetches tyre degradation regression data |
+| `usePitStopQuery` | Fetches pit stop durations and consistency |
+| `useTeamPerformanceQuery` | Fetches team performance quadrant data |
+| `usePracticeSessionsQuery` | Fetches available practice sessions |
+| `useLongRunQuery` | Fetches long run stint data |
+| `useShortRunQuery` | Fetches short run best laps |
+| `useSectorAnalysisQuery` | Fetches sector analysis data |
+| `useCircuitSVGQuery` | Fetches track SVG for map rendering |
+| `useSessionProgressionQuery` | Fetches cross-session progression data |
 
 ---
 
@@ -335,7 +364,7 @@ See the `docs/` directory for detailed documentation:
 - TypeScript
 - Tailwind CSS
 - React Query (TanStack Query)
-- Recharts (data visualization)
+- Plotly.js (data visualisation via plotly.js-cartesian-dist-min)
 
 ### Backend
 - FastAPI
@@ -352,4 +381,4 @@ See the `docs/` directory for detailed documentation:
 ### Infrastructure
 - Docker / Docker Compose
 - pnpm workspaces (monorepo)
-- GitLab CI/CD
+- GitLab

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "web-dev",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "process.chdir('apps/web');require('next/dist/bin/next')"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev"],
       "port": 3000
     }
   ]

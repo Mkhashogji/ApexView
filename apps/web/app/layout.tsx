@@ -26,8 +26,17 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'F1 Engineering App',
-  description: 'Advanced Formula 1 telemetry and race analysis platform',
+  title: 'ApexView | Formula 1 Data Analytics',
+  description:
+    'Advanced Formula 1 telemetry and race analysis platform covering ' +
+    'qualifying, race strategy, practice performance, and circuit intelligence.',
+  openGraph: {
+    title: 'ApexView | Formula 1 Data Analytics',
+    description:
+      'Formula 1 data analytics platform — race strategy, qualifying analysis, ' +
+      'practice performance, and circuit intelligence for the 2025 season.',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({

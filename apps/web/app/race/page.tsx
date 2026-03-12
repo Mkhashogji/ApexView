@@ -1,6 +1,21 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import RaceContent from './RaceContent'
 import RacePageSkeleton from './RacePageSkeleton'
+
+export const metadata: Metadata = {
+  title: 'Race Analysis | ApexView',
+  description:
+    'Analyse Formula 1 race pace distribution, tyre degradation, pit stop ' +
+    'strategy, and team aerodynamic philosophy across the 2025 season.',
+  openGraph: {
+    title: 'Race Analysis | ApexView',
+    description:
+      'Race pace, tyre strategy, pit stop efficiency, and team performance ' +
+      'analysis for every round of the 2025 Formula 1 season.',
+    type: 'website',
+  },
+}
 
 /**
  * Race Analysis Page — Server Component

@@ -3,20 +3,30 @@ import { Suspense } from 'react'
 import { TrackIntelligenceContent } from './TrackIntelligenceContent'
 
 type Props = {
-  params: { round: string }
+  searchParams: { round?: string; season?: string }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const round = parseInt(params.round, 10)
-  
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const round = parseInt(searchParams.round || '24', 10)
+
   return {
-    title: `Round ${round} Track Intelligence | F1 Engineering`,
-    description: 'Comprehensive circuit analysis with technical insights, sector breakdown, and strategic considerations',
+    title: `Round ${round} Track Intelligence | ApexView`,
+    description:
+      'Comprehensive circuit analysis with technical insights, sector breakdown, ' +
+      'and strategic considerations.',
+    openGraph: {
+      title: `Round ${round} Track Intelligence | ApexView`,
+      description:
+        'Circuit characteristics, Pirelli tyre data, DRS zones, and strategic ' +
+        'insights for every Formula 1 Grand Prix venue.',
+      type: 'website',
+    },
   }
 }
 
-export default function TrackPage({ params }: Props) {
-  const round = parseInt(params.round, 10)
+export default function TrackPage({ searchParams }: Props) {
+  const round = parseInt(searchParams.round || '24', 10)
+  const season = parseInt(searchParams.season || '2025', 10)
 
   // Validate round number
   if (isNaN(round) || round < 1 || round > 24) {
@@ -35,7 +45,7 @@ export default function TrackPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <Suspense fallback={<TrackIntelligenceFallback />}>
-        <TrackIntelligenceContent round={round} />
+        <TrackIntelligenceContent round={round} season={season} />
       </Suspense>
     </div>
   )

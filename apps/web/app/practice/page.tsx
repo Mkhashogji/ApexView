@@ -4,8 +4,17 @@ import PracticeContent from './PracticeContent'
 import PracticePageSkeleton from './PracticePageSkeleton'
 
 export const metadata: Metadata = {
-  title: 'Practice Analysis | F1 Engineering',
-  description: 'Practice session analysis with long run pace, tyre insights, and session comparison',
+  title: 'Practice Analysis | ApexView',
+  description:
+    'Practice session analysis with long run pace, tyre insights, ' +
+    'and session comparison across the 2025 Formula 1 season.',
+  openGraph: {
+    title: 'Practice Analysis | ApexView',
+    description:
+      'Long run pace comparison, sector analysis, and session progression ' +
+      'for every practice weekend of the 2025 Formula 1 season.',
+    type: 'website',
+  },
 }
 
 /**

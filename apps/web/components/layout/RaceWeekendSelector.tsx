@@ -94,7 +94,7 @@ export function RaceWeekendSelector() {
         className="flex items-center gap-2 rounded-md bg-f1gray/50 px-3 py-2 text-sm font-medium transition-colors hover:bg-f1gray focus-ring"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Select race weekend"
+        aria-label={`${currentSeason} ${currentRace?.shortName || 'Select Race'} — select race weekend`}
       >
         <span className="text-gray-400">{currentSeason}</span>
         <span className="text-white">•</span>

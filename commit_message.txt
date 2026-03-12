@@ -1,241 +1,211 @@
-feat(practice): Complete Practice Page — three-phase analytical platform
+feat(home): implement complete Home Page plan across three phases
 
-The Practice page is a full data analysis platform for Formula 1 practice
-weekends, covering race simulation pace, qualifying simulation pace, sector-
-level timing, circuit layout context, and how driver performance evolved
-across each practice session. It is built using the same architecture as the
-Race and Qualifying pages: a FastAPI backend that processes and caches session
-data, React Query on the frontend to keep that data from being re-fetched
-unnecessarily, and a progressive rendering pipeline that displays a loading
-skeleton immediately while chart data loads in the background. Each panel is
-isolated behind its own error boundary so that a failure in one panel does
-not break the rest of the page. The page delivers five analytical panels
-across three implementation phases, all reading from a single shared data
-pipeline introduced in Phase 1.
+ApexView is a Formula 1 data analytics platform. The Home page is
+its entry point — the first thing any user or reviewer sees when
+they visit the application. Before this implementation, no Home
+page existed. Users arriving at the root URL would land on an
+empty route with no content, no navigation, and no identity.
 
----
+The Home page was built to serve three purposes: introduce what
+ApexView is and what it does, provide clear navigation to the four
+analytical pages (Qualifying, Race, Practice, and Track
+Intelligence), and establish a consistent, professional first
+impression. Unlike every other page in the application, the Home
+page makes no API calls and loads no external data — everything it
+displays is either static content or derived at build time from
+the 2025 race calendar. This makes it fast, reliable, and
+independent of the backend services.
 
-Phase 1 — Data Foundation & Long Run Pace Comparison
-
-Purpose: establish the practice data pipeline and deliver the primary
-analytical panel, which compares each driver's race-simulation pace across
-a session.
-
-A dedicated backend service module was built for practice data. It
-classifies every lap into one of five categories — RACING, IN_LAP, OUT_LAP,
-RED_FLAG, or ANOMALY — so that only genuine racing laps feed into the
-analysis. It applies within-stint fuel correction (using a 1.6 kg/lap fuel
-burn rate) to account for the fact that lighter cars at the end of a long
-run naturally lap faster than heavier ones at the start, making raw times
-misleading for pace comparison. It also derives a clean-air percentage for
-each stint by checking the gap to the car ahead: laps run in heavy traffic
-are flagged separately because a driver behind another car cannot show their
-true pace. A long run is defined as a stint of at least 4 laps
-(LONG_RUN_MIN_LAPS = 4); shorter stints are classified as short runs and
-used in Phase 2 instead.
-
-The central function, get_processed_practice_data(), processes an entire
-session once and caches the result. Every subsequent phase reads from this
-cache rather than re-loading raw data from FastF1, which keeps response
-times fast across all five endpoints. A new get_practice_laps() method was
-added to the FastF1 client layer, following the same pattern as the existing
-get_race_laps() but without finishing positions, which are not relevant in
-practice. Two API endpoints were added: GET /practice/sessions (to retrieve
-which sessions are available for a given race weekend) and GET
-/practice/long-runs (to serve long-run stint data for the panel).
-
-The Long Run Pace panel visualises each driver's stint as a violin plot — a
-chart shape that shows not just average pace but the full distribution of lap
-times within a stint. A wide violin at a given lap time means many laps were
-recorded near that pace; a narrow shape means the driver was highly
-consistent. The violin body is coloured by team and the individual lap dots
-inside it are coloured by tyre compound, so compound strategy is immediately
-visible alongside pace. Raw lap time arrays are sent from the backend so that
-the frontend can compute the violin shape (Kernel Density Estimation — the
-statistical method that generates the smooth curve) directly, preserving the
-full distribution rather than reducing it to a summary statistic like an
-average. Each stint also carries two contextual indicators: a degradation
-hint (the difference in average pace between the opening two laps and the
-closing two laps of a stint, computed only when at least 4 laps are
-available) and a clean-air percentage badge showing how much of the stint
-was run without traffic ahead. Compound filter tabs (ALL / SOFT / MEDIUM /
-HARD) let users reduce visual clutter by focusing on one compound at a time.
-The fuel correction toggle defaults to OFF so users see raw times by default
-and opt in to corrected times deliberately. Sprint weekends, which have only
-one practice session, show FP1 only with no session selector. On standard
-weekends, the session selector tabs (FP1 / FP2 / FP3) reuse the same CSS
-tab pattern established on the Qualifying page.
-
-Testing: 40 backend transform tests verify lap classification and fuel
-correction logic. 74 data service tests cover the pipeline, caching
-behaviour, and degradation calculations. Validation also included live
-Docker endpoint checks, a TypeScript zero-error build, and manual visual
-inspection of the violin plots to confirm correct y-axis orientation, stint
-labelling, compound colouring, and outlier exclusion.
+The implementation was structured across three sequential phases.
+Each phase had a clearly defined scope, a set of completion
+checks, and a validation step before the next phase began.
 
 ---
 
-Phase 2 — Short Run / Best Lap, Sector Analysis, and Circuit Map
+Phase 1: Structural Foundation
 
-Purpose: add three further panels — qualifying simulation rankings, sector
-timing breakdown, and a circuit map — all reading from the same Phase 1
-pipeline with no changes to Phase 1 code.
+Before any visible content was added, the architectural structure
+of the Home page was put in place. This involved setting up the
+page file, the loading skeleton, the navigation bar, and the
+application favicon.
 
-A key design decision in this phase was how to determine each driver's
-session-best lap reliably. The backend uses FastF1's is_personal_best flag
-for this, but applies it at the session level rather than per-driver: either
-all drivers in a session use the flag-based best lap, or all fall back to
-the computed minimum. This all-or-nothing approach avoids a fuel correction
-inversion problem that emerged during development — adjusting raw lap times
-for fuel weight within a stint could cause a driver's corrected times to rank
-in a different order from their official FIA timing, producing results
-inconsistent with what appeared on the timing tower. Using the official
-flag-based best laps as the single authoritative source resolves this. Two
-new endpoints were added: GET /practice/short-runs and
-GET /practice/sector-analysis.
+The page was built using Next.js App Router conventions, which
+means the entry point (page.tsx) runs on the server and handles
+page-level metadata such as the browser tab title. It delegates
+the interactive parts of the page to a separate client-side
+component (HomeContent.tsx), which runs in the browser. A loading
+skeleton (HomePageSkeleton.tsx) was created to display a
+placeholder layout while the page first loads, with dimensions
+pre-matched to the eventual content — this prevents the page from
+visually jumping or reflowing when the real content appears.
 
-Short Run / Best Lap panel: a ranked horizontal bar chart showing each
-driver's session-best lap time in order from fastest to slowest. Each bar
-includes a verification badge (a tick for laps confirmed as short-run
-qualifying simulations, an asterisk where only long-run data was available
-for that driver) so users can see how confident the ranking is. The gap to
-the session-fastest driver is annotated alongside each bar, with a compound
-badge showing which tyre the lap was set on. When a user opens the panel on
-FP2 — a session typically used for long-run race simulation rather than
-qualifying pace — the empty state names FP1 and FP3 explicitly as better
-sessions for this analysis.
+The Track Intelligence page URL was changed from a path-based
+format (/track/5) to a query-parameter format (/track?round=5).
+This aligns all analytical pages to a consistent URL pattern where
+session filters live in the query string rather than the path. A
+permanent redirect was added so that any existing links using the
+old format automatically forward to the new one without breaking.
 
-Sector Analysis panel: a three-part panel that breaks session pace down to
-its components. The first part is a sector times table showing each driver's
-best time in each of the three track sectors, with the outright fastest time
-per sector highlighted in purple and all other times colour-coded relative
-to it. The second part is a theoretical best lap card — the sum of the
-fastest sector 1 from any driver, the fastest sector 2 from any driver, and
-the fastest sector 3 from any driver — giving a reference time that no
-single driver actually achieved but that represents the ceiling of pace
-available in the session. The third part is a speed trap bar chart showing
-the maximum recorded trap speed per driver (SpeedST measurement point). The
-sector table and the theoretical best lap use two separate data structures
-maintained in parallel inside compute_sector_analysis(): the session-best
-lap index (which determines each driver's row in the table) and a per-driver
-accumulator that independently tracks each driver's fastest individual
-sector time regardless of which lap it came from.
-
-Circuit Map panel: SVG vector layouts for all 24 circuits on the 2025
-Formula 1 calendar, sourced from Gumroad f1-track-vectors. The three track
-sectors are colour-highlighted on each layout using dynamic colours drawn
-from the Track Intelligence page, with a defined fallback set for circuits
-where those colours are unavailable. The SVG structure was pre-inspected
-across 7 circuits before implementation to confirm a consistent internal
-format; each circuit is rendered as 6 path elements (3 grey base paths and
-3 coloured overlay paths, one per sector). The circuit map lookup file
-(circuitMap.ts) was corrected to match the actual asset naming convention
-used in the SVG bundle, with 16 of 24 entries updated from placeholder names.
-The legend showing the fastest driver in each sector is fed from the same
-sector analysis query used by the timing table above.
-
-Testing: 41 short run tests and 17 sector analysis tests. A dedicated
-regression guard test — test_official_ranking_overrides_fuel_corrected_
-stint_ordering — confirms that official FIA timing order is always preserved
-when it conflicts with fuel-corrected stint ordering, protecting the core
-data integrity decision made in this phase. All 4 endpoints were verified
-live in Docker with cross-endpoint data consistency checks.
+The navigation bar was updated to include five links: Home,
+Qualifying, Race, Practice, and Track Intelligence — providing
+consistent access to the full application from every page. An SVG
+favicon (the small icon shown in the browser tab) was added at
+the path Next.js automatically detects, so it appears without any
+additional configuration.
 
 ---
 
-Phase 3 — Session Progression & Performance Optimisation
+Phase 2: Content and Identity
 
-Purpose: complete the Practice page with a panel that shows how each
-driver's competitive position changed across the full practice weekend, and
-apply a performance optimisation pass to ensure the page loads quickly.
+With the structure in place, Phase 2 filled the page with its
+actual content across four components.
 
-The Session Progression panel answers a question the single-session panels
-cannot: did a driver improve their pace from FP1 to FP2 to FP3, or fall
-back? It plots each driver's gap to the session-fastest driver in each
-practice session, so a driver who improved across the weekend shows as an
-upward trend on the chart.
+HeroSection is the large introductory banner at the top of the
+page. It displays the ApexView name — "Apex" in white and "View"
+in the F1 red brand colour — using a bold, responsive heading
+that scales from a smaller size on mobile to a larger size on
+desktop. Below the heading is a one-line description of what
+ApexView does, followed by a prominent call-to-action button
+("Explore Race Data") that links to the Race page.
 
-The backend function compute_progression_stats() first checks which practice
-sessions actually took place for the selected race weekend before loading any
-data. This avoids unnecessary data calls for sprint weekends, where FP2 and
-FP3 do not take place. For each available session, raw lap times are used
-without fuel correction so that gaps are comparable across sessions that may
-have been held on different days with different track conditions. The gap for
-each driver is computed relative to the fastest time within that individual
-session — not across the whole weekend — so that natural track evolution
-(rubber laid down, track temperature changes) does not distort the
-comparison. If one session fails to load, results for the remaining sessions
-are still returned rather than the whole panel failing. Drivers who did not
-participate in a particular session due to a mid-weekend substitution simply
-do not appear in that session's data. One new endpoint was added: GET
-/practice/progression, which accepts a year and round number but no session
-parameter, because it covers the full weekend rather than a single session.
+SeasonStats shows three live figures derived from the 2025 F1
+race calendar: the total number of rounds in the season, the
+number of rounds completed, and whether the season is still in
+progress or finished. These values are calculated on the server
+when the page is built, so no separate data request is made when
+a user visits — the numbers are already ready. The figures use a
+monospace font with fixed-width digits so they align cleanly
+regardless of the values displayed.
 
-The chart uses two overlaid traces per driver: a team-coloured connecting
-line showing the trend across sessions, and individual data points coloured
-by the tyre compound used in each session's best lap. The y-axis is inverted
-using an explicit reversed range so that gap = 0 (the session fastest) sits
-at the top and improvement reads as an upward movement — consistent with how
-progress is naturally understood. For sprint weekends where only FP1 takes
-place and a trend line would carry no meaningful information, the panel falls
-back to a simple ranked driver list for that single session. The driver and
-team filter selector was updated with a new inline display mode to fix a
-clipping issue: the original dropdown was being cut off by a browser paint
-optimisation applied to panels that are off-screen before the user scrolls
-to them. URL state is preserved for the selected filter mode and active
-drivers using sp-prefixed query parameters (?spMode, ?spDrivers), consistent
-with the URL state approach used across other pages in the application.
+Four FeatureCards introduce each of the analytical pages. Each
+card poses a question that frames what the page helps answer —
+for example, "Who was genuinely fastest over a single lap, and
+why?" for the Qualifying page. Cards include a short list of
+analytical capabilities and a directional arrow that appears on
+hover to signal the card is a link.
 
-Performance optimisation: the four panels below the fold — Short Run, Sector
-Analysis, Circuit Map, and Session Progression — are deferred so they do not
-begin loading until they scroll into the viewport. This keeps the initial
-page load focused on the Long Run Pace panel at the top of the page. The
-Session Progression panel uses a slightly different layout structure from the
-other three: its outer container carries the scroll-trigger while its inner
-container holds the visible card. This split was necessary to prevent the
-filter selector from being clipped by the same browser paint optimisation
-that originally caused the dropdown issue, and mirrors the pattern used on
-the Tyre Degradation panel on the Race page. Two loading
-skeleton cards were also added for Sector Analysis and Session Progression so
-that the full page structure is shown during the initial load before data
-arrives.
+PlatformCapabilities is a section below the cards that lists
+eight statements describing the analytical scope of the platform,
+grouped under a clearly branded heading.
 
-Testing: 11 session progression tests covering a full 3-session weekend,
-sprint weekends, the zero-gap guard for the session leader, mid-weekend
-driver substitutions, session ordering, driver sorting, empty session
-handling, exception recovery, floating point precision, and enforcement of
-raw (uncorrected) times for all cross-session gap calculations. Full API
-suite: 313 tests across 11 test files, 0 regressions. TypeScript: zero
-compilation errors. Docker: all 5 practice endpoints verified live with 7
-cross-validation checks, including a cross-endpoint consistency check
-confirming that the FP2 times returned by the progression endpoint match the
-FP2 rankings returned by the short runs endpoint. Frontend: deferred loading
-confirmed on all 4 below-fold panels, API URL construction verified via
-network logs, and component structure validated via accessibility snapshot.
+All calendar-based figures are calculated on the server before
+the page is delivered to the browser. No data fetching happens
+on the client side — the Home page contains only static content
+and pre-computed values.
 
 ---
 
-Accompanying Race Page Fixes
+Phase 3: Polish and Performance
 
-Four small improvements to the Race page are included in this commit. They
-were developed during the Practice page implementation period, address gaps
-that surfaced during cross-page testing, and do not alter the Race page's
-existing analytical results or its test suite.
+Phase 3 focused on three areas: accessibility fixes identified
+through automated audit, entrance animations, and consistent
+page metadata across the whole application.
 
-DNF and driver status support: the race data service now reads each driver's
-final session status from FastF1 and passes it through to the frontend. This
-allows drivers who retired from the race to be labelled clearly in the pace
-distribution panel — their final lap is displayed in red with a DNF marker,
-distinguishing it from genuine race pace. Previously, retirement laps were
-indistinguishable from normal laps in the visualisation.
+The starting point was a Lighthouse audit — a standardised
+performance, accessibility, SEO, and best-practices scoring tool
+built into Chrome. The audit was run on the Home page before any
+code was written so that the findings drove the implementation
+rather than guesswork. Baseline scores on Desktop were:
+Performance 96, Accessibility 98, Best Practices 100, SEO 100.
 
-Per-compound outlier detection: the race transforms layer previously computed
-a single outlier threshold per driver across all their laps regardless of
-compound. It now groups by driver and compound together, which prevents a
-driver's wet-tyre laps (inherently slower) from distorting the threshold
-calculated from their dry-tyre laps, or vice versa.
+Three accessibility failures were identified and corrected:
 
-Null tyre life guard: a defensive null check was added in the tyre
-degradation service for cases where FastF1 does not return a tyre_life value
-for a stint. Previously this could cause an unhandled error; it now falls
-back gracefully without breaking the rest of the degradation calculation.
+The heading structure on the page was incorrect. HTML headings
+(h1, h2, h3 and so on) form an outline that screen readers use
+to help visually impaired users navigate a page. The page had an
+h1 at the top followed directly by h3 headings, skipping level
+h2 entirely — a violation of accessibility guidelines. This was
+fixed by adding a visually hidden h2 heading that restores the
+correct outline for screen readers without changing what sighted
+users see, and by correcting one section's heading level from
+h2 to h3.
+
+Interactive elements — the main call-to-action button and each
+feature card — were missing visible focus indicators. A focus
+indicator is the visible outline that appears around a button or
+link when a keyboard user tabs to it. Without them, keyboard-only
+users cannot tell which element is currently selected. The focus
+ring styling already used elsewhere in the application was applied
+to both elements.
+
+The round selector widget in the navigation bar had an
+accessibility label that did not include the text displayed inside
+the button. Accessibility guidelines require that a button's
+label contains its visible text so that voice control users can
+activate it by saying what they read on screen. The label was
+updated to include the currently selected race name.
+
+Entrance animations were added to give the page a polished feel
+on load. The three content sections — the hero banner, feature
+cards, and capabilities list — each fade in and slide up slightly
+in sequence, with a short delay between each section so they
+appear one after another rather than all at once. The animations
+are defined in CSS only, with no JavaScript involvement, keeping
+them lightweight. A CSS rule responds to the "reduce motion"
+accessibility setting that users can enable in their operating
+system, and disables all animations completely for those users —
+not just softens them — to avoid causing discomfort for people
+with motion sensitivity.
+
+Page metadata — the information embedded in each page's HTML that
+controls the browser tab title, search engine descriptions, and
+the preview card shown when a link is shared on social media —
+was inconsistent across the application. The root layout still
+used the development working title "F1 Engineering App" instead
+of "ApexView". Two pages (Race and Qualifying) had no metadata
+at all, meaning they would show a blank or generic title in
+browser tabs and search results. Two other pages (Practice and
+Track Intelligence) used "F1 Engineering" as the brand name
+instead of "ApexView". All six locations — five pages plus the
+root layout — were updated to use the consistent format
+"Page Name | ApexView" and now include social sharing metadata
+for every page. The Track Intelligence page generates its title
+dynamically based on the selected round, so its existing
+function was updated in place rather than replaced with a fixed
+alternative.
+
+The navigation bar logo was also corrected as part of this brand
+remediation. It previously displayed "F1 Engineering" in solid
+red — a visible holdout from the development era that contradicted
+the corrected metadata shown on every page. The logo was updated
+to match the HeroSection headline convention: "Apex" in white and
+"View" in red, using the same uppercase tracking-tight styling.
+This was the last remaining instance of "F1 Engineering" anywhere
+in the web application. A full brand audit across all TypeScript,
+stylesheet, and JSON files confirms zero remaining instances.
+
+Final Lighthouse scores on Desktop: Performance 100, Accessibility
+100, Best Practices 100, SEO 100. All four categories at maximum.
+The Phase 3 accessibility fixes — heading structure, focus
+indicators, and the navigation label — were the changes that
+brought Accessibility from 98 to 100. The metadata remediation
+completed the SEO coverage that was already at 100.
+
+---
+
+Testing and Validation
+
+Phase 1: All five routes were confirmed to return successful HTTP
+responses after the navigation changes. The Track Intelligence
+redirect was verified — requests to the old URL format are
+correctly forwarded to the new one. Docker build completed cleanly
+across all three application services.
+
+Phase 2: The page was visually inspected across mobile (375px),
+tablet (768px), and desktop (1280px and 1536px) screen widths to
+confirm layout, typography, and spacing at each size. The server-
+side calendar calculation was confirmed to pass correctly to the
+client-side component. Docker build clean.
+
+Phase 3: Automated text-search checks confirmed the following —
+the animation definitions are present in the global stylesheet,
+the reduced-motion override is present, animation classes are
+applied to exactly three sections in HomeContent.tsx and nowhere
+else, zero instances of the old "F1 Engineering" brand name
+remain in any metadata file, all six files have page titles and
+social sharing metadata, and all five page titles in the rendered
+HTML match the expected "Page Name | ApexView" format. TypeScript
+compilation produced zero errors. Docker rebuild clean. No layout
+overflow at 375px mobile width. The call-to-action button meets
+the 44px minimum touch target size required for mobile usability.
+All 25 completion gate items confirmed passing.

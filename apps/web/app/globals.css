@@ -121,3 +121,44 @@
   }
 }
 
+/* ============================================================
+   Home Page Entrance Animations
+   Added: Phase 3
+   ============================================================ */
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-in {
+  animation: fadeSlideIn 400ms ease-out forwards;
+}
+
+.animate-fade-slide-in-delay-1 {
+  animation: fadeSlideIn 400ms ease-out 150ms forwards;
+  opacity: 0;
+}
+
+.animate-fade-slide-in-delay-2 {
+  animation: fadeSlideIn 400ms ease-out 300ms forwards;
+  opacity: 0;
+}
+
+/* Respect user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-slide-in,
+  .animate-fade-slide-in-delay-1,
+  .animate-fade-slide-in-delay-2 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+

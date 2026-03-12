@@ -16,6 +16,7 @@ const navLinks = [
   { href: '/qualifying', label: 'Qualifying' },
   { href: '/race', label: 'Race' },
   { href: '/practice', label: 'Practice' },
+  { href: '/track', label: 'Track Intelligence' },
 ]
 
 /**
@@ -65,11 +66,11 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link 
-              href="/" 
-              className="font-heading text-2xl font-bold text-f1red transition-opacity hover:opacity-80"
+            <Link
+              href="/"
+              className="font-heading text-2xl font-bold uppercase tracking-tight text-white transition-opacity hover:opacity-80"
             >
-              F1 Engineering
+              Apex<span className="text-f1red">View</span>
             </Link>
           </div>
 

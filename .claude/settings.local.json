@@ -31,7 +31,8 @@
       "Bash(curl -s \"http://localhost:8000/practice/long-runs?session=2025_1_FP2\")",
       "Bash(python -m json.tool)",
       "Bash(curl -s \"http://localhost:8000/practice/short-runs?session=2025_1_FP2\")",
-      "Bash(docker ps --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\")"
+      "Bash(docker ps --format \"table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}\")",
+      "Bash(grep -c \"def test_\" test_*.py)"
     ]
   }
 }

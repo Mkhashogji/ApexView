@@ -419,7 +419,7 @@ def _boost_confidence_from_delta_accuracy(
 
 **Command:**
 ```bash
-docker exec f1-ml python -m pytest tests/test_corner_analysis.py -v --tb=short
+docker exec f1-analysis python -m pytest tests/test_corner_analysis.py -v --tb=short
 ```
 
 **Output:**
@@ -474,7 +474,7 @@ def test_combine_confidence_low_low(self):
 
 **Before Fix Diagnostic:**
 ```bash
-docker exec f1-ml python -c "
+docker exec f1-analysis python -c "
 from services.corner_analysis import detect_braking_zone
 import numpy as np
 
@@ -503,7 +503,7 @@ Confidence: high
 
 **Command:**
 ```bash
-curl -s -X POST "http://localhost:8501/ml/corner-analysis" \
+curl -s -X POST "http://localhost:8501/analysis/corner-analysis" \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "2025_Monaco_Q3",
@@ -526,7 +526,7 @@ curl -s -X POST "http://localhost:8501/ml/corner-analysis" \
 
 **Command:**
 ```bash
-docker exec f1-ml python -m pytest tests/ -v --tb=short
+docker exec f1-analysis python -m pytest tests/ -v --tb=short
 ```
 
 **Output:**
@@ -544,13 +544,13 @@ tests/test_technique_profiling.py ...................... [100%]
 ========================= 269 passed, 2 skipped =========================
 ```
 
-**Purpose:** Confirms that confidence improvements don't break any other functionality in the ML service.
+**Purpose:** Confirms that confidence improvements don't break any other functionality in the Analysis service.
 
 ### 5.6 Gradient Value Validation
 
 **Command:**
 ```bash
-docker exec f1-ml python -c "
+docker exec f1-analysis python -c "
 from services.corner_analysis import detect_braking_zone
 import numpy as np
 
@@ -584,7 +584,7 @@ Trail braking: medium
 | Corner analysis unit tests | 38 | All pass | Confidence combination, brake detection |
 | Delta analysis tests | 28 | All pass | Ensure delta confidence is calculated correctly |
 | Technique profiling tests | 36 | All pass | Ensure confidence propagates to profiles |
-| Full ML service suite | 269 | All pass | No regressions |
+| Full Analysis service suite | 269 | All pass | No regressions |
 
 ---
 
@@ -617,8 +617,8 @@ Users can now:
 
 | File | Changes |
 |------|---------|
-| `apps/ml_service/services/corner_analysis.py` | Bug fix (3 lines), confidence functions |
-| `apps/ml_service/tests/test_corner_analysis.py` | Confidence combination tests |
+| `apps/analysis_service/services/corner_analysis.py` | Bug fix (3 lines), confidence functions |
+| `apps/analysis_service/tests/test_corner_analysis.py` | Confidence combination tests |
 | `CLAUDE.md` | Documentation of Issue #3 |
 
 

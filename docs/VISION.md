@@ -24,7 +24,7 @@ The F1 Engineering App is a comprehensive telemetry and race analysis platform d
 - Circuit-specific information with track maps
 - Driver and team statistics
 
-### 4. **AI-Powered Insights**
+### 4. **Data-Driven Insights**
 - Automated performance analysis
 - Setup hints based on telemetry patterns
 - Similarity detection for lap comparison
@@ -111,5 +111,5 @@ The F1 Engineering App is a comprehensive telemetry and race analysis platform d
 - Mobile app for iOS/Android 
 - Community features (shared analysis, comments)
 - Integration with F1TV for synchronized video playback 
-- Machine learning models for strategy optimization
+- Telemetry analysis models for strategy optimization
 

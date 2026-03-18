@@ -43,7 +43,7 @@ Phase 3 implements the Corner Analysis Module, which analyzes WHERE and WHY time
 
 ## Files Created (5 new files)
 
-### 1. `apps/ml_service/services/corner_analysis.py` (~400 lines)
+### 1. `apps/analysis_service/services/corner_analysis.py` (~400 lines)
 
 **Purpose:** Core analysis module with hybrid zone detection algorithm
 
@@ -106,7 +106,7 @@ BRAKE_GRADIENT_THRESHOLD = 5.0   # Minimum gradient (%/10m) for detection
 
 ---
 
-### 2. `apps/ml_service/tests/test_corner_analysis.py` (~350 lines)
+### 2. `apps/analysis_service/tests/test_corner_analysis.py` (~350 lines)
 
 **Purpose:** 31 unit tests covering all functions
 
@@ -191,7 +191,7 @@ export function useCornerAnalysisQuery(
 
 ## Files Modified (7 files)
 
-### 1. `apps/ml_service/models/schemas.py`
+### 1. `apps/analysis_service/models/schemas.py`
 
 **Added 5 Pydantic schemas:**
 
@@ -236,7 +236,7 @@ class CornerAnalysisResponse(BaseModel):
 
 ---
 
-### 2. `apps/ml_service/main.py`
+### 2. `apps/analysis_service/main.py`
 
 **Added imports:**
 ```python
@@ -256,7 +256,7 @@ from services.corner_analysis import (
 **Added endpoint:**
 ```python
 @app.post(
-    "/ml/corner-analysis",
+    "/analysis/corner-analysis",
     response_model=CornerAnalysisResponse,
     summary="Analyze time gained/lost at each corner",
     tags=["Phase 3 - Corner Analysis"]
@@ -274,7 +274,7 @@ async def get_corner_analysis(request: CornerAnalysisRequest):
 
 **Updated startup logging:**
 ```python
-logger.info("Endpoints: /health, /lap-similarity, /driver-style-clustering, /ml/scaled-delta, /ml/corner-analysis")
+logger.info("Endpoints: /health, /lap-similarity, /driver-style-clustering, /analysis/scaled-delta, /analysis/corner-analysis")
 ```
 
 ---
@@ -353,7 +353,7 @@ export async function fetchCornerAnalysis(
   corners: Corner[],
   sessionPart?: string
 ): Promise<CornerAnalysisResponse> {
-  const response = await fetch(`${ML_SERVICE_URL}/ml/corner-analysis`, {
+  const response = await fetch(`${ML_SERVICE_URL}/analysis/corner-analysis`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -501,7 +501,7 @@ tests/test_corner_analysis.py::TestEdgeCases::test_negative_delta_time_gained PA
 docker compose up -d ml api
 
 # Test endpoint
-curl -s -X POST http://localhost:8501/ml/corner-analysis \
+curl -s -X POST http://localhost:8501/analysis/corner-analysis \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "2025_24_Qualifying",
@@ -596,7 +596,7 @@ feat(ai-insights): Phase 3 - Corner Analysis Module
 
 - Create corner_analysis.py with hybrid zone detection algorithm
 - Add 31 unit tests for corner analysis (100% passing)
-- Add POST /ml/corner-analysis endpoint
+- Add POST /analysis/corner-analysis endpoint
 - Add 5 Pydantic schemas and 6 TypeScript types
 - Create CornerBreakdownPanel UI component with:
   - Sortable table (corner, delta, cause)
@@ -619,12 +619,12 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 | Action | File | Lines |
 |--------|------|-------|
-| CREATE | `apps/ml_service/services/corner_analysis.py` | ~400 |
-| CREATE | `apps/ml_service/tests/test_corner_analysis.py` | ~350 |
+| CREATE | `apps/analysis_service/services/corner_analysis.py` | ~400 |
+| CREATE | `apps/analysis_service/tests/test_corner_analysis.py` | ~350 |
 | CREATE | `apps/web/lib/hooks/useCornerAnalysisQuery.ts` | ~35 |
 | CREATE | `apps/web/components/panels/CornerBreakdownPanel.tsx` | ~200 |
-| MODIFY | `apps/ml_service/models/schemas.py` | +70 |
-| MODIFY | `apps/ml_service/main.py` | +180 |
+| MODIFY | `apps/analysis_service/models/schemas.py` | +70 |
+| MODIFY | `apps/analysis_service/main.py` | +180 |
 | MODIFY | `packages/models/src/types.ts` | +60 |
 | MODIFY | `apps/web/lib/api.ts` | +75 |
 | MODIFY | `apps/web/lib/hooks/queryKeys.ts` | +8 |

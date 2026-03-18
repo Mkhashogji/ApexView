@@ -21,10 +21,12 @@ interface UsePerformanceInsightsOptions {
   mode?: InsightMode
   sessionPart?: string
   trackLength?: number
+  /** External gate — pass false to defer query (e.g. useVisibility) */
+  enabled?: boolean
 }
 
 /**
- * Fetch unified performance insights from the ML service.
+ * Fetch unified performance insights from the Analysis service.
  *
  * @param sessionId - Session identifier (e.g., '2025_24_Qualifying')
  * @param referenceDriver - Reference driver code (e.g., 'VER')
@@ -42,9 +44,10 @@ export function usePerformanceInsightsQuery({
   mode = 'engineer',
   sessionPart,
   trackLength,
+  enabled: externalEnabled,
 }: UsePerformanceInsightsOptions) {
   return useQuery<PerformanceInsightsResponse, Error>({
-    queryKey: queryKeys.ml.performanceInsights(
+    queryKey: queryKeys.analysis.performanceInsights(
       sessionId,
       referenceDriver,
       compareDrivers,
@@ -61,13 +64,15 @@ export function usePerformanceInsightsQuery({
         sessionPart,
         trackLength
       ),
-    // Only enable when all required data is present
+    // External gate (useVisibility) AND internal data-readiness gate
     enabled:
+      (externalEnabled !== false) &&
       !!sessionId &&
       !!referenceDriver &&
       compareDrivers.length > 0 &&
       !!corners &&
       corners.length > 0,
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

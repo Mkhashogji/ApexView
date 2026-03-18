@@ -96,7 +96,7 @@ if driver_braking <= session_braking_p30:
 
 ### Step 2.1: Core Module Creation
 
-**File**: `apps/ml_service/services/technique_profiling.py` (788 lines)
+**File**: `apps/analysis_service/services/technique_profiling.py` (788 lines)
 
 **What We Did**:
 Created the core technique profiling module with comprehensive documentation, data classes, constants, and algorithms.
@@ -391,7 +391,7 @@ def profile_drivers(
 
 ### Step 2.7: Pydantic Schemas
 
-**File**: `apps/ml_service/models/schemas.py` (160 lines added)
+**File**: `apps/analysis_service/models/schemas.py` (160 lines added)
 
 **What We Did**:
 Created Pydantic schemas for API request/response validation.
@@ -440,14 +440,14 @@ class TechniqueProfilingResponse(BaseModel):
 
 ### Step 2.8: API Endpoint Integration
 
-**File**: `apps/ml_service/main.py` (270 lines added)
+**File**: `apps/analysis_service/main.py` (270 lines added)
 
 **What We Did**:
-Added the `/ml/technique-profile` POST endpoint with full Phase 2/3/4 integration.
+Added the `/analysis/technique-profile` POST endpoint with full Phase 2/3/4 integration.
 
 **Endpoint Specification**:
 ```
-POST /ml/technique-profile
+POST /analysis/technique-profile
 Content-Type: application/json
 
 Request Body:
@@ -486,7 +486,7 @@ Request Body:
 
 ### Step 2.9: Unit Tests
 
-**File**: `apps/ml_service/tests/test_technique_profiling.py` (450 lines)
+**File**: `apps/analysis_service/tests/test_technique_profiling.py` (450 lines)
 
 **What We Did**:
 Created 43 comprehensive unit tests covering all functions and edge cases.
@@ -694,7 +694,7 @@ Created 43 comprehensive unit tests covering all functions and edge cases.
 ### 4.1 Docker Container Rebuild
 
 ```bash
-$ docker compose build ml_service
+$ docker compose build analysis_service
 [+] Building 45.2s (12/12) FINISHED
  => [internal] load build definition from Dockerfile
  => => transferring dockerfile: 1.23kB
@@ -708,17 +708,17 @@ $ docker compose build ml_service
  => [6/7] RUN poetry install --no-dev --no-interaction --no-ansi
  => [7/7] COPY . .
  => exporting to image
- => => naming to docker.io/library/f1-engineering-app-ml_service
+ => => naming to docker.io/library/f1-engineering-app-analysis_service
 
-$ docker compose up -d ml_service
+$ docker compose up -d analysis_service
 [+] Running 1/1
- ✔ Container f1-ml  Started
+ ✔ Container f1-analysis  Started
 ```
 
 ### 4.2 Unit Test Execution
 
 ```bash
-$ docker exec f1-ml pytest tests/test_technique_profiling.py -v
+$ docker exec f1-analysis pytest tests/test_technique_profiling.py -v
 
 ======================== test session starts =========================
 platform linux -- Python 3.12.0, pytest-8.0.0, pluggy-1.3.0
@@ -802,22 +802,22 @@ assert profiles[0].braking.percentile == 50.0  # Single value = 50th percentile
 ### 4.4 API Endpoint Verification
 
 ```bash
-$ docker exec f1-ml curl -s http://localhost:8501/ | jq
+$ docker exec f1-analysis curl -s http://localhost:8501/ | jq
 {
-  "name": "F1 ML Service",
+  "name": "F1 Analysis Service",
   "version": "0.1.0",
   "status": "healthy",
   "endpoints": [
-    "/ml/cluster",
-    "/ml/similarity",
-    "/ml/scaled-delta",
-    "/ml/corner-analysis",
-    "/ml/technique-profile"
+    "/analysis/cluster",
+    "/analysis/similarity",
+    "/analysis/scaled-delta",
+    "/analysis/corner-analysis",
+    "/analysis/technique-profile"
   ]
 }
 ```
 
-**Result**: The `/ml/technique-profile` endpoint is registered and accessible.
+**Result**: The `/analysis/technique-profile` endpoint is registered and accessible.
 
 ---
 
@@ -827,20 +827,20 @@ $ docker exec f1-ml curl -s http://localhost:8501/ | jq
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `apps/ml_service/services/technique_profiling.py` | 788 | Core Phase 4 module |
-| `apps/ml_service/tests/test_technique_profiling.py` | 450 | Unit tests (43 tests) |
+| `apps/analysis_service/services/technique_profiling.py` | 788 | Core Phase 4 module |
+| `apps/analysis_service/tests/test_technique_profiling.py` | 450 | Unit tests (43 tests) |
 
 ### 5.2 Modified Files
 
 | File | Lines Added | Changes |
 |------|-------------|---------|
-| `apps/ml_service/models/schemas.py` | ~160 | Phase 4 Pydantic schemas |
-| `apps/ml_service/main.py` | ~270 | `/ml/technique-profile` endpoint |
+| `apps/analysis_service/models/schemas.py` | ~160 | Phase 4 Pydantic schemas |
+| `apps/analysis_service/main.py` | ~270 | `/analysis/technique-profile` endpoint |
 
 ### 5.3 File Structure
 
 ```
-apps/ml_service/
+apps/analysis_service/
 ├── main.py                          # FastAPI app + endpoints
 ├── models/
 │   └── schemas.py                   # Pydantic request/response schemas
@@ -860,7 +860,7 @@ apps/ml_service/
 
 ## 6. API Reference
 
-### 6.1 Endpoint: POST /ml/technique-profile
+### 6.1 Endpoint: POST /analysis/technique-profile
 
 **Summary**: Generate technique profiles for drivers using session-relative classification.
 

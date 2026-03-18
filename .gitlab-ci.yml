@@ -43,13 +43,13 @@ lint:api:
     - branches
     - merge_requests
 
-lint:ml:
+lint:analysis:
   stage: lint
   image: python:3.11-slim
   before_script:
     - pip install ruff
   script:
-    - cd apps/ml_service && ruff check .
+    - cd apps/analysis_service && ruff check .
   only:
     - branches
     - merge_requests
@@ -85,14 +85,14 @@ test:api:
     - branches
     - merge_requests
 
-test:ml:
+test:analysis:
   stage: test
   image: python:3.11-slim
   before_script:
-    - cd apps/ml_service
+    - cd apps/analysis_service
     - pip install -e ".[dev]"
   script:
-    - cd apps/ml_service && pytest -q
+    - cd apps/analysis_service && pytest -q
   only:
     - branches
     - merge_requests
@@ -138,27 +138,27 @@ dockerize:
     # Build images
     - docker build -t $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA -f apps/web/Dockerfile .
     - docker build -t $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA -f apps/api/Dockerfile .
-    - docker build -t $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA -f apps/ml_service/Dockerfile .
+    - docker build -t $CI_REGISTRY_IMAGE/analysis:$CI_COMMIT_SHORT_SHA -f apps/analysis_service/Dockerfile .
     
     # Tag as latest for main branch
     - |
       if [ "$CI_COMMIT_BRANCH" == "main" ]; then
         docker tag $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/web:latest
         docker tag $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/api:latest
-        docker tag $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/ml:latest
+        docker tag $CI_REGISTRY_IMAGE/analysis:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/analysis:latest
       fi
     
     # Push images
     - docker push $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA
     - docker push $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA
-    - docker push $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/analysis:$CI_COMMIT_SHORT_SHA
     
     # Push latest tags
     - |
       if [ "$CI_COMMIT_BRANCH" == "main" ]; then
         docker push $CI_REGISTRY_IMAGE/web:latest
         docker push $CI_REGISTRY_IMAGE/api:latest
-        docker push $CI_REGISTRY_IMAGE/ml:latest
+        docker push $CI_REGISTRY_IMAGE/analysis:latest
       fi
   only:
     - main
@@ -179,7 +179,7 @@ dockerize:
 #     - echo "Images available:"
 #     - echo "  - $CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA"
 #     - echo "  - $CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA"
-#     - echo "  - $CI_REGISTRY_IMAGE/ml:$CI_COMMIT_SHORT_SHA"
+#     - echo "  - $CI_REGISTRY_IMAGE/analysis:$CI_COMMIT_SHORT_SHA"
 #     # Add deployment commands here (e.g., kubectl, docker-compose, etc.)
 #   only:
 #     - main

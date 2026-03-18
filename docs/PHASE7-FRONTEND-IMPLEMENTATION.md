@@ -7,7 +7,7 @@
 | **Phase** | 7 of 8 |
 | **Module** | Performance Insights Panel |
 | **Location** | `apps/web/components/panels/PerformanceInsightsPanel/` |
-| **Dependencies** | Phase 6 endpoint (`/ml/performance-insights`), React Query, Tailwind CSS |
+| **Dependencies** | Phase 6 endpoint (`/analysis/performance-insights`), React Query, Tailwind CSS |
 | **Status** | Complete |
 | **Test Status** | TypeScript compilation passes, Next.js build successful |
 
@@ -31,8 +31,8 @@
 
 Phase 7 transforms the technical analysis from Phases 2-6 into a user-facing visual interface. The primary objectives were:
 
-1. **Replace AIInsights**: Remove the legacy component displaying meaningless cosine similarity scores ("99.9% similar")
-2. **Consume Phase 6 Payload**: Create a frontend that consumes the unified `/ml/performance-insights` endpoint
+1. **Replace AnalysisInsights**: Remove the legacy component displaying meaningless cosine similarity scores ("99.9% similar")
+2. **Consume Phase 6 Payload**: Create a frontend that consumes the unified `/analysis/performance-insights` endpoint
 3. **Dual-Mode Display**: Support both Engineer (technical metrics) and Driver (actionable coaching) perspectives
 4. **Rich Visualization**: Display technique profiles, dimension bars, and focus areas
 5. **Maintain Patterns**: Follow existing codebase conventions for consistency
@@ -45,11 +45,11 @@ Phase 7 transforms the technical analysis from Phases 2-6 into a user-facing vis
 | **API Integration** | Created `fetchPerformanceInsights()` function calling the unified endpoint |
 | **React Query Hook** | Implemented `usePerformanceInsightsQuery` with proper caching and error handling |
 | **Component Library** | Built 8 modular components for the Performance Insights Panel |
-| **Seamless Integration** | Replaced AIInsights with zero breaking changes to QualifyingContent |
+| **Seamless Integration** | Replaced AnalysisInsights with zero breaking changes to QualifyingContent |
 
 ### 1.3 The Transformation
 
-**Before (AIInsights)**:
+**Before (AnalysisInsights)**:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  AI Insights                                                │
@@ -170,7 +170,7 @@ export async function fetchPerformanceInsights(
   mode: 'engineer' | 'driver' = 'engineer',
   sessionPart?: string
 ): Promise<PerformanceInsightsResponse> {
-  const response = await fetch(`${ML_SERVICE_URL}/ml/performance-insights`, {
+  const response = await fetch(`${ML_SERVICE_URL}/analysis/performance-insights`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -438,10 +438,10 @@ export function PerformanceInsightsPanel({ sessionId, referenceDriver, selectedD
 **Changes**:
 
 ```diff
-- import { AIInsights } from '@/components/panels/AIInsights'
+- import { AnalysisInsights } from '@/components/panels/AnalysisInsights'
 + import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsightsPanel'
 
-- <AIInsights
+- <AnalysisInsights
 -   sessionId={sessionId}
 -   sectorData={sectorsData ?? []}
 -   referenceDriver={referenceDriver}
@@ -456,7 +456,7 @@ export function PerformanceInsightsPanel({ sessionId, referenceDriver, selectedD
 + />
 ```
 
-**Rationale**: The new component requires corners (from trackData) and sessionPart for the Phase 6 endpoint. The old AIInsights used sectorData which is no longer needed.
+**Rationale**: The new component requires corners (from trackData) and sessionPart for the Phase 6 endpoint. The old AnalysisInsights used sectorData which is no longer needed.
 
 ---
 
@@ -477,7 +477,7 @@ export function PerformanceInsightsPanel({ sessionId, referenceDriver, selectedD
 │     ↓                                                                       │
 │  4. usePerformanceInsightsQuery: Enabled condition becomes true             │
 │     ↓                                                                       │
-│  5. fetchPerformanceInsights: POST to /ml/performance-insights              │
+│  5. fetchPerformanceInsights: POST to /analysis/performance-insights              │
 │     ↓                                                                       │
 │  6. Phase 6 Backend: Orchestrates Phases 2→3→4→5                            │
 │     ↓                                                                       │
@@ -667,7 +667,7 @@ QualifyingContent
                            │   fetchPerformanceInsights
                            │         │
                            │         ▼
-                           │   /ml/performance-insights
+                           │   /analysis/performance-insights
                            │         │
                            │         ▼
                            │   PerformanceInsightsResponse

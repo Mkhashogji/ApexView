@@ -4,34 +4,151 @@
   "country": "Belgium",
   "length": 7004,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 2050 },
-    { "sectorNumber": 2, "startDistance": 2050, "endDistance": 4950 },
-    { "sectorNumber": 3, "startDistance": 4950, "endDistance": 7004 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 2050
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 2050,
+      "endDistance": 4950
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 4950,
+      "endDistance": 7004
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 750, "activationPoint": 1100, "endPoint": 1850 },
-    { "zoneNumber": 2, "detectionPoint": 6650, "activationPoint": 6900, "endPoint": 400, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 750,
+      "activationPoint": 1100,
+      "endPoint": 1850
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 6650,
+      "activationPoint": 6900,
+      "endPoint": 400,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 450, "type": "right", "name": "La Source" },
-    { "cornerNumber": 2, "distance": 820, "type": "left", "name": "Eau Rouge" },
-    { "cornerNumber": 3, "distance": 900, "type": "right", "name": "Eau Rouge" },
-    { "cornerNumber": 4, "distance": 1050, "type": "left", "name": "Raidillon" },
-    { "cornerNumber": 5, "distance": 1900, "type": "left", "name": "Les Combes" },
-    { "cornerNumber": 6, "distance": 2200, "type": "right", "name": "Malmedy" },
-    { "cornerNumber": 7, "distance": 2550, "type": "right", "name": "Rivage" },
-    { "cornerNumber": 8, "distance": 2900, "type": "left", "name": "Unnamed" },
-    { "cornerNumber": 9, "distance": 3200, "type": "right", "name": "Speaker's Corner" },
-    { "cornerNumber": 10, "distance": 3600, "type": "left", "name": "Pouhon Entry" },
-    { "cornerNumber": 11, "distance": 3900, "type": "left", "name": "Pouhon Exit" },
-    { "cornerNumber": 12, "distance": 4300, "type": "left", "name": "Fagnes" },
-    { "cornerNumber": 13, "distance": 4500, "type": "right", "name": "Piff Paff" },
-    { "cornerNumber": 14, "distance": 4900, "type": "right", "name": "Campus" },
-    { "cornerNumber": 15, "distance": 5400, "type": "right", "name": "Curve Paul Frère" },
-    { "cornerNumber": 16, "distance": 5900, "type": "left", "name": "Blanchimont" },
-    { "cornerNumber": 17, "distance": 6150, "type": "right", "name": "Unnamed" },
-    { "cornerNumber": 18, "distance": 6700, "type": "left", "name": "Bus Stop Entry" },
-    { "cornerNumber": 19, "distance": 6850, "type": "right", "name": "Bus Stop Exit" }
+    {
+      "cornerNumber": 1,
+      "distance": 450,
+      "type": "right",
+      "name": "La Source"
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 820,
+      "type": "left",
+      "name": "Eau Rouge"
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 900,
+      "type": "right",
+      "name": "Raidillon"
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 1050,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 1900,
+      "type": "left",
+      "name": "Les Combes"
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 2200,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 2550,
+      "type": "right",
+      "name": "Bruxelles"
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 2900,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 3200,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 3600,
+      "type": "left",
+      "name": "Pouhon"
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 3900,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 4300,
+      "type": "left",
+      "name": "Fagnes"
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 4500,
+      "type": "right",
+      "name": "Jacky Ickx"
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 4900,
+      "type": "right",
+      "name": "Campus"
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 5400,
+      "type": "right",
+      "name": "Paul Frère"
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 5900,
+      "type": "left",
+      "name": "Blanchimont"
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 6150,
+      "type": "right",
+      "name": "Bus Stop Chicane"
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 6700,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 19,
+      "distance": 6850,
+      "type": "right",
+      "name": null
+    }
   ]
 }
-

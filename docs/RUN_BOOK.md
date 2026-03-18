@@ -9,7 +9,7 @@ This guide will help you set up and run the F1 Engineering App, featuring qualif
 The application consists of three microservices:
 - **Web** (Next.js) - Frontend on port 3000
 - **API** (FastAPI) - Backend gateway on port 8000
-- **ML** (FastAPI) - ML service on port 8501
+- **ML** (FastAPI) - Analysis service on port 8501
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ docker-compose down
 - Frontend: http://localhost:3000
 - API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
-- ML Service: http://localhost:8501
+- Analysis Service: http://localhost:8501
 - ML Docs: http://localhost:8501/docs
 
 ### Docker Services
@@ -87,8 +87,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e ".[dev]"
 cd ../..
 
-# Install ML service dependencies
-cd apps/ml_service
+# Install Analysis service dependencies
+cd apps/analysis_service
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e ".[dev]"
@@ -140,7 +140,7 @@ This will start:
 - Backend API: `http://localhost:8000`
 - API Docs: `http://localhost:8000/docs`
 
-**Note:** ML service must be started separately in local dev (see below)
+**Note:** Analysis service must be started separately in local dev (see below)
 
 ### Option 2: Run Services Individually
 
@@ -168,17 +168,17 @@ pnpm dev:web
 
 Frontend will be available at `http://localhost:3000`
 
-#### ML Service
+#### Analysis Service
 
 ```bash
-cd apps/ml_service
+cd apps/analysis_service
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-# Start ML service
+# Start Analysis service
 uvicorn main:app --reload --port 8501
 ```
 
-ML Service will be available at `http://localhost:8501`
+Analysis Service will be available at `http://localhost:8501`
 
 ## Testing the Application
 

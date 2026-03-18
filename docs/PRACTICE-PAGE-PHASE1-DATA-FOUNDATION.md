@@ -467,7 +467,7 @@ Session ID is derived as `${season}_${round}_${activeSession}` (e.g., `2025_24_F
 
 All 104 new tests were self-contained with `_make_lap()` and `_make_stint_laps()` factory helpers. Tests used `pytest.approx()` for floating-point comparisons with `abs=1e-6` for time values and `abs=1e-4` for percentages. No external dependencies or fixtures were required.
 
-The full regression suite (234+ tests) was run to confirm zero regressions across existing qualifying, race, and ML service tests.
+The full regression suite (234+ tests) was run to confirm zero regressions across existing qualifying, race, and Analysis service tests.
 
 TypeScript compilation was verified via `pnpm --filter web exec tsc --noEmit` (clean, zero errors). Note: `pnpm --filter web build` encounters a pre-existing EPERM symlink error on Windows/OneDrive during the standalone file-copy step — this is an environment issue, not a code defect.
 

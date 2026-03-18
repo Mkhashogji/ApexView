@@ -17,7 +17,7 @@ Checks code quality and style compliance.
 **Jobs:**
 - `lint:web` - ESLint for Next.js frontend
 - `lint:api` - Ruff for FastAPI backend
-- `lint:ml` - Ruff for ML service
+- `lint:ml` - Ruff for Analysis service
 
 **Duration:** ~30 seconds per job
 
@@ -30,7 +30,7 @@ Runs unit tests for all services.
 **Jobs:**
 - `test:web` - Vitest with coverage
 - `test:api` - Pytest for FastAPI
-- `test:ml` - Pytest for ML service
+- `test:ml` - Pytest for Analysis service
 
 **Duration:** ~1-2 minutes per job
 
@@ -183,7 +183,7 @@ Dockerfiles are optimized for layer caching:
 # Run locally to see errors
 pnpm --filter web lint
 cd apps/api && ruff check .
-cd apps/ml_service && ruff check .
+cd apps/analysis_service && ruff check .
 
 # Auto-fix
 pnpm --filter web lint --fix
@@ -196,7 +196,7 @@ ruff check --fix .
 # Run tests locally
 pnpm --filter web test
 cd apps/api && pytest -v
-cd apps/ml_service && pytest -v
+cd apps/analysis_service && pytest -v
 
 # Run with coverage
 pytest --cov --cov-report=html

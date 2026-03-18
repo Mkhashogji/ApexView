@@ -4,43 +4,206 @@
   "country": "Saudi Arabia",
   "length": 6174,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 2100 },
-    { "sectorNumber": 2, "startDistance": 2100, "endDistance": 4300 },
-    { "sectorNumber": 3, "startDistance": 4300, "endDistance": 6174 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 2100
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 2100,
+      "endDistance": 4300
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 4300,
+      "endDistance": 6174
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 2840, "activationPoint": 3270, "endPoint": 3930 },
-    { "zoneNumber": 2, "detectionPoint": 3850, "activationPoint": 4600, "endPoint": 5800 },
-    { "zoneNumber": 3, "detectionPoint": 5840, "activationPoint": 6040, "endPoint": 100, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 2840,
+      "activationPoint": 3270,
+      "endPoint": 3930
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 3850,
+      "activationPoint": 4600,
+      "endPoint": 5800
+    },
+    {
+      "zoneNumber": 3,
+      "detectionPoint": 5840,
+      "activationPoint": 6040,
+      "endPoint": 100,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 100, "type": "left", "name": "Turn 1" },
-    { "cornerNumber": 2, "distance": 200, "type": "right", "name": "Turn 2" },
-    { "cornerNumber": 3, "distance": 350, "type": "left", "name": "Turn 3" },
-    { "cornerNumber": 4, "distance": 480, "type": "left", "name": "Turn 4" },
-    { "cornerNumber": 5, "distance": 600, "type": "right", "name": "Turn 5" },
-    { "cornerNumber": 6, "distance": 720, "type": "left", "name": "Turn 6" },
-    { "cornerNumber": 7, "distance": 850, "type": "right", "name": "Turn 7" },
-    { "cornerNumber": 8, "distance": 980, "type": "left", "name": "Turn 8" },
-    { "cornerNumber": 9, "distance": 1100, "type": "right", "name": "Turn 9" },
-    { "cornerNumber": 10, "distance": 1220, "type": "left", "name": "Turn 10" },
-    { "cornerNumber": 11, "distance": 1350, "type": "right", "name": "Turn 11" },
-    { "cornerNumber": 12, "distance": 1500, "type": "left", "name": "Turn 12" },
-    { "cornerNumber": 13, "distance": 2100, "type": "right", "name": "Banked Hairpin" },
-    { "cornerNumber": 14, "distance": 2300, "type": "left", "name": "Turn 14" },
-    { "cornerNumber": 15, "distance": 2450, "type": "right", "name": "Turn 15" },
-    { "cornerNumber": 16, "distance": 2600, "type": "left", "name": "Turn 16" },
-    { "cornerNumber": 17, "distance": 2800, "type": "right", "name": "Turn 17" },
-    { "cornerNumber": 18, "distance": 2950, "type": "left", "name": "Turn 18" },
-    { "cornerNumber": 19, "distance": 3100, "type": "right", "name": "Turn 19" },
-    { "cornerNumber": 20, "distance": 3300, "type": "left", "name": "Turn 20" },
-    { "cornerNumber": 21, "distance": 3500, "type": "right", "name": "Turn 21" },
-    { "cornerNumber": 22, "distance": 3850, "type": "left", "name": "Turn 22" },
-    { "cornerNumber": 23, "distance": 4100, "type": "right", "name": "Turn 23" },
-    { "cornerNumber": 24, "distance": 4350, "type": "left", "name": "Turn 24" },
-    { "cornerNumber": 25, "distance": 4600, "type": "right", "name": "Turn 25" },
-    { "cornerNumber": 26, "distance": 5000, "type": "right", "name": "Turn 26" },
-    { "cornerNumber": 27, "distance": 5800, "type": "right", "name": "Final Hairpin" }
+    {
+      "cornerNumber": 1,
+      "distance": 100,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 200,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 350,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 480,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 600,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 720,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 850,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 980,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 1100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 1220,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 1350,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 1500,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 2100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 2300,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 2450,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 2600,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 2800,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 2950,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 19,
+      "distance": 3100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 20,
+      "distance": 3300,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 21,
+      "distance": 3500,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 22,
+      "distance": 3850,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 23,
+      "distance": 4100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 24,
+      "distance": 4350,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 25,
+      "distance": 4600,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 26,
+      "distance": 5000,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 27,
+      "distance": 5800,
+      "type": "right",
+      "name": null
+    }
   ],
   "qualifying": {
     "year": 2025,
@@ -50,8 +213,14 @@
       "time": "1:27.294"
     },
     "topSpeeds": {
-      "fastest": { "driver": "Nico Hulkenberg", "speed": 339 },
-      "range": [330, 339]
+      "fastest": {
+        "driver": "Nico Hulkenberg",
+        "speed": 339
+      },
+      "range": [
+        330,
+        339
+      ]
     }
   },
   "race": {
@@ -66,10 +235,21 @@
       "lap": 41
     },
     "podium": [
-      { "position": 1, "driver": "Oscar Piastri", "team": "McLaren" },
-      { "position": 2, "driver": "Max Verstappen", "team": "Red Bull Racing" },
-      { "position": 3, "driver": "Charles Leclerc", "team": "Ferrari" }
+      {
+        "position": 1,
+        "driver": "Oscar Piastri",
+        "team": "McLaren"
+      },
+      {
+        "position": 2,
+        "driver": "Max Verstappen",
+        "team": "Red Bull Racing"
+      },
+      {
+        "position": 3,
+        "driver": "Charles Leclerc",
+        "team": "Ferrari"
+      }
     ]
   }
 }
-

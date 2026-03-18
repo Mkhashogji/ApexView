@@ -4,35 +4,158 @@
   "country": "United States",
   "length": 5412,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 2150 },
-    { "sectorNumber": 2, "startDistance": 2150, "endDistance": 4100 },
-    { "sectorNumber": 3, "startDistance": 4100, "endDistance": 5412 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 2150
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 2150,
+      "endDistance": 4100
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 4100,
+      "endDistance": 5412
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 1590, "activationPoint": 1780, "endPoint": 2650 },
-    { "zoneNumber": 2, "detectionPoint": 3920, "activationPoint": 4375, "endPoint": 4750 },
-    { "zoneNumber": 3, "detectionPoint": 4765, "activationPoint": 5300, "endPoint": 150, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 1590,
+      "activationPoint": 1780,
+      "endPoint": 2650
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 3920,
+      "activationPoint": 4375,
+      "endPoint": 4750
+    },
+    {
+      "zoneNumber": 3,
+      "detectionPoint": 4765,
+      "activationPoint": 5300,
+      "endPoint": 150,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 150, "type": "right", "name": "Turn 1" },
-    { "cornerNumber": 2, "distance": 320, "type": "left", "name": "Turn 2" },
-    { "cornerNumber": 3, "distance": 480, "type": "right", "name": "Turn 3" },
-    { "cornerNumber": 4, "distance": 680, "type": "left", "name": "Turn 4" },
-    { "cornerNumber": 5, "distance": 850, "type": "right", "name": "Turn 5" },
-    { "cornerNumber": 6, "distance": 1020, "type": "left", "name": "Turn 6" },
-    { "cornerNumber": 7, "distance": 1250, "type": "left", "name": "Marina Entry" },
-    { "cornerNumber": 8, "distance": 1500, "type": "left", "name": "Marina Exit" },
-    { "cornerNumber": 9, "distance": 1750, "type": "left", "name": "Back Straight Kink 1" },
-    { "cornerNumber": 10, "distance": 2000, "type": "right", "name": "Back Straight Kink 2" },
-    { "cornerNumber": 11, "distance": 2650, "type": "left", "name": "Turn 11" },
-    { "cornerNumber": 12, "distance": 2950, "type": "right", "name": "The Beach" },
-    { "cornerNumber": 13, "distance": 3200, "type": "left", "name": "Turn 13" },
-    { "cornerNumber": 14, "distance": 3450, "type": "right", "name": "Chicane Entry" },
-    { "cornerNumber": 15, "distance": 3550, "type": "left", "name": "Chicane Exit" },
-    { "cornerNumber": 16, "distance": 3850, "type": "right", "name": "Turn 16" },
-    { "cornerNumber": 17, "distance": 4750, "type": "right", "name": "Hairpin" },
-    { "cornerNumber": 18, "distance": 5050, "type": "left", "name": "Turn 18" },
-    { "cornerNumber": 19, "distance": 5300, "type": "right", "name": "Turn 19" }
+    {
+      "cornerNumber": 1,
+      "distance": 150,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 320,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 480,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 680,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 850,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1020,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 1250,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 1500,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 1750,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 2000,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 2650,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 2950,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 3200,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 3450,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 3550,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 3850,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 4750,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 5050,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 19,
+      "distance": 5300,
+      "type": "right",
+      "name": null
+    }
   ],
   "qualifying": {
     "year": 2025,
@@ -42,8 +165,14 @@
       "time": "1:26.204"
     },
     "topSpeeds": {
-      "fastest": { "driver": "Charles Leclerc", "speed": 343.5 },
-      "range": [320, 344]
+      "fastest": {
+        "driver": "Charles Leclerc",
+        "speed": 343.5
+      },
+      "range": [
+        320,
+        344
+      ]
     }
   },
   "race": {
@@ -58,10 +187,21 @@
       "lap": 36
     },
     "podium": [
-      { "position": 1, "driver": "Oscar Piastri", "team": "McLaren" },
-      { "position": 2, "driver": "Lando Norris", "team": "McLaren" },
-      { "position": 3, "driver": "George Russell", "team": "Mercedes" }
+      {
+        "position": 1,
+        "driver": "Oscar Piastri",
+        "team": "McLaren"
+      },
+      {
+        "position": 2,
+        "driver": "Lando Norris",
+        "team": "McLaren"
+      },
+      {
+        "position": 3,
+        "driver": "George Russell",
+        "team": "Mercedes"
+      }
     ]
   }
 }
-

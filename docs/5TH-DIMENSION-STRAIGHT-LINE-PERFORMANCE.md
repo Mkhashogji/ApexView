@@ -2,7 +2,7 @@
 
 ## Document Overview
 
-This document provides comprehensive documentation of the **5th Dimension: Straight-Line Performance** feature, its integration with the Corner Analysis component, and its role in completing the Refined AI Architecture's lap time analysis pipeline.
+This document provides comprehensive documentation of the **5th Dimension: Straight-Line Performance** feature, its integration with the Corner Analysis component, and its role in completing the Telemetry Analysis Pipeline's lap time analysis pipeline.
 
 **Document Version:** 1.1  
 **Last Updated:** February 4, 2026  
@@ -344,11 +344,11 @@ def generate_straight_line_insight(
 
 | File | Changes |
 |------|---------|
-| `apps/ml_service/services/technique_profiling.py` | +`StraightLineDimension` dataclass, +`determine_straight_line_primary_factor()`, +`aggregate_straight_line_performance()`, +`classify_straight_line_dimension()`, updated `profile_drivers()` |
-| `apps/ml_service/services/insight_generation.py` | +`STRAIGHT_LINE_ENGINEER` templates, +`STRAIGHT_LINE_DRIVER` templates, +`PRIMARY_FACTOR_*` templates, +`LAP_BREAKDOWN_*` templates, +`EXIT_STRAIGHT_OPPORTUNITY` templates, +`generate_straight_line_insight()`, +`generate_lap_breakdown_insight()`, +`generate_exit_straight_opportunity()`, updated `generate_insights()` |
-| `apps/ml_service/services/corner_analysis.py` | `LapBreakdown` and `StraightSegment` dataclasses (pre-existing, used by 5th dimension) |
-| `apps/ml_service/services/performance_orchestrator.py` | Updated `_technique_profile_to_dict()` to serialize `straight_line`, updated `_session_percentiles_to_dict()` |
-| `apps/ml_service/models/schemas.py` | +`StraightLineDimensionSchema`, updated `TechniqueProfileSchema`, updated `SessionPercentilesSchema` |
+| `apps/analysis_service/services/technique_profiling.py` | +`StraightLineDimension` dataclass, +`determine_straight_line_primary_factor()`, +`aggregate_straight_line_performance()`, +`classify_straight_line_dimension()`, updated `profile_drivers()` |
+| `apps/analysis_service/services/insight_generation.py` | +`STRAIGHT_LINE_ENGINEER` templates, +`STRAIGHT_LINE_DRIVER` templates, +`PRIMARY_FACTOR_*` templates, +`LAP_BREAKDOWN_*` templates, +`EXIT_STRAIGHT_OPPORTUNITY` templates, +`generate_straight_line_insight()`, +`generate_lap_breakdown_insight()`, +`generate_exit_straight_opportunity()`, updated `generate_insights()` |
+| `apps/analysis_service/services/corner_analysis.py` | `LapBreakdown` and `StraightSegment` dataclasses (pre-existing, used by 5th dimension) |
+| `apps/analysis_service/services/performance_orchestrator.py` | Updated `_technique_profile_to_dict()` to serialize `straight_line`, updated `_session_percentiles_to_dict()` |
+| `apps/analysis_service/models/schemas.py` | +`StraightLineDimensionSchema`, updated `TechniqueProfileSchema`, updated `SessionPercentilesSchema` |
 | `packages/models/src/types.ts` | +`StraightLineDimension` interface, +`StraightLinePrimaryFactor` type, updated `TechniqueProfile`, updated `SessionPercentiles`, updated `DimensionType` |
 | `apps/web/components/panels/PerformanceInsightsPanel/TechniqueProfileDisplay.tsx` | Added 5th dimension bar with separator and factor badge |
 | `apps/web/components/panels/PerformanceInsightsPanel/DimensionBar.tsx` | Added `'straight_line': 'Straight-Line'` label |
@@ -395,7 +395,7 @@ STRAIGHT_LINE_DRIVER = {
 
 ### 5.1 Test File
 
-**File:** `apps/ml_service/tests/test_straight_line_integration.py`
+**File:** `apps/analysis_service/tests/test_straight_line_integration.py`
 
 **Coverage:** 32 tests across 7 test classes
 
@@ -415,16 +415,16 @@ STRAIGHT_LINE_DRIVER = {
 
 ```bash
 # Run all straight-line integration tests
-docker exec f1-ml python -m pytest tests/test_straight_line_integration.py -v
+docker exec f1-analysis python -m pytest tests/test_straight_line_integration.py -v
 
 # Run with coverage
-docker exec f1-ml python -m pytest tests/test_straight_line_integration.py -v --cov=services
+docker exec f1-analysis python -m pytest tests/test_straight_line_integration.py -v --cov=services
 
 # Run full test suite (301+ tests)
-docker exec f1-ml python -m pytest tests/ -v
+docker exec f1-analysis python -m pytest tests/ -v
 
 # Run specific test class
-docker exec f1-ml python -m pytest tests/test_straight_line_integration.py::TestPrimaryFactorDetermination -v
+docker exec f1-analysis python -m pytest tests/test_straight_line_integration.py::TestPrimaryFactorDetermination -v
 ```
 
 ### 5.4 Expected Test Output
@@ -589,10 +589,10 @@ The Docker container did not have `pytest` installed, and the module import path
 
 ```bash
 # Failed - pytest not found
-docker exec f1-ml pytest tests/
+docker exec f1-analysis pytest tests/
 
 # Failed - module not found
-docker exec f1-ml python tests/test_straight_line_integration.py
+docker exec f1-analysis python tests/test_straight_line_integration.py
 ```
 
 **Resolution:**  
@@ -600,10 +600,10 @@ Used proper Docker environment setup:
 
 ```bash
 # Install pytest if missing
-docker exec f1-ml pip install pytest
+docker exec f1-analysis pip install pytest
 
 # Run with correct PYTHONPATH
-docker exec f1-ml python -m pytest tests/test_straight_line_integration.py -v
+docker exec f1-analysis python -m pytest tests/test_straight_line_integration.py -v
 ```
 
 ### 6.5 Issue #5: Lap Breakdown Panel Not Displaying in UI
@@ -612,7 +612,7 @@ docker exec f1-ml python -m pytest tests/test_straight_line_integration.py -v
 **Impact:** Complete feature invisibility — Lap Breakdown panel not rendering despite backend implementation
 
 **Problem:**  
-After implementing the 5th Dimension feature (backend ML service + frontend components), the **LapBreakdownPanel** was not appearing in the Performance Insights card. The UI showed technique profiles and corner analysis, but the "Corners + Straights = Official" breakdown was completely missing.
+After implementing the 5th Dimension feature (backend Analysis service + frontend components), the **LapBreakdownPanel** was not appearing in the Performance Insights card. The UI showed technique profiles and corner analysis, but the "Corners + Straights = Official" breakdown was completely missing.
 
 **Symptoms Observed:**
 - No visible Lap Breakdown panel in DriverInsightCard
@@ -667,8 +667,8 @@ Four coordinated changes across the stack:
 
 | Layer | File | Change |
 |-------|------|--------|
-| **Backend Schema** | `apps/ml_service/models/schemas.py` | Added `track_length: Optional[float]` to `PerformanceInsightsRequest` |
-| **Backend API** | `apps/ml_service/main.py` | Added `track_length=request.track_length` to config; Added `lap_breakdown` serialization in response |
+| **Backend Schema** | `apps/analysis_service/models/schemas.py` | Added `track_length: Optional[float]` to `PerformanceInsightsRequest` |
+| **Backend API** | `apps/analysis_service/main.py` | Added `track_length=request.track_length` to config; Added `lap_breakdown` serialization in response |
 | **Frontend Types** | `packages/models/src/types.ts` | Added `track_length?: number` to `PerformanceInsightsRequest` |
 | **Frontend API** | `apps/web/lib/api.ts` | Added `trackLength` parameter to `fetchPerformanceInsights()` |
 | **Frontend Hook** | `apps/web/lib/hooks/usePerformanceInsightsQuery.ts` | Added `trackLength` option and pass to API function |
@@ -688,7 +688,7 @@ $body = @{
     track_length = 5281
 } | ConvertTo-Json -Depth 5
 
-$response = Invoke-RestMethod -Uri "http://localhost:8501/ml/performance-insights" `
+$response = Invoke-RestMethod -Uri "http://localhost:8501/analysis/performance-insights" `
     -Method POST -Body $body -ContentType "application/json"
 
 $response.results[0].lap_breakdown
@@ -718,7 +718,7 @@ usePerformanceInsightsQuery.ts
 fetchPerformanceInsights()
   │ track_length in request body
   ▼
-ML API /ml/performance-insights
+ML API /analysis/performance-insights
   │ request.track_length
   ▼
 PerformanceInsightsConfig

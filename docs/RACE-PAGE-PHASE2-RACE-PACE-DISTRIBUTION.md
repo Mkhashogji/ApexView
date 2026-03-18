@@ -784,7 +784,7 @@ Two existing tests were updated to account for the fuel-corrected statistics fix
 - **Race page bundle:** 5.78 KiB page chunk (First Load JS: 189 KiB)
 - **Qualifying regression:** Zero qualifying page files modified — no regression risk
 - **Live data verification:** API returning 20 drivers for Abu Dhabi 2025 (NOR leading), 19 for Baku 2025; fuel correction delta ~1.7s consistent with physics
-- **Docker deployment:** All 3 containers healthy (f1-api, f1-ml, f1-web); build successful on each iteration
+- **Docker deployment:** All 3 containers healthy (f1-api, f1-analysis, f1-web); build successful on each iteration
 - **Build error:** The EPERM symlink error during standalone output is the pre-existing Windows/OneDrive issue documented in MEMORY.md and does not indicate a code problem
 
 ### 7.5 Visual Verification

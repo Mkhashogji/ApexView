@@ -14,6 +14,7 @@ export function useSectorsQuery(
     queryKey: queryKeys.sectors.list(sessionId, drivers, sessionPart),
     queryFn: () => fetchSectors(sessionId, drivers, sessionPart),
     enabled: Boolean(sessionId && drivers.length > 0),
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

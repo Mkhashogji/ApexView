@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { LapBreakdown, StraightSegment } from '@/../../packages/models/src/types'
 import { formatDelta, getDeltaColorClass } from '@/lib/formatters'
 
@@ -29,6 +30,8 @@ export function LapBreakdownPanel({
   compDriver,
   className = ''
 }: LapBreakdownPanelProps) {
+  const [showGuide, setShowGuide] = useState(false)
+
   const {
     corner_total,
     straight_total,
@@ -179,6 +182,63 @@ export function LapBreakdownPanel({
               Reconciliation error: {(reconciliation_error * 1000).toFixed(0)}ms
               (exceeds 5ms tolerance). Data quality may affect accuracy.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* How to read this panel */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="flex items-center gap-2 mt-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className={`inline-block transition-transform duration-200 ${showGuide ? 'rotate-90' : ''}`}
+        >
+          &#9656;
+        </span>
+        How to read this panel
+      </button>
+      {showGuide && (
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">The Equation</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                The headline equation — Corners + Straights = Official Gap — is the mathematical validation check for the analysis. If the sum of corner deltas and straight-line deltas matches the official gap (within 5ms tolerance), it confirms the analysis accounts for all time across the full lap.
+              </p>
+              <p>
+                The green checkmark (✓) means internal consistency — the numbers add up. The warning icon (⚠) with a reconciliation error means the analysis could not fully account for all time, which typically indicates data quality issues at this circuit.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Track Coverage</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                The coverage bar shows what percentage of the lap is classified as corners vs straights. This split is defined by corner zone boundaries. A higher corner percentage means more of the lap is under detailed corner-by-corner analysis.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Straight Segments</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                Each straight shows a time delta and a &quot;primary factor&quot; classification — Aero Efficiency, Exit Traction, High Drag, Poor Traction, or Balanced. These are inferred from telemetry speed and acceleration patterns and indicate setup tendencies rather than definitive diagnoses.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Limitations</h4>
+            <div className="text-sm text-gray-500/80 italic space-y-1.5">
+              <p>
+                Internal consistency (✓) does not guarantee accuracy — errors in individual corner attributions could cancel each other out while the total still matches.
+              </p>
+              <p>
+                Straight-line primary factors are derived from publicly available speed data. The actual cause of a speed difference could be engine mode, DRS usage, battery deployment, or aerodynamic configuration — none of which are individually identifiable from speed traces alone.
+              </p>
+            </div>
           </div>
         </div>
       )}

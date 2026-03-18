@@ -4,32 +4,140 @@
   "country": "Japan",
   "length": 5807,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 2030 },
-    { "sectorNumber": 2, "startDistance": 2030, "endDistance": 4650 },
-    { "sectorNumber": 3, "startDistance": 4650, "endDistance": 5807 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 2030
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 2030,
+      "endDistance": 4650
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 4650,
+      "endDistance": 5807
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 4940, "activationPoint": 5707, "endPoint": 400, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 4940,
+      "activationPoint": 5707,
+      "endPoint": 400,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 400, "type": "right", "name": "First Curve" },
-    { "cornerNumber": 2, "distance": 550, "type": "left", "name": "Turn 2" },
-    { "cornerNumber": 3, "distance": 700, "type": "right", "name": "S-Curve Entry" },
-    { "cornerNumber": 4, "distance": 850, "type": "left", "name": "S-Curve 2" },
-    { "cornerNumber": 5, "distance": 1000, "type": "right", "name": "S-Curve 3" },
-    { "cornerNumber": 6, "distance": 1150, "type": "left", "name": "S-Curve 4" },
-    { "cornerNumber": 7, "distance": 1300, "type": "right", "name": "S-Curve Exit (Dunlop)" },
-    { "cornerNumber": 8, "distance": 2100, "type": "right", "name": "Degner 1" },
-    { "cornerNumber": 9, "distance": 2300, "type": "right", "name": "Degner 2" },
-    { "cornerNumber": 10, "distance": 2700, "type": "left", "name": "Turn 10" },
-    { "cornerNumber": 11, "distance": 3100, "type": "right", "name": "Hairpin" },
-    { "cornerNumber": 12, "distance": 3400, "type": "left", "name": "Turn 12" },
-    { "cornerNumber": 13, "distance": 3800, "type": "left", "name": "Spoon Entry" },
-    { "cornerNumber": 14, "distance": 4100, "type": "left", "name": "Spoon Exit" },
-    { "cornerNumber": 15, "distance": 4900, "type": "left", "name": "130R" },
-    { "cornerNumber": 16, "distance": 5300, "type": "right", "name": "Casio Triangle Entry" },
-    { "cornerNumber": 17, "distance": 5450, "type": "left", "name": "Casio Triangle Exit" },
-    { "cornerNumber": 18, "distance": 5650, "type": "right", "name": "Last Curve" }
+    {
+      "cornerNumber": 1,
+      "distance": 400,
+      "type": "right",
+      "name": "First Curve"
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 550,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 700,
+      "type": "right",
+      "name": "S Curves"
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 850,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 1000,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1150,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 1300,
+      "type": "right",
+      "name": "Dunlop Curve"
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 2100,
+      "type": "right",
+      "name": "Degner 1"
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 2300,
+      "type": "right",
+      "name": "Degner 2"
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 2700,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 3100,
+      "type": "right",
+      "name": "Hairpin"
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 3400,
+      "type": "left",
+      "name": "200R"
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 3800,
+      "type": "left",
+      "name": "Spoon Curve"
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 4100,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 4900,
+      "type": "left",
+      "name": "130R"
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 5300,
+      "type": "right",
+      "name": "Casio Triangle"
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 5450,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 5650,
+      "type": "right",
+      "name": "Last Curve"
+    }
   ],
   "qualifying": {
     "year": 2025,
@@ -39,8 +147,14 @@
       "time": "1:26.983"
     },
     "topSpeeds": {
-      "fastest": { "driver": "George Russell", "speed": 326 },
-      "range": [319, 326]
+      "fastest": {
+        "driver": "George Russell",
+        "speed": 326
+      },
+      "range": [
+        319,
+        326
+      ]
     }
   },
   "race": {
@@ -55,10 +169,21 @@
       "lap": 50
     },
     "podium": [
-      { "position": 1, "driver": "Max Verstappen", "team": "Red Bull" },
-      { "position": 2, "driver": "Lando Norris", "team": "McLaren" },
-      { "position": 3, "driver": "Oscar Piastri", "team": "McLaren" }
+      {
+        "position": 1,
+        "driver": "Max Verstappen",
+        "team": "Red Bull"
+      },
+      {
+        "position": 2,
+        "driver": "Lando Norris",
+        "team": "McLaren"
+      },
+      {
+        "position": 3,
+        "driver": "Oscar Piastri",
+        "team": "McLaren"
+      }
     ]
   }
 }
-

@@ -301,7 +301,7 @@ User on /race?round=1&season=2025
 
 `SessionSummary.tsx` was a panel component in `components/panels/` that rendered hardcoded fake F1 data — fabricated driver abbreviations, lap times (1:32.837), speeds (342 km/h), and a "Weekend Overview" title. It was imported only in `apps/web/app/page.tsx`.
 
-The `panels/` directory contains 14 other components (PerformanceInsightsPanel, CornerBreakdownPanel, AIInsights, etc.) used by the Qualifying page. Only `SessionSummary.tsx` was deleted — all other panel components were preserved.
+The `panels/` directory contains 14 other components (PerformanceInsightsPanel, CornerBreakdownPanel, AnalysisInsights, etc.) used by the Qualifying page. Only `SessionSummary.tsx` was deleted — all other panel components were preserved.
 
 **Why delete rather than refactor:** The component had no reusable logic. Every data point was hardcoded. Refactoring it to accept props would produce a component with no callers (the Home page does not display session summary data) and no architectural alignment with the planned feature card design.
 
@@ -516,7 +516,7 @@ Before writing any code, a comprehensive diagnostic was conducted across 8 dimen
 
 **Finding 4: Track Intelligence accepted no `season` prop.** The component signature was `{ round, season = 2025 }` with a default. The old `page.tsx` only passed `round`. The new page passes both `round` and `season` from search params, enabling the `RaceWeekendSelector` to drive season context.
 
-**Finding 5: The `panels/` directory had 14 other files.** Deleting the directory or using a broad cleanup would have destroyed the entire Qualifying AI pipeline's frontend components. Only `SessionSummary.tsx` was targeted for deletion.
+**Finding 5: The `panels/` directory had 14 other files.** Deleting the directory or using a broad cleanup would have destroyed the entire Qualifying telemetry analysis pipeline's frontend components. Only `SessionSummary.tsx` was targeted for deletion.
 
 ### 5.3 Diagnostic Methodology
 
@@ -635,7 +635,7 @@ docker-compose up -d
 | Service | Port | Health Check | Status |
 |---------|------|-------------|--------|
 | f1-api | 8000 | `GET /health` | Healthy |
-| f1-ml | 8501 | ML service probe | Healthy |
+| f1-analysis | 8501 | Analysis service probe | Healthy |
 | f1-web | 3000 | `GET /` | Serving (200) |
 
 ### 7.5 Stage 4: Implementation-Specific Validation

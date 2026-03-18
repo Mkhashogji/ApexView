@@ -13,15 +13,13 @@ export { useSectorsQuery } from './useSectorsQuery'
 export { useTrackQuery, useDRSZones, useCorners, useSectorBoundaries } from './useTrackQuery'
 export { useTrackIntelligence } from './useTrackIntelligence'
 
-// ML service hooks
+// Analysis service hooks
 export {
-  useMLInsightsQuery,
+  useAnalysisInsightsQuery,
   useLapSimilarityQuery,
   useDriverClusteringQuery,
-  useAllMLInsights,
-} from './useMLInsightsQuery'
-export { useScaledDeltaQuery } from './useScaledDeltaQuery'
-export { useCornerAnalysisQuery } from './useCornerAnalysisQuery'
+  useAllAnalysisInsights,
+} from './useAnalysisInsightsQuery'
 export { usePerformanceInsightsQuery } from './usePerformanceInsightsQuery'
 
 // Query key factory

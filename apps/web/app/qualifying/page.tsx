@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Qualifying Analysis | ApexView',
   description:
     'Analyse Formula 1 qualifying sector deltas, mini-sector heatmaps, ' +
-    'and AI-generated driver technique profiles across the 2025 season.',
+    'and data-driven driver technique profiles across the 2025 season.',
   openGraph: {
     title: 'Qualifying Analysis | ApexView',
     description:

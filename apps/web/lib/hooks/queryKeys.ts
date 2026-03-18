@@ -63,29 +63,29 @@ export const queryKeys = {
     progression: (year: number, round: number) =>
       ['practice', 'progression', { year, round }] as const,
   },
-  // ML Service query keys
-  ml: {
-    all: ['ml'] as const,
+  // Analysis Service query keys
+  analysis: {
+    all: ['analysis'] as const,
     insights: (sessionId: string, drivers: string[]) =>
-      ['ml', 'insights', sessionId, { drivers: drivers.sort() }] as const,
+      ['analysis', 'insights', sessionId, { drivers: drivers.sort() }] as const,
     similarity: (sessionId: string, driver1: string, driver2: string) =>
-      ['ml', 'similarity', sessionId, { drivers: [driver1, driver2].sort() }] as const,
+      ['analysis', 'similarity', sessionId, { drivers: [driver1, driver2].sort() }] as const,
     clustering: (sessionId: string, drivers: string[], nClusters: number) =>
-      ['ml', 'clustering', sessionId, { drivers: drivers.sort(), nClusters }] as const,
+      ['analysis', 'clustering', sessionId, { drivers: drivers.sort(), nClusters }] as const,
     scaledDelta: (
       sessionId: string,
       refDriver: string,
       compareDrivers: string[],
       sessionPart?: string
     ) =>
-      ['ml', 'scaledDelta', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
+      ['analysis', 'scaledDelta', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
     cornerAnalysis: (
       sessionId: string,
       refDriver: string,
       compareDrivers: string[],
       sessionPart?: string
     ) =>
-      ['ml', 'cornerAnalysis', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
+      ['analysis', 'cornerAnalysis', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), sessionPart }] as const,
     performanceInsights: (
       sessionId: string,
       refDriver: string,
@@ -93,7 +93,7 @@ export const queryKeys = {
       mode: 'engineer' | 'driver',
       sessionPart?: string
     ) =>
-      ['ml', 'performanceInsights', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), mode, sessionPart }] as const,
+      ['analysis', 'performanceInsights', sessionId, refDriver, { compareDrivers: [...compareDrivers].sort(), mode, sessionPart }] as const,
   },
 } as const
 

@@ -1,12 +1,13 @@
 'use client'
 
-import { ScaledDeltaDriverResult } from '@/../../packages/models/src/types'
+import { DriverPerformanceResult } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
+import { useState } from 'react'
 import { formatDelta } from '@/lib/formatters'
 
 interface ScalingMetadataPanelProps {
-  /** Scaled delta results from Phase 2 */
-  results: ScaledDeltaDriverResult[]
+  /** Performance results from unified Phase 6 endpoint */
+  results: DriverPerformanceResult[]
   /** Reference driver for display */
   referenceDriver: string
   /** Whether data is loading */
@@ -33,6 +34,8 @@ export function ScalingMetadataPanel({
   isLoading,
   error,
 }: ScalingMetadataPanelProps) {
+  const [showGuide, setShowGuide] = useState(false)
+
   // Loading state
   if (isLoading) {
     return (
@@ -93,29 +96,30 @@ export function ScalingMetadataPanel({
           </thead>
           <tbody>
             {results.map((result) => {
-              const driverInfo = getDriverInfo(result.compareDriver)
-              const teamColor = getTeamColor(result.compareDriver)
-              const confidencePercent = Math.round(result.confidence * 100)
+              const driverInfo = getDriverInfo(result.driver)
+              const teamColor = getTeamColor(result.driver)
+              const confidence = result.scaling_confidence ?? 0
+              const confidencePercent = Math.round(confidence * 100)
 
               // Determine confidence color
               const confidenceColor =
-                result.confidence >= 0.8
+                confidence >= 0.8
                   ? 'text-green-400'
-                  : result.confidence >= 0.6
+                  : confidence >= 0.6
                     ? 'text-yellow-400'
                     : 'text-red-400'
 
               // Determine confidence bar color
               const confidenceBarColor =
-                result.confidence >= 0.8
+                confidence >= 0.8
                   ? 'bg-green-500'
-                  : result.confidence >= 0.6
+                  : confidence >= 0.6
                     ? 'bg-yellow-500'
                     : 'bg-red-500'
 
               return (
                 <tr
-                  key={result.compareDriver}
+                  key={result.driver}
                   className="border-b border-f1gray/10 hover:bg-f1gray/5"
                 >
                   {/* Driver */}
@@ -125,7 +129,7 @@ export function ScalingMetadataPanel({
                         className="w-1 h-4 rounded"
                         style={{ backgroundColor: teamColor }}
                       />
-                      <span className="font-medium">{result.compareDriver}</span>
+                      <span className="font-medium">{result.driver}</span>
                       <span className="text-gray-500 text-xs hidden sm:inline">
                         {driverInfo?.fullName}
                       </span>
@@ -135,20 +139,20 @@ export function ScalingMetadataPanel({
                   {/* Official Gap */}
                   <td className="py-2 px-2 text-right font-mono">
                     <span
-                      className={result.officialGap > 0 ? 'text-delta-positive' : 'text-delta-negative'}
+                      className={result.official_gap > 0 ? 'text-delta-positive' : 'text-delta-negative'}
                     >
-                      {formatDelta(result.officialGap)}
+                      {formatDelta(result.official_gap)}
                     </span>
                   </td>
 
                   {/* Telemetry Gap */}
                   <td className="py-2 px-2 text-right font-mono text-gray-400">
-                    {formatDelta(result.telemetryGap)}
+                    {formatDelta(result.telemetry_gap ?? 0)}
                   </td>
 
                   {/* Scaling Factor */}
                   <td className="py-2 px-2 text-right font-mono text-gray-300">
-                    {result.scalingFactor.toFixed(3)}x
+                    {(result.scaling_factor ?? 0).toFixed(3)}x
                   </td>
 
                   {/* Confidence */}
@@ -191,6 +195,59 @@ export function ScalingMetadataPanel({
           indicate telemetry closely matches official timing.
         </p>
       </div>
+
+      {/* How to read this panel */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="flex items-center gap-2 mt-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className={`inline-block transition-transform duration-200 ${showGuide ? 'rotate-90' : ''}`}
+        >
+          &#9656;
+        </span>
+        How to read this panel
+      </button>
+      {showGuide && (
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Understanding the Columns</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                <span className="text-gray-400 font-medium">Official gap:</span> The FIA-published time difference. This is ground truth — all analysis is anchored to this value.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Telemetry gap:</span> Time difference calculated from speed trace integration. Often differs slightly from official timing due to telemetry sampling resolution and distance normalisation.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Scale factor:</span> The multiplier applied to align telemetry deltas with official timing. 1.000x = perfect agreement. Values between 0.95x–1.05x indicate good data quality.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Confidence:</span> How close the scale factor is to 1.0, expressed as a percentage. Green (80%+) = reliable. Yellow (60-79%) = treat with some caution. Red (&lt;60%) = significant data quality limitations.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">What This Tells You</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                A confidence score close to 100% means the telemetry data closely matches what the official timing system recorded. A lower score means the publicly available telemetry has gaps or inconsistencies with official timing at this circuit.
+              </p>
+              <p>
+                The delta curve in the chart above uses this scaling — its shape comes from telemetry, but its magnitude is corrected to match the official gap. Higher confidence means the shape is more trustworthy.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Limitations</h4>
+            <p className="text-gray-500/80 italic text-sm">
+              Telemetry data is sourced from publicly broadcast car data, not team-internal high-resolution sensors. Teams have access to additional channels (ride height, aero load, individual brake temperatures, energy deployment) that are not publicly available. The scale factor quantifies how well the available public data represents the actual on-track performance.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

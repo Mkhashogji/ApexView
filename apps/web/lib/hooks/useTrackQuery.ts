@@ -12,6 +12,7 @@ export function useTrackQuery(round: number, season: number = 2025) {
     queryKey: queryKeys.track.detail(round),
     queryFn: () => fetchTrack(round, season),
     enabled: Boolean(round > 0),
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

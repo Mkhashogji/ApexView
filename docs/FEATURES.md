@@ -73,11 +73,11 @@ Detailed lap-by-lap analysis with multi-driver comparison, ML-powered insights, 
 - Detailed comparison table with color-coded deltas
 - Purple highlighting for best sector times in table
 
-#### AI Insights Panel (`AIInsights`) - **ML Integrated**
-- Fetches from ML service endpoints:
-  - `/ml/insights/{session_id}` - Combined insights
-  - `/ml/lap-similarity` - Pairwise driver similarity
-  - `/ml/driver-style-clustering` - Driving style groups
+#### AI Insights Panel (`AnalysisInsights`) - **Analysis Integrated**
+- Fetches from Analysis service endpoints:
+  - `/analysis/insights/{session_id}` - Combined insights
+  - `/analysis/lap-similarity` - Pairwise driver similarity
+  - `/analysis/driver-style-clustering` - Driving style groups
 - **Insight Types:**
   - Similarity: "VER & NOR: 92% similar, main difference in braking"
   - Cluster: "VER, LEC grouped: aggressive throttle application"
@@ -347,7 +347,7 @@ Circuit-specific information and geographical/technical details.
 - Video synchronization with F1TV
 
 ### Phase 4
-- Machine learning predictions
+- Telemetry analysis predictions
 - Community features
 - Custom analysis tools
 - API access for developers

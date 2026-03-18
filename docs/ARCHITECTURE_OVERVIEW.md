@@ -20,10 +20,10 @@ The F1 Engineering App is built as a microservices architecture with three main 
    │ HTTP                    │ HTTP            │ Read
    ▼                         ▼                 ▼
 ┌──────────────┐    ┌────────────────┐    ┌──────────────┐
-│ ML Service   │    │  FastF1 API    │    │ Parquet Cache│
+│ Analysis Service   │    │  FastF1 API    │    │ Parquet Cache│
 │  (FastAPI)   │    │  (External)    │    │   + SQLite   │
 │ Port 8501    │    │                │    │ data/cache/  │
-│ apps/ml_service/  │                │    │              │
+│ apps/analysis_service/  │                │    │              │
 │- Similarity  │    │                │    │              │
 │- Clustering  │    │                │    │              │
 └──────────────┘    └────────────────┘    └──────────────┘
@@ -60,7 +60,7 @@ The F1 Engineering App is built as a microservices architecture with three main 
 - Session and lap data retrieval
 - Telemetry processing and downsampling
 - Delta calculation between drivers
-- ML service proxy
+- Analysis service proxy
 - Parquet caching layer
 
 **Endpoints:**
@@ -68,12 +68,12 @@ The F1 Engineering App is built as a microservices architecture with three main 
 - `GET /laps` - Get lap data for drivers
 - `GET /telemetry` - Get telemetry with optional downsampling
 - `GET /telemetry/delta` - Calculate delta between drivers
-- `POST /ml/lap-similarity` - Proxy to ML service
-- `POST /ml/driver-style-clustering` - Proxy to ML service
+- `POST /analysis/lap-similarity` - Proxy to Analysis service
+- `POST /analysis/driver-style-clustering` - Proxy to Analysis service
 
-### 3. ML Service (FastAPI)
+### 3. Analysis Service (FastAPI)
 
-**Location:** `apps/ml_service/`
+**Location:** `apps/analysis_service/`
 
 **Technology:** Python 3.11, FastAPI, scikit-learn, NumPy
 
@@ -113,7 +113,7 @@ User → Web → API Gateway → Parquet Cache (Read)
 ### 3. ML Analysis Request
 
 ```
-User → Web → API Gateway → Fetch Telemetry → ML Service
+User → Web → API Gateway → Fetch Telemetry → Analysis Service
                                                   ↓
                                             Analyze & Return
 ```
@@ -170,7 +170,7 @@ f1-engineering-app/
 │   │       ├── models/   # Pydantic schemas
 │   │       ├── routes/   # API endpoints
 │   │       └── services/ # Business logic
-│   └── ml_service/       # ML microservice
+│   └── analysis_service/       # ML microservice
 │       ├── models/       # Pydantic schemas
 │       ├── services/     # ML algorithms
 │       └── main.py       # FastAPI app
@@ -195,7 +195,7 @@ docker-compose up --build
 # Services will be available at:
 # - Frontend: http://localhost:3000
 # - API: http://localhost:8000
-# - ML Service: http://localhost:8501
+# - Analysis Service: http://localhost:8501
 ```
 
 ### Production
@@ -208,13 +208,13 @@ Services are containerized and can be deployed to:
 **Container Images:**
 - `f1-web` - Next.js frontend
 - `f1-api` - FastAPI backend
-- `f1-ml` - ML microservice
+- `f1-analysis` - ML microservice
 
 ## Scaling Considerations
 
 ### Horizontal Scaling
 
-**ML Service:** Can run multiple instances behind a load balancer
+**Analysis Service:** Can run multiple instances behind a load balancer
 
 **API Gateway:** Stateless, can be replicated
 
@@ -279,7 +279,7 @@ All services expose `/health` endpoints for container orchestration.
 - High performance
 - Python ecosystem for data science
 
-### Why Separate ML Service?
+### Why Separate Analysis Service?
 
 - Independent scaling
 - Isolated ML dependencies

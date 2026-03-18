@@ -1,7 +1,7 @@
 # Codebase Diagnostic Analysis Report
 
 **Date:** February 3, 2026
-**Purpose:** Post-recovery inspection of the Refined AI Architecture implementation
+**Purpose:** Post-recovery inspection of the Telemetry Analysis Pipeline implementation
 **Scope:** Phases 1-7 of the ML pipeline, with focus on identifying implementation gaps
 
 ---
@@ -25,7 +25,7 @@
 
 ### 1.1 Inspection Context
 
-Following a system failure and repository recovery from GitLab, this diagnostic was conducted to verify which components of the Refined AI Architecture are present in the codebase and which need to be re-implemented. The architecture spans 8 phases, from data foundation through race page planning.
+Following a system failure and repository recovery from GitLab, this diagnostic was conducted to verify which components of the Telemetry Analysis Pipeline are present in the codebase and which need to be re-implemented. The architecture spans 8 phases, from data foundation through race page planning.
 
 ### 1.2 Key Findings
 
@@ -59,16 +59,16 @@ The diagnostic followed a systematic verification process:
 
 ```bash
 # File existence
-ls -la apps/ml_service/services/*.py
+ls -la apps/analysis_service/services/*.py
 
 # Pattern matching for specific implementations
 grep -n "pattern" file.py
 
 # Line counts for implementation depth
-wc -l apps/ml_service/services/*.py
+wc -l apps/analysis_service/services/*.py
 
 # Test counting
-grep -c "def test_" apps/ml_service/tests/test_*.py
+grep -c "def test_" apps/analysis_service/tests/test_*.py
 ```
 
 ### 2.3 Reference Documentation
@@ -1003,7 +1003,7 @@ class TestIntegration:
 ## Appendix A: File Sizes Reference
 
 ```
-apps/ml_service/services/
+apps/analysis_service/services/
   __init__.py                2 lines
   clustering.py            195 lines
   corner_analysis.py     1,507 lines  ← Largest, needs straight-line additions
@@ -1033,4 +1033,4 @@ docker compose up -d
 
 *Document generated: February 3, 2026*
 *Diagnostic performed by: Claude Code*
-*Reference: CLAUDE.md Refined AI Architecture Specification*
+*Reference: CLAUDE.md Telemetry Analysis Pipeline Specification*

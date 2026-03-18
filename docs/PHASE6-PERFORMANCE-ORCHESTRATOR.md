@@ -18,10 +18,10 @@ Phase 6 implements a **Performance Insights Orchestrator** - a unified API endpo
 ### 1.2 Problem Statement
 
 Prior to Phase 6, the frontend had to make sequential API calls to:
-1. `/ml/scaled-delta` (Phase 2) - Get time delta analysis
-2. `/ml/corner-analysis` (Phase 3) - Get corner-by-corner breakdown
-3. `/ml/technique-profile` (Phase 4) - Get technique classification
-4. `/ml/generate-insight` (Phase 5) - Get natural language insights
+1. `/analysis/scaled-delta` (Phase 2) - Get time delta analysis
+2. `/analysis/corner-analysis` (Phase 3) - Get corner-by-corner breakdown
+3. `/analysis/technique-profile` (Phase 4) - Get technique classification
+4. `/analysis/generate-insight` (Phase 5) - Get natural language insights
 
 This created several issues:
 - **Network Overhead**: 4 round-trips per analysis request
@@ -32,7 +32,7 @@ This created several issues:
 ### 1.3 Solution
 
 The Performance Insights Orchestrator provides:
-- **Single Endpoint**: `POST /ml/performance-insights`
+- **Single Endpoint**: `POST /analysis/performance-insights`
 - **Complete Analysis**: All phases executed and results aggregated
 - **Unified Response**: One response object with all driver data
 - **Phase Timing**: Execution metrics for debugging and monitoring
@@ -54,7 +54,7 @@ The Performance Insights Orchestrator provides:
 
 ### 2.1 Step 1: Design Pydantic Schemas
 
-**File**: `apps/ml_service/models/schemas.py`
+**File**: `apps/analysis_service/models/schemas.py`
 
 #### 2.1.1 Request Schema
 
@@ -156,7 +156,7 @@ class PerformanceInsightsResponse(BaseModel):
 
 ### 2.2 Step 2: Create Orchestrator Module
 
-**File**: `apps/ml_service/services/performance_orchestrator.py`
+**File**: `apps/analysis_service/services/performance_orchestrator.py`
 
 #### 2.2.1 Module Structure
 
@@ -447,7 +447,7 @@ This ensures one driver's failure doesn't abort the entire analysis.
 
 ### 2.3 Step 3: Add API Endpoint
 
-**File**: `apps/ml_service/main.py`
+**File**: `apps/analysis_service/main.py`
 
 #### 2.3.1 Imports
 
@@ -475,7 +475,7 @@ from services.performance_orchestrator import (
 
 ```python
 @app.post(
-    "/ml/performance-insights",
+    "/analysis/performance-insights",
     response_model=PerformanceInsightsResponse,
     summary="Unified performance insights (chains Phases 2-5)",
     tags=["Phase 6 - Performance Orchestrator"]
@@ -544,7 +544,7 @@ for dr in result.results:
 
 ### 2.4 Step 4: Create Unit Tests
 
-**File**: `apps/ml_service/tests/test_performance_orchestrator.py`
+**File**: `apps/analysis_service/tests/test_performance_orchestrator.py`
 
 #### 2.4.1 Test Categories
 
@@ -654,7 +654,7 @@ def test_delta_calculation_performance(self, sample_telemetry):
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         FRONTEND REQUEST                                     │
-│  POST /ml/performance-insights                                              │
+│  POST /analysis/performance-insights                                              │
 │  {                                                                          │
 │    "session_id": "2025_24_Qualifying",                                      │
 │    "reference_driver": "NOR",                                               │
@@ -1002,7 +1002,7 @@ Full suite:
 ### 7.1 Endpoint
 
 ```
-POST /ml/performance-insights
+POST /analysis/performance-insights
 ```
 
 ### 7.2 Request Schema
@@ -1087,7 +1087,7 @@ The implementation follows the Backend-for-Frontend pattern, significantly simpl
 ## Appendix A: Code Locations
 
 ```
-apps/ml_service/
+apps/analysis_service/
 ├── services/
 │   └── performance_orchestrator.py  # NEW: Orchestration logic
 ├── models/

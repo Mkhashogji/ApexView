@@ -1,13 +1,15 @@
 'use client'
 
+import Link from 'next/link'
+
 /**
- * Footer component with data source attribution.
+ * Footer component with data source attribution and transparency link.
  */
 export function Footer() {
   const currentYear = new Date().getFullYear()
-  
+
   return (
-    <footer 
+    <footer
       className="border-t border-f1gray bg-f1dark/95 mt-auto"
       role="contentinfo"
     >
@@ -16,7 +18,7 @@ export function Footer() {
           {/* Data source attribution */}
           <div className="flex items-center gap-2">
             <span>Data source:</span>
-            <a 
+            <a
               href="https://github.com/theOehrly/Fast-F1"
               target="_blank"
               rel="noopener noreferrer"
@@ -26,7 +28,17 @@ export function Footer() {
             </a>
             <span className="text-gray-600">(cached)</span>
           </div>
-          
+
+          {/* Transparency link */}
+          <div>
+            <Link
+              href="/transparency"
+              className="text-gray-400 transition-colors hover:text-white"
+            >
+              Transparency & Attribution
+            </Link>
+          </div>
+
           {/* Copyright */}
           <div>
             <span>&copy; Mohamed Hani B Khashogji {currentYear}</span>

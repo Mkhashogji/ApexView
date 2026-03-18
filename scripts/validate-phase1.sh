@@ -2,7 +2,7 @@
 set -e
 
 echo "=== Phase 1 Docker Validation ==="
-echo "Assumes Docker images are already built. Run 'docker compose build api ml' first if needed."
+echo "Assumes Docker images are already built. Run 'docker compose build api analysis' first if needed."
 echo ""
 
 # Test 1: Verify _filter_valid_laps method exists
@@ -61,14 +61,14 @@ else
 fi
 "
 
-# Test 5: Verify ML logging config
-echo "[5/6] Testing ML logging configuration..."
-docker compose run --rm ml python -c "
+# Test 5: Verify Analysis service logging config
+echo "[5/6] Testing Analysis service logging configuration..."
+docker compose run --rm analysis python -c "
 from core.logging_config import setup_logging, get_logger
 logger = setup_logging()
 assert logger is not None, 'setup_logging should return logger'
 test_logger = get_logger('test_module')
-assert 'ml_service' in test_logger.name, 'Logger should have ml_service prefix'
+assert 'analysis_service' in test_logger.name, 'Logger should have analysis_service prefix'
 print('PASS: Logging configuration works')
 "
 

@@ -28,7 +28,7 @@ The API endpoint chains all phases internally, providing an end-to-end pipeline 
 
 ### Step 5.1: Core Data Classes and Constants
 
-**File:** `apps/ml_service/services/insight_generation.py` (lines 1-131)
+**File:** `apps/analysis_service/services/insight_generation.py` (lines 1-131)
 
 #### 5.1.1 Module Design
 
@@ -145,7 +145,7 @@ class InsightGenerationResult:
 
 ### Step 5.2: Template Definitions (InsightTemplates Class)
 
-**File:** `apps/ml_service/services/insight_generation.py` (lines 244-530)
+**File:** `apps/analysis_service/services/insight_generation.py` (lines 244-530)
 
 The `InsightTemplates` class is the heart of the anti-hallucination strategy. Every piece of generated text comes from these templates.
 
@@ -293,7 +293,7 @@ CONFIDENCE_QUALIFIERS = {
 
 ### Step 5.3: Core Generation Functions
 
-**File:** `apps/ml_service/services/insight_generation.py` (lines 532-1044)
+**File:** `apps/analysis_service/services/insight_generation.py` (lines 532-1044)
 
 #### 5.3.1 classify_confidence()
 
@@ -453,7 +453,7 @@ Iterates over profiles, calling `generate_insights()` for each, collecting resul
 
 ### Step 5.4: Pydantic Schemas
 
-**File:** `apps/ml_service/models/schemas.py` (lines 442-561)
+**File:** `apps/analysis_service/models/schemas.py` (lines 442-561)
 
 Added 6 new Pydantic schemas for API serialization:
 
@@ -488,13 +488,13 @@ class InsightGenerationResponse(BaseModel):
 
 ### Step 5.5: API Endpoint
 
-**File:** `apps/ml_service/main.py` (lines 966-1250)
+**File:** `apps/analysis_service/main.py` (lines 966-1250)
 
 #### Endpoint Definition
 
 ```python
 @app.post(
-    "/ml/generate-insight",
+    "/analysis/generate-insight",
     response_model=InsightGenerationResponse,
     summary="Generate natural language insights for drivers",
     tags=["Phase 5 - Natural Language Insights"]
@@ -533,7 +533,7 @@ The endpoint chains all phases internally:
 
 ### Step 5.6: Unit Tests
 
-**File:** `apps/ml_service/tests/test_insight_generation.py` (~550 lines, 61 tests)
+**File:** `apps/analysis_service/tests/test_insight_generation.py` (~550 lines, 61 tests)
 
 #### Test Organization
 
@@ -589,8 +589,8 @@ Critical tests verifying data binding:
 #### Docker Rebuild
 
 ```bash
-docker compose build ml_service
-docker compose up -d ml_service
+docker compose build analysis_service
+docker compose up -d analysis_service
 ```
 
 **Result:** ✅ SUCCESS - Service rebuilt and healthy
@@ -598,7 +598,7 @@ docker compose up -d ml_service
 #### Unit Tests
 
 ```bash
-docker exec f1-ml python -m pytest tests/test_insight_generation.py -v
+docker exec f1-analysis python -m pytest tests/test_insight_generation.py -v
 ```
 
 **Output:**
@@ -675,7 +675,7 @@ tests/test_insight_generation.py::TestTemplates::test_opportunity_templates_cove
 #### API Endpoint Test
 
 ```bash
-curl -X POST "http://localhost:8501/ml/generate-insight" \
+curl -X POST "http://localhost:8501/analysis/generate-insight" \
   -H "Content-Type: application/json" \
   -d '{"session_id":"2025_8_Qualifying","reference_driver":"NOR","compare_drivers":["PIA"],"corners":[],"mode":"engineer"}'
 ```
@@ -735,7 +735,7 @@ curl -X POST "http://localhost:8501/ml/generate-insight" \
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        POST /ml/generate-insight                            │
+│                        POST /analysis/generate-insight                            │
 │                                                                             │
 │  Request: session_id, reference_driver, compare_drivers, corners, mode      │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -925,10 +925,10 @@ The test run produces a `PytestConfigWarning: Unknown config option: asyncio_mod
 
 | File | Action | Lines Added |
 |------|--------|-------------|
-| `apps/ml_service/services/insight_generation.py` | CREATE | ~750 |
-| `apps/ml_service/models/schemas.py` | MODIFY | +120 |
-| `apps/ml_service/main.py` | MODIFY | +200 |
-| `apps/ml_service/tests/test_insight_generation.py` | CREATE | ~550 |
+| `apps/analysis_service/services/insight_generation.py` | CREATE | ~750 |
+| `apps/analysis_service/models/schemas.py` | MODIFY | +120 |
+| `apps/analysis_service/main.py` | MODIFY | +200 |
+| `apps/analysis_service/tests/test_insight_generation.py` | CREATE | ~550 |
 
 ---
 

@@ -3,7 +3,7 @@
 **Status:** Complete
 **Implemented:** March 2026
 **TypeScript:** Zero compilation errors
-**Docker Build:** Clean exit, all 3 services healthy (f1-api, f1-ml, f1-web)
+**Docker Build:** Clean exit, all 3 services healthy (f1-api, f1-analysis, f1-web)
 **Verification:** 15/15 completion gate items passing
 **Files Created:** 4 | **Files Modified:** 2
 
@@ -463,7 +463,7 @@ Phase 2 follows the same Docker-first verification workflow established in Phase
 All 3 Docker images built successfully with `--no-cache`:
 
 - `apexview-api` — Built (Python/FastAPI)
-- `apexview-ml` — Built (Python/ML service)
+- `apexview-ml` — Built (Python/Analysis service)
 - `apexview-web` — Built (Next.js, includes Phase 2 changes)
 
 ### 7.4 Container Health
@@ -471,7 +471,7 @@ All 3 Docker images built successfully with `--no-cache`:
 | Container | Status | Port |
 |-----------|--------|------|
 | f1-api | Healthy | 8000 |
-| f1-ml | Healthy | 8501 |
+| f1-analysis | Healthy | 8501 |
 | f1-web | Serving | 3000 |
 
 ### 7.5 Implementation Validation Results

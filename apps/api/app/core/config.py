@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     DEFAULT_SEASON: int = 2025
     DOWNSAMPLE_THRESHOLD: int = 5000  # Max telemetry points before downsampling
     
-    # ML Service Settings
-    ML_SERVICE_URL: str = "http://ml:8501"
+    # Analysis Service Settings
+    ANALYSIS_SERVICE_URL: str = "http://analysis:8501"
     
     # Mock Data Settings
     MOCK_DATA_DIR: Path = Path(__file__).parent.parent / "fixtures"

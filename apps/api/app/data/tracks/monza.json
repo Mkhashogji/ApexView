@@ -4,26 +4,103 @@
   "country": "Italy",
   "length": 5793,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1900 },
-    { "sectorNumber": 2, "startDistance": 1900, "endDistance": 3800 },
-    { "sectorNumber": 3, "startDistance": 3800, "endDistance": 5793 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1900
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1900,
+      "endDistance": 3800
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 3800,
+      "endDistance": 5793
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 5500, "activationPoint": 5650, "endPoint": 700, "wrapAround": true },
-    { "zoneNumber": 2, "detectionPoint": 3200, "activationPoint": 3350, "endPoint": 3750 }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 5500,
+      "activationPoint": 5650,
+      "endPoint": 700,
+      "wrapAround": true
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 3200,
+      "activationPoint": 3350,
+      "endPoint": 3750
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 750, "type": "right" },
-    { "cornerNumber": 2, "distance": 850, "type": "left" },
-    { "cornerNumber": 3, "distance": 1350, "type": "right" },
-    { "cornerNumber": 4, "distance": 1950, "type": "right" },
-    { "cornerNumber": 5, "distance": 2050, "type": "left" },
-    { "cornerNumber": 6, "distance": 2500, "type": "right" },
-    { "cornerNumber": 7, "distance": 2900, "type": "right" },
-    { "cornerNumber": 8, "distance": 3850, "type": "left" },
-    { "cornerNumber": 9, "distance": 3950, "type": "right" },
-    { "cornerNumber": 10, "distance": 4100, "type": "left" },
-    { "cornerNumber": 11, "distance": 5300, "type": "right" }
+    {
+      "cornerNumber": 1,
+      "distance": 750,
+      "type": "right",
+      "name": "Variante del Rettifilo"
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 850,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 1350,
+      "type": "right",
+      "name": "Curva Grande"
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 1950,
+      "type": "right",
+      "name": "Variante della Roggia"
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 2050,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 2500,
+      "type": "right",
+      "name": "Lesmo 1"
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 2900,
+      "type": "right",
+      "name": "Lesmo 2"
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 3850,
+      "type": "left",
+      "name": "Variante Ascari"
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 3950,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 4100,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 5300,
+      "type": "right",
+      "name": "Curva Alboreto"
+    }
   ]
 }
-

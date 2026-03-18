@@ -3,7 +3,7 @@
 import { SectorComparison, TheoreticalBestLap } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { formatLapTime, formatSectorTime, formatDelta, getDeltaColorClass } from '@/lib/formatters'
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 
 interface SectorCardsProps {
   sectorData: SectorComparison[]
@@ -21,6 +21,8 @@ interface SectorFastest {
 }
 
 export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCardsProps) {
+  const [showGuide, setShowGuide] = useState(false)
+
   // Filter out invalid data
   const validSectorData = useMemo(() => {
     // Guard: Check if sectorData exists and is an array
@@ -248,6 +250,46 @@ export function SectorCards({ sectorData, referenceDriver, poleTime }: SectorCar
               {formatDelta(overallTheoreticalBest.deltaToPole)} vs pole
             </p>
           )}
+        </div>
+      )}
+
+      {/* How to read this panel */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="text-xs text-gray-500 hover:text-gray-400 transition-colors flex items-center gap-1"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className="inline-block transition-transform duration-200"
+          style={{ transform: showGuide ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
+          &#9656;
+        </span>
+        How to read this panel
+      </button>
+      {showGuide && (
+        <div className="mt-2 p-3 rounded border border-white/10 bg-white/[0.02] text-sm text-gray-500 space-y-2">
+          <div>
+            <span className="text-gray-400 font-medium">What this shows: </span>
+            Each driver&apos;s best sector times (S1, S2, S3) from the selected qualifying session. Times come from official FIA timing.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Purple highlights: </span>
+            The fastest time in each sector column is highlighted in purple, matching the F1 broadcast convention.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Deltas: </span>
+            Non-fastest entries show the gap to the fastest time in that sector (e.g. +0.152s).
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Theoretical best: </span>
+            The sum of each driver&apos;s best individual sector times — a mathematical construct representing the lap if every sector was driven at their personal best. This is rarely achievable in practice because track conditions and car setup trade-offs vary across laps.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Delta vs pole: </span>
+            A negative value means the driver had raw pace to beat pole but did not assemble their best sectors into a single lap.
+          </div>
         </div>
       )}
     </div>

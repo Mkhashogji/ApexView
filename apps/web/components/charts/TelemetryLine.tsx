@@ -80,6 +80,7 @@ export function TelemetryLine({
 }: TelemetryLineProps) {
   const [activeChannel, setActiveChannel] = useState<TelemetryChannel>('speed')
   const [showAllChannels, setShowAllChannels] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   // Get available channels based on data
   const availableChannels = useMemo(() => {
@@ -327,6 +328,46 @@ export function TelemetryLine({
           onRelayout={handleRelayout}
         />
       </div>
+
+      {/* How to read this chart */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="text-xs text-gray-500 hover:text-gray-400 transition-colors flex items-center gap-1"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className="inline-block transition-transform duration-200"
+          style={{ transform: showGuide ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
+          &#9656;
+        </span>
+        How to read this chart
+      </button>
+      {showGuide && (
+        <div className="mt-2 p-3 rounded border border-white/10 bg-white/[0.02] text-sm text-gray-500 space-y-2">
+          <div>
+            <span className="text-gray-400 font-medium">What this shows: </span>
+            Each line represents one driver&apos;s telemetry data over the full lap distance. Lines are coloured by team.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Channels: </span>
+            Speed (km/h) = velocity throughout the lap. Throttle/Brake (0-100%) = driver inputs. Gear (1-8). RPM = engine revolutions. DRS = 1 when open, 0 when closed.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">DRS zones: </span>
+            Green shaded regions mark official DRS activation zones where drivers can reduce aerodynamic drag for higher straight-line speed.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Teammate styling: </span>
+            When both teammates are selected, the #1 driver uses a solid line and the #2 driver uses a dashed line (based on T-Cam designation).
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Zoom &amp; sync: </span>
+            Click-drag to zoom into a section. Double-click to reset. Zooming this chart also adjusts the delta chart below to the same track section.
+          </div>
+        </div>
+      )}
     </div>
   )
 }

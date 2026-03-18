@@ -4,30 +4,132 @@
   "country": "UAE",
   "length": 5281,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1850 },
-    { "sectorNumber": 2, "startDistance": 1850, "endDistance": 3700 },
-    { "sectorNumber": 3, "startDistance": 3700, "endDistance": 5281 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1850
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1850,
+      "endDistance": 3700
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 3700,
+      "endDistance": 5281
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 950, "activationPoint": 1050, "endPoint": 1700 },
-    { "zoneNumber": 2, "detectionPoint": 2200, "activationPoint": 2400, "endPoint": 3200 }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 950,
+      "activationPoint": 1050,
+      "endPoint": 1700
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 2200,
+      "activationPoint": 2400,
+      "endPoint": 3200
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 180, "type": "left" },
-    { "cornerNumber": 2, "distance": 350, "type": "left" },
-    { "cornerNumber": 3, "distance": 520, "type": "right" },
-    { "cornerNumber": 4, "distance": 700, "type": "right" },
-    { "cornerNumber": 5, "distance": 900, "type": "right" },
-    { "cornerNumber": 6, "distance": 1950, "type": "left" },
-    { "cornerNumber": 7, "distance": 2100, "type": "right" },
-    { "cornerNumber": 8, "distance": 2350, "type": "left" },
-    { "cornerNumber": 9, "distance": 2500, "type": "right" },
-    { "cornerNumber": 10, "distance": 3750, "type": "left" },
-    { "cornerNumber": 11, "distance": 3950, "type": "right" },
-    { "cornerNumber": 12, "distance": 4150, "type": "left" },
-    { "cornerNumber": 13, "distance": 4350, "type": "right" },
-    { "cornerNumber": 14, "distance": 4550, "type": "left" },
-    { "cornerNumber": 15, "distance": 4850, "type": "left" },
-    { "cornerNumber": 16, "distance": 5100, "type": "left" }
+    {
+      "cornerNumber": 1,
+      "distance": 180,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 350,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 520,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 700,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 900,
+      "type": "right",
+      "name": "North Hairpin"
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1950,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 2100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 2350,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 2500,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 3750,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 3950,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 4150,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 4350,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 4550,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 4850,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 5100,
+      "type": "left",
+      "name": null
+    }
   ]
 }

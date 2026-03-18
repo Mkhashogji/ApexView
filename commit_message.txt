@@ -1,211 +1,85 @@
-feat(home): implement complete Home Page plan across three phases
+feat: corner names, qualifying stability, weekend persistence, interpretability guides, transparency page, analysis service rename
 
-ApexView is a Formula 1 data analytics platform. The Home page is
-its entry point — the first thing any user or reviewer sees when
-they visit the application. Before this implementation, no Home
-page existed. Users arriving at the root URL would land on an
-empty route with no content, no navigation, and no identity.
+--- Corner Names (24 circuit files) ---
 
-The Home page was built to serve three purposes: introduce what
-ApexView is and what it does, provide clear navigation to the four
-analytical pages (Qualifying, Race, Practice, and Track
-Intelligence), and establish a consistent, professional first
-impression. Unlike every other page in the application, the Home
-page makes no API calls and loads no external data — everything it
-displays is either static content or derived at build time from
-the 2025 race calendar. This makes it fast, reliable, and
-independent of the backend services.
+Added validated corner names to all 24 track JSON files. The Corner
+Analysis component displayed dashes because the data files had no name
+values — the rendering code was already built, the gap was in the data.
+Five circuits had unverified names removed, seven were populated from
+scratch, twelve were audited and corrected. Five circuits required
+physical feature mapping (matching corners by type and distance rather
+than turn number when sources use different numbering for the same
+physical location).
 
-The implementation was structured across three sequential phases.
-Each phase had a clearly defined scope, a set of completion
-checks, and a validation step before the next phase began.
+--- Qualifying — Race Condition Fix ---
 
----
+Fixed a bug where Corner Analysis did not update when switching GPs.
+Two hooks ran concurrently: one fetching track corners, one using those
+corners to request analysis. Both used keepPreviousData (shows old data
+while loading to prevent blank screens), so the analysis hook received
+stale corners from the previous circuit and sent them to the backend.
+Fix: the analysis query now waits until track data is genuinely fresh
+via React Query's isPlaceholderData flag.
 
-Phase 1: Structural Foundation
+--- Weekend Selector — Persistence Across All Pages ---
 
-Before any visible content was added, the architectural structure
-of the Home page was put in place. This involved setting up the
-page file, the loading skeleton, the navigation bar, and the
-application favicon.
+The Race Weekend Selector allows users to choose which GP weekend to
+analyse. The selected round and season are stored as URL search
+parameters (e.g. ?round=1&season=2025), and a shared mechanism in the
+Navigation component forwards these parameters when the user clicks
+between pages, so the selection persists during navigation.
 
-The page was built using Next.js App Router conventions, which
-means the entry point (page.tsx) runs on the server and handles
-page-level metadata such as the browser tab title. It delegates
-the interactive parts of the page to a separate client-side
-component (HomeContent.tsx), which runs in the browser. A loading
-skeleton (HomePageSkeleton.tsx) was created to display a
-placeholder layout while the page first loads, with dimensions
-pre-matched to the eventual content — this prevents the page from
-visually jumping or reflowing when the real content appears.
+This was implemented first for the Qualifying, Race, and Practice
+pages, which share the same pattern of reading round/season from the
+URL to load session-specific data. However, the Home page and Track
+Intelligence page were not included in this forwarding set, meaning
+the parameters were stripped when navigating to either page, causing
+the selector to reset to the default Abu Dhabi GP.
 
-The Track Intelligence page URL was changed from a path-based
-format (/track/5) to a query-parameter format (/track?round=5).
-This aligns all analytical pages to a consistent URL pattern where
-session filters live in the query string rather than the path. A
-permanent redirect was added so that any existing links using the
-old format automatically forward to the new one without breaking.
+Fix: expanded the ANALYSIS_PAGES set to include all five pages (Home,
+Qualifying, Race, Practice, Track Intelligence). Updated the logo
+link in the navigation bar to also forward parameters. On the Home
+page, the feature cards (which link to each analytical page) were
+updated to read the current URL parameters and append them to their
+destination links, ensuring the selection carries through even when
+navigating via the Home page rather than the navigation bar.
 
-The navigation bar was updated to include five links: Home,
-Qualifying, Race, Practice, and Track Intelligence — providing
-consistent access to the full application from every page. An SVG
-favicon (the small icon shown in the browser tab) was added at
-the path Next.js automatically detects, so it appears without any
-additional configuration.
+--- Qualifying — Interpretability Guides ---
 
----
+Added "How to read this chart" sections to all seven Qualifying
+components, matching the pattern already established on Race and
+Practice pages. Each guide explains purpose, interpretation, and
+limitations. All claims verified against production code — six
+corrections applied where descriptions did not match the actual
+algorithm (e.g. confidence labels, cause thresholds, delta semantics).
 
-Phase 2: Content and Identity
+--- Transparency & Attribution Page ---
 
-With the structure in place, Phase 2 filled the page with its
-actual content across four components.
+New /transparency route linked from the footer. Six sections: project
+disclaimer, data sources and limitations, analysis methodology (with
+verified thresholds from production code), privacy (no data collection,
+no cookies, no tracking), attribution, and intellectual property. Built
+as a Server Component — static text only, no client-side JavaScript.
 
-HeroSection is the large introductory banner at the top of the
-page. It displays the ApexView name — "Apex" in white and "View"
-in the F1 red brand colour — using a bold, responsive heading
-that scales from a smaller size on mobile to a larger size on
-desktop. Below the heading is a one-line description of what
-ApexView does, followed by a prominent call-to-action button
-("Explore Race Data") that links to the Race page.
+--- Analysis Service Rename ---
 
-SeasonStats shows three live figures derived from the 2025 F1
-race calendar: the total number of rounds in the season, the
-number of rounds completed, and whether the season is still in
-progress or finished. These values are calculated on the server
-when the page is built, so no separate data request is made when
-a user visits — the numbers are already ready. The figures use a
-monospace font with fixed-width digits so they align cleanly
-regardless of the values displayed.
+Renamed "ML Service" to "Analysis Service" across the entire codebase.
+The rename applies specifically to the telemetry analysis pipeline
+(the service responsible for qualifying analysis: delta computation,
+corner detection, technique profiling, and insight generation). That
+pipeline's implementation consists of physics-based computation,
+rule-based signal processing, descriptive statistics, and template-based
+text generation — methods that do not constitute machine learning by
+standard technical definition, despite being originally labelled as
+such.
 
-Four FeatureCards introduce each of the analytical pages. Each
-card poses a question that frames what the page helps answer —
-for example, "Who was genuinely fastest over a single lap, and
-why?" for the Qualifying page. Cards include a short list of
-analytical capabilities and a directional arrow that appears on
-hover to signal the card is a link.
+The broader codebase does include statistical modelling: the Race
+page's tyre degradation component uses linear regression
+(scipy.stats.linregress) to fit a model of tyre age against lap time,
+producing a degradation rate and R² goodness-of-fit metric. That
+component resides in the API service and was not part of this rename
+— it was already accurately described.
 
-PlatformCapabilities is a section below the cards that lists
-eight statements describing the analytical scope of the platform,
-grouped under a clearly branded heading.
-
-All calendar-based figures are calculated on the server before
-the page is delivered to the browser. No data fetching happens
-on the client side — the Home page contains only static content
-and pre-computed values.
-
----
-
-Phase 3: Polish and Performance
-
-Phase 3 focused on three areas: accessibility fixes identified
-through automated audit, entrance animations, and consistent
-page metadata across the whole application.
-
-The starting point was a Lighthouse audit — a standardised
-performance, accessibility, SEO, and best-practices scoring tool
-built into Chrome. The audit was run on the Home page before any
-code was written so that the findings drove the implementation
-rather than guesswork. Baseline scores on Desktop were:
-Performance 96, Accessibility 98, Best Practices 100, SEO 100.
-
-Three accessibility failures were identified and corrected:
-
-The heading structure on the page was incorrect. HTML headings
-(h1, h2, h3 and so on) form an outline that screen readers use
-to help visually impaired users navigate a page. The page had an
-h1 at the top followed directly by h3 headings, skipping level
-h2 entirely — a violation of accessibility guidelines. This was
-fixed by adding a visually hidden h2 heading that restores the
-correct outline for screen readers without changing what sighted
-users see, and by correcting one section's heading level from
-h2 to h3.
-
-Interactive elements — the main call-to-action button and each
-feature card — were missing visible focus indicators. A focus
-indicator is the visible outline that appears around a button or
-link when a keyboard user tabs to it. Without them, keyboard-only
-users cannot tell which element is currently selected. The focus
-ring styling already used elsewhere in the application was applied
-to both elements.
-
-The round selector widget in the navigation bar had an
-accessibility label that did not include the text displayed inside
-the button. Accessibility guidelines require that a button's
-label contains its visible text so that voice control users can
-activate it by saying what they read on screen. The label was
-updated to include the currently selected race name.
-
-Entrance animations were added to give the page a polished feel
-on load. The three content sections — the hero banner, feature
-cards, and capabilities list — each fade in and slide up slightly
-in sequence, with a short delay between each section so they
-appear one after another rather than all at once. The animations
-are defined in CSS only, with no JavaScript involvement, keeping
-them lightweight. A CSS rule responds to the "reduce motion"
-accessibility setting that users can enable in their operating
-system, and disables all animations completely for those users —
-not just softens them — to avoid causing discomfort for people
-with motion sensitivity.
-
-Page metadata — the information embedded in each page's HTML that
-controls the browser tab title, search engine descriptions, and
-the preview card shown when a link is shared on social media —
-was inconsistent across the application. The root layout still
-used the development working title "F1 Engineering App" instead
-of "ApexView". Two pages (Race and Qualifying) had no metadata
-at all, meaning they would show a blank or generic title in
-browser tabs and search results. Two other pages (Practice and
-Track Intelligence) used "F1 Engineering" as the brand name
-instead of "ApexView". All six locations — five pages plus the
-root layout — were updated to use the consistent format
-"Page Name | ApexView" and now include social sharing metadata
-for every page. The Track Intelligence page generates its title
-dynamically based on the selected round, so its existing
-function was updated in place rather than replaced with a fixed
-alternative.
-
-The navigation bar logo was also corrected as part of this brand
-remediation. It previously displayed "F1 Engineering" in solid
-red — a visible holdout from the development era that contradicted
-the corrected metadata shown on every page. The logo was updated
-to match the HeroSection headline convention: "Apex" in white and
-"View" in red, using the same uppercase tracking-tight styling.
-This was the last remaining instance of "F1 Engineering" anywhere
-in the web application. A full brand audit across all TypeScript,
-stylesheet, and JSON files confirms zero remaining instances.
-
-Final Lighthouse scores on Desktop: Performance 100, Accessibility
-100, Best Practices 100, SEO 100. All four categories at maximum.
-The Phase 3 accessibility fixes — heading structure, focus
-indicators, and the navigation label — were the changes that
-brought Accessibility from 98 to 100. The metadata remediation
-completed the SEO coverage that was already at 100.
-
----
-
-Testing and Validation
-
-Phase 1: All five routes were confirmed to return successful HTTP
-responses after the navigation changes. The Track Intelligence
-redirect was verified — requests to the old URL format are
-correctly forwarded to the new one. Docker build completed cleanly
-across all three application services.
-
-Phase 2: The page was visually inspected across mobile (375px),
-tablet (768px), and desktop (1280px and 1536px) screen widths to
-confirm layout, typography, and spacing at each size. The server-
-side calendar calculation was confirmed to pass correctly to the
-client-side component. Docker build clean.
-
-Phase 3: Automated text-search checks confirmed the following —
-the animation definitions are present in the global stylesheet,
-the reduced-motion override is present, animation classes are
-applied to exactly three sections in HomeContent.tsx and nowhere
-else, zero instances of the old "F1 Engineering" brand name
-remain in any metadata file, all six files have page titles and
-social sharing metadata, and all five page titles in the rendered
-HTML match the expected "Page Name | ApexView" format. TypeScript
-compilation produced zero errors. Docker rebuild clean. No layout
-overflow at 375px mobile width. The call-to-action button meets
-the 44px minimum touch target size required for mobile usability.
-All 25 completion gate items confirmed passing.
+The rename covers folders, Docker service, API routes, env vars, hooks,
+types, UI badges, loggers, and ~35 documentation files. No logic or
+behaviour changes — naming corrections only.

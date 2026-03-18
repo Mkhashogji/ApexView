@@ -14,6 +14,7 @@ export function useTelemetryQuery(
     queryKey: queryKeys.telemetry.list(sessionId, drivers, sessionPart),
     queryFn: () => fetchTelemetry(sessionId, drivers, sessionPart),
     enabled: Boolean(sessionId && drivers.length > 0),
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the lightweight machine learning and AI features to be implemented in the F1 Engineering App. The focus is on practical, computationally efficient features that provide real value without requiring complex ML infrastructure.
+This document outlines the lightweight telemetry analysis and AI features to be implemented in the F1 Engineering App. The focus is on practical, computationally efficient features that provide real value without requiring complex ML infrastructure.
 
 ## Philosophy
 

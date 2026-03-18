@@ -35,7 +35,7 @@ f1-engineering-app/
 │  │  │  │  └─ TyreDegradation.tsx
 │  │  │  ├─ panels/
 │  │  │  │  ├─ SectorCards.tsx
-│  │  │  │  ├─ AIInsights.tsx
+│  │  │  │  ├─ AnalysisInsights.tsx
 │  │  │  │  └─ SessionSummary.tsx
 │  │  │  └─ track/
 │  │  │     ├─ TrackMap.tsx       # SVG/Three.js with sectors & DRS

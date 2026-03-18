@@ -10,6 +10,7 @@ export function useSessionsQuery(season: number, round: number) {
     queryKey: queryKeys.sessions.list(season, round),
     queryFn: () => fetchSessions(season, round),
     enabled: Boolean(season && round),
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

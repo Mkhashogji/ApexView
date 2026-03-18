@@ -31,7 +31,7 @@ Phase 3 completes the Corner Analysis V2 implementation by:
 
 **Solution**: Added configurations for 10 missing circuits to complete the 2025 F1 calendar.
 
-**File Modified**: `apps/ml_service/core/corner_config.py`
+**File Modified**: `apps/analysis_service/core/corner_config.py`
 
 #### Circuits Added
 
@@ -85,11 +85,11 @@ def get_circuit_count() -> int:
 
 **Problem**: `validate_against_sectors()` existed but was not called from endpoints.
 
-**Solution**: Integrated sector validation into `/ml/corner-analysis` endpoint.
+**Solution**: Integrated sector validation into `/analysis/corner-analysis` endpoint.
 
 **Files Modified**:
-- `apps/ml_service/models/schemas.py` — Added validation schemas
-- `apps/ml_service/main.py` — Integrated validation logic
+- `apps/analysis_service/models/schemas.py` — Added validation schemas
+- `apps/analysis_service/main.py` — Integrated validation logic
 
 #### New Schemas
 
@@ -128,7 +128,7 @@ class CornerAnalysisDriverResult(BaseModel):
 
 ### 2.3 FastF1 Validation Script
 
-**File Created**: `apps/ml_service/scripts/validate_v2.py`
+**File Created**: `apps/analysis_service/scripts/validate_v2.py`
 
 Script features:
 - Loads real F1 telemetry via FastF1 library
@@ -145,7 +145,7 @@ Script features:
 
 **Command**:
 ```bash
-cd /c/f1-engineering-app/apps/ml_service
+cd /c/f1-engineering-app/apps/analysis_service
 python -m pytest tests/test_circuit_configs.py tests/test_corner_analysis_v2.py tests/test_corner_analysis.py -v --tb=short
 ```
 
@@ -161,7 +161,7 @@ python -m pytest tests/test_circuit_configs.py tests/test_corner_analysis_v2.py 
 
 **Command**:
 ```bash
-cd /c/f1-engineering-app/apps/ml_service
+cd /c/f1-engineering-app/apps/analysis_service
 python scripts/validate_v2.py --circuit rodriguez --year 2025 --round 20 --ref LEC --comp NOR
 ```
 
@@ -169,7 +169,7 @@ python scripts/validate_v2.py --circuit rodriguez --year 2025 --round 20 --ref L
 
 **Commands**:
 ```bash
-# Rebuild ML service with latest changes
+# Rebuild Analysis service with latest changes
 docker-compose build --no-cache ml
 docker-compose up -d ml
 
@@ -177,7 +177,7 @@ docker-compose up -d ml
 curl -s http://localhost:8501/health
 
 # Test corner-analysis endpoint
-curl -s -X POST http://localhost:8501/ml/corner-analysis \
+curl -s -X POST http://localhost:8501/analysis/corner-analysis \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "2025_20_Qualifying",
@@ -339,14 +339,14 @@ core           INFO   Loading data for Mexico City Grand Prix - Qualifying [v3.6
 ```
 NAME      IMAGE                    COMMAND                  SERVICE   STATUS
 f1-api    f1-engineering-app-api   "uvicorn app.main:ap…"   api       Up (healthy)
-f1-ml     f1-engineering-app-ml    "uvicorn main:app --…"   ml        Up (healthy)
+f1-analysis     f1-engineering-app-ml    "uvicorn main:app --…"   ml        Up (healthy)
 f1-web    f1-engineering-app-web   "docker-entrypoint.s…"   web       Up
 ```
 
 ### 4.4 Health Check Response
 
 ```json
-{"status":"healthy","version":"0.1.0","service":"f1-ml-service"}
+{"status":"healthy","version":"0.1.0","service":"f1-analysis-service"}
 ```
 
 ### 4.5 Corner Analysis Endpoint Response
@@ -440,16 +440,16 @@ f1-web    f1-engineering-app-web   "docker-entrypoint.s…"   web       Up
 
 | File | Changes |
 |------|---------|
-| `apps/ml_service/core/corner_config.py` | Added 10 circuits, CIRCUIT_ALIASES, helper functions |
-| `apps/ml_service/models/schemas.py` | Added SectorValidationSchema, ValidationReportSchema, updated CornerAnalysisDriverResult |
-| `apps/ml_service/main.py` | Integrated sector validation into endpoint |
+| `apps/analysis_service/core/corner_config.py` | Added 10 circuits, CIRCUIT_ALIASES, helper functions |
+| `apps/analysis_service/models/schemas.py` | Added SectorValidationSchema, ValidationReportSchema, updated CornerAnalysisDriverResult |
+| `apps/analysis_service/main.py` | Integrated sector validation into endpoint |
 
 ### 5.2 New Files
 
 | File | Description |
 |------|-------------|
-| `apps/ml_service/scripts/validate_v2.py` | FastF1 validation script |
-| `apps/ml_service/tests/test_circuit_configs.py` | 26 circuit configuration tests |
+| `apps/analysis_service/scripts/validate_v2.py` | FastF1 validation script |
+| `apps/analysis_service/tests/test_circuit_configs.py` | 26 circuit configuration tests |
 | `docs/PHASE3-V2-ENHANCEMENT-VALIDATION.md` | This documentation |
 
 ---

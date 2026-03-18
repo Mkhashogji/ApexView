@@ -135,11 +135,11 @@ export interface TheoreticalBestLap {
 }
 
 // ============================================================================
-// ML Service Response Types
+// Analysis Service Response Types
 // ============================================================================
 
-/** Individual insight from ML analysis */
-export interface MLInsight {
+/** Individual insight from telemetry analysis */
+export interface AnalysisInsight {
   type: 'similarity' | 'cluster' | 'braking' | 'sector' | 'speed' | 'consistency' | 'error' | 'default'
   message: string
   confidence?: 'high' | 'medium' | 'low'
@@ -147,11 +147,11 @@ export interface MLInsight {
   data?: Record<string, unknown>
 }
 
-/** Response from /ml/insights/{session_id} endpoint */
-export interface MLInsightsResponse {
+/** Response from /analysis/insights/{session_id} endpoint */
+export interface AnalysisInsightsResponse {
   session_id: string
   drivers: string[]
-  insights: MLInsight[]
+  insights: AnalysisInsight[]
   clusters?: ClusteringResponse
 }
 
@@ -164,7 +164,7 @@ export interface FeatureScores {
   overall?: number
 }
 
-/** Response from /ml/lap-similarity endpoint */
+/** Response from /analysis/lap-similarity endpoint */
 export interface LapSimilarityResponse {
   session_id: string
   driver1: string
@@ -185,7 +185,7 @@ export interface DriverCluster {
   pca_y?: number
 }
 
-/** Response from /ml/driver-style-clustering endpoint */
+/** Response from /analysis/driver-style-clustering endpoint */
 export interface ClusteringResponse {
   session_id: string
   clusters: DriverCluster[]
@@ -370,6 +370,10 @@ export interface DriverPerformanceResult {
   scaling_confidence: number
   delta?: number[]
   distance?: number[]
+  // Phase 2: Extended fields for ScalingMetadataPanel
+  telemetry_gap?: number
+  scaling_factor?: number
+  raw_delta?: number[]
   // Phase 3: Corner Analysis Summary
   corners_gaining: number
   corners_losing: number

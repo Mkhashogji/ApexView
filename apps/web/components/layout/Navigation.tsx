@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { fetchRacePace } from '@/lib/api'
@@ -19,17 +19,19 @@ const navLinks = [
   { href: '/track', label: 'Track Intelligence' },
 ]
 
+/** Pages that share race weekend selection (round/season) */
+const ANALYSIS_PAGES = new Set(['/', '/qualifying', '/race', '/practice', '/track'])
+
 /**
  * Main navigation component with active state indicators.
  * Uses red underline to show current page.
  */
-/** Default session for prefetch — matches RaceContent DEFAULT_SEASON/DEFAULT_ROUND */
-const PREFETCH_SESSION = '2025_24_Race'
 /** Default fuel effect for prefetch (general default 0.032) */
 const PREFETCH_FUEL_EFFECT = 0.032
 
 export function Navigation() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
 
   /**
@@ -43,18 +45,36 @@ export function Navigation() {
   }
 
   /**
+   * Build nav link href, carrying round/season across analysis pages.
+   * Only round and season are forwarded — page-specific params (drivers,
+   * session, ref, tdMode, etc.) are intentionally left per-page.
+   */
+  const buildHref = useCallback((href: string): string => {
+    if (!ANALYSIS_PAGES.has(href)) return href
+    const round = searchParams.get('round')
+    const season = searchParams.get('season')
+    if (!round && !season) return href
+    const params = new URLSearchParams()
+    if (season) params.set('season', season)
+    if (round) params.set('round', round)
+    return `${href}?${params.toString()}`
+  }, [searchParams])
+
+  /**
    * Prefetch race pace data on Race link hover.
-   * Uses hardcoded default session to avoid useSearchParams hydration issues.
-   * If the user has navigated to a different GP, this prefetch won't match,
-   * but that's acceptable for a hover-optimisation.
+   * Uses current round/season from URL params when available,
+   * falling back to defaults for the initial load case.
    */
   const handleRaceHover = useCallback(() => {
+    const round = searchParams.get('round') || '24'
+    const season = searchParams.get('season') || '2025'
+    const sessionId = `${season}_${round}_Race`
     queryClient.prefetchQuery({
-      queryKey: queryKeys.race.pace(PREFETCH_SESSION, PREFETCH_FUEL_EFFECT),
-      queryFn: () => fetchRacePace(PREFETCH_SESSION, PREFETCH_FUEL_EFFECT),
+      queryKey: queryKeys.race.pace(sessionId, PREFETCH_FUEL_EFFECT),
+      queryFn: () => fetchRacePace(sessionId, PREFETCH_FUEL_EFFECT),
       staleTime: Infinity,
     })
-  }, [queryClient])
+  }, [queryClient, searchParams])
 
   return (
     <nav 
@@ -67,7 +87,7 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center">
             <Link
-              href="/"
+              href={buildHref('/')}
               className="font-heading text-2xl font-bold uppercase tracking-tight text-white transition-opacity hover:opacity-80"
             >
               Apex<span className="text-f1red">View</span>
@@ -81,7 +101,7 @@ export function Navigation() {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  href={buildHref(link.href)}
                   className={`
                     relative px-4 py-2 text-sm font-medium transition-colors duration-200
                     focus-ring rounded-md

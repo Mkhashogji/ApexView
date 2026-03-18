@@ -4,36 +4,163 @@
   "country": "Singapore",
   "length": 4940,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1650 },
-    { "sectorNumber": 2, "startDistance": 1650, "endDistance": 3300 },
-    { "sectorNumber": 3, "startDistance": 3300, "endDistance": 4940 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1650
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1650,
+      "endDistance": 3300
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 3300,
+      "endDistance": 4940
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 4700, "activationPoint": 4850, "endPoint": 350, "wrapAround": true },
-    { "zoneNumber": 2, "detectionPoint": 550, "activationPoint": 650, "endPoint": 1100 },
-    { "zoneNumber": 3, "detectionPoint": 1800, "activationPoint": 1950, "endPoint": 2400 },
-    { "zoneNumber": 4, "detectionPoint": 3500, "activationPoint": 3650, "endPoint": 4100 }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 4700,
+      "activationPoint": 4850,
+      "endPoint": 350,
+      "wrapAround": true
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 550,
+      "activationPoint": 650,
+      "endPoint": 1100
+    },
+    {
+      "zoneNumber": 3,
+      "detectionPoint": 1800,
+      "activationPoint": 1950,
+      "endPoint": 2400
+    },
+    {
+      "zoneNumber": 4,
+      "detectionPoint": 3500,
+      "activationPoint": 3650,
+      "endPoint": 4100
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 400, "type": "left" },
-    { "cornerNumber": 2, "distance": 600, "type": "left" },
-    { "cornerNumber": 3, "distance": 850, "type": "right" },
-    { "cornerNumber": 4, "distance": 1100, "type": "left" },
-    { "cornerNumber": 5, "distance": 1350, "type": "right" },
-    { "cornerNumber": 6, "distance": 1550, "type": "left" },
-    { "cornerNumber": 7, "distance": 1800, "type": "right" },
-    { "cornerNumber": 8, "distance": 2050, "type": "right" },
-    { "cornerNumber": 9, "distance": 2300, "type": "left" },
-    { "cornerNumber": 10, "distance": 2550, "type": "right" },
-    { "cornerNumber": 11, "distance": 2800, "type": "right" },
-    { "cornerNumber": 12, "distance": 3050, "type": "left" },
-    { "cornerNumber": 13, "distance": 3300, "type": "right" },
-    { "cornerNumber": 14, "distance": 3600, "type": "left" },
-    { "cornerNumber": 15, "distance": 3850, "type": "right" },
-    { "cornerNumber": 16, "distance": 4100, "type": "left" },
-    { "cornerNumber": 17, "distance": 4350, "type": "right" },
-    { "cornerNumber": 18, "distance": 4600, "type": "left" },
-    { "cornerNumber": 19, "distance": 4850, "type": "right" }
+    {
+      "cornerNumber": 1,
+      "distance": 400,
+      "type": "left",
+      "name": "Sheares"
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 600,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 850,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 1100,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 1350,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1550,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 1800,
+      "type": "right",
+      "name": "Memorial"
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 2050,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 2300,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 2550,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 2800,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 3050,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 3300,
+      "type": "right",
+      "name": "Anderson Bridge Hairpin"
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 3600,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 3850,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 4100,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 4350,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 4600,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 19,
+      "distance": 4850,
+      "type": "right",
+      "name": null
+    }
   ]
 }
-

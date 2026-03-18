@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { CornerAnalysisDriverResult, CornerResult } from '@/../../packages/models/src/types'
+import { DriverPerformanceResult, PerformanceCornerResult } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { formatDelta } from '@/lib/formatters'
 
 interface CornerBreakdownPanelProps {
-  /** Corner analysis results from Phase 3 */
-  results: CornerAnalysisDriverResult[]
+  /** Performance results from unified Phase 6 endpoint */
+  results: DriverPerformanceResult[]
   /** Reference driver for display */
   referenceDriver: string
   /** Whether data is loading */
@@ -43,6 +43,7 @@ export function CornerBreakdownPanel({
   const [selectedDriverIndex, setSelectedDriverIndex] = useState(0)
   const [sortField, setSortField] = useState<SortField>('corner')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [showGuide, setShowGuide] = useState(false)
 
   // Loading state
   if (isLoading) {
@@ -87,18 +88,18 @@ export function CornerBreakdownPanel({
     return null
   }
 
-  const driverInfo = getDriverInfo(currentResult.compareDriver)
-  const teamColor = getTeamColor(currentResult.compareDriver)
+  const driverInfo = getDriverInfo(currentResult.driver)
+  const teamColor = getTeamColor(currentResult.driver)
 
   // Sort corner results
-  const sortedCorners = [...currentResult.cornerResults].sort((a, b) => {
+  const sortedCorners = [...currentResult.corner_results].sort((a, b) => {
     let comparison = 0
     switch (sortField) {
       case 'corner':
-        comparison = a.cornerNumber - b.cornerNumber
+        comparison = a.corner_number - b.corner_number
         break
       case 'delta':
-        comparison = Math.abs(b.deltaChange) - Math.abs(a.deltaChange)
+        comparison = Math.abs(b.delta_change) - Math.abs(a.delta_change)
         break
       case 'cause':
         comparison = a.cause.localeCompare(b.cause)
@@ -138,8 +139,8 @@ export function CornerBreakdownPanel({
             className="bg-f1gray/30 border border-f1gray/50 rounded px-2 py-1 text-sm"
           >
             {results.map((r, i) => (
-              <option key={r.compareDriver} value={i}>
-                {r.compareDriver}
+              <option key={r.driver} value={i}>
+                {r.driver}
               </option>
             ))}
           </select>
@@ -154,7 +155,7 @@ export function CornerBreakdownPanel({
             style={{ backgroundColor: teamColor }}
           />
           <div>
-            <span className="font-medium">{currentResult.compareDriver}</span>
+            <span className="font-medium">{currentResult.driver}</span>
             <span className="text-gray-500 text-xs ml-2">
               {driverInfo?.fullName}
             </span>
@@ -166,20 +167,20 @@ export function CornerBreakdownPanel({
             <span className="text-gray-500">Total:</span>
             <span
               className={`font-mono ml-2 ${
-                currentResult.totalDeltaChange > 0.005
+                currentResult.total_corner_delta > 0.005
                   ? 'text-delta-positive'
-                  : currentResult.totalDeltaChange < -0.005
+                  : currentResult.total_corner_delta < -0.005
                     ? 'text-delta-negative'
                     : 'text-gray-400'
               }`}
             >
-              {formatDelta(currentResult.totalDeltaChange)}
+              {formatDelta(currentResult.total_corner_delta)}
             </span>
           </div>
           <div className="border-l border-f1gray/30 pl-4">
-            <span className="text-delta-negative">{currentResult.cornersGaining}</span>
+            <span className="text-delta-negative">{currentResult.corners_gaining}</span>
             <span className="text-gray-500 mx-1">/</span>
-            <span className="text-delta-positive">{currentResult.cornersLosing}</span>
+            <span className="text-delta-positive">{currentResult.corners_losing}</span>
             <span className="text-gray-500 text-xs ml-1">(gaining/losing)</span>
           </div>
         </div>
@@ -218,7 +219,7 @@ export function CornerBreakdownPanel({
           </thead>
           <tbody>
             {sortedCorners.map((corner) => (
-              <CornerRow key={corner.cornerNumber} corner={corner} />
+              <CornerRow key={corner.corner_number} corner={corner} />
             ))}
           </tbody>
         </table>
@@ -228,16 +229,83 @@ export function CornerBreakdownPanel({
       <div className="mt-4 pt-3 border-t border-f1gray/20">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
           <span>
-            <span className="text-delta-negative">Green</span> = {currentResult.compareDriver} gaining time
+            <span className="text-delta-negative">Green</span> = {currentResult.driver} gaining time
           </span>
           <span>
-            <span className="text-delta-positive">Red</span> = {currentResult.compareDriver} losing time
+            <span className="text-delta-positive">Red</span> = {currentResult.driver} losing time
           </span>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
           <span><strong>Cause:</strong> braking, apex, exit, or multiple phases</span>
         </div>
       </div>
+
+      {/* How to read this panel */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="flex items-center gap-2 mt-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className={`inline-block transition-transform duration-200 ${showGuide ? 'rotate-90' : ''}`}
+        >
+          &#9656;
+        </span>
+        How to read this panel
+      </button>
+      {showGuide && (
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Understanding the Table</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                <span className="text-gray-400 font-medium">Corner (T1, T2...):</span> Each numbered turn on the circuit, with the analysis zone extending from brake point through apex to exit.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Δ Time:</span> Time gained (green/negative) or lost (red/positive) by the comparison driver at this corner.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Cause:</span> The primary driving phase where the difference originated. Braking = corner entry deceleration. Apex = mid-corner minimum speed. Exit = corner exit acceleration. Multiple = a secondary phase contributed more than 30% of the primary phase&apos;s time difference, meaning the gap cannot be attributed to one phase alone.
+              </p>
+              <p>
+                <span className="text-gray-400 font-medium">Confidence:</span> How closely the two brake detection methods agreed at this corner. High = the brake signal and deceleration refinement aligned within 20 metres. Medium = aligned within 40 metres. Low = diverged beyond 40 metres, meaning zone boundaries are approximate.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">How Corner Zones Are Detected</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                Brake points are identified using a two-stage physics-based approach. First, the system finds where the brake signal clearly activates (&gt;50%). Then it refines backward using deceleration calculated from speed changes (v&#178; kinematics), searching for where heavy deceleration first begins — typically where deceleration crosses a circuit-specific threshold (around -5 m/s&#178;, tuned per circuit from -4.0 to -6.5 m/s&#178;). This captures the true onset of braking rather than relying solely on brake pedal pressure.
+              </p>
+              <p>
+                The apex is detected as the point of minimum speed within the corner zone. The exit is identified when the driver either sustains positive acceleration (3+ consecutive data points above 2.0 m/s&#178;) or recovers to 85% of their pre-braking speed.
+              </p>
+              <p>
+                The &quot;multiple&quot; cause is assigned when the second-most-significant phase exceeds 30% of the primary phase&apos;s magnitude. For example, a corner where 65% of the time difference came from braking and 35% from apex would be labelled &quot;multiple&quot;, since the apex contribution is substantial relative to braking.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Limitations</h4>
+            <div className="text-sm text-gray-500/80 italic space-y-1.5">
+              <p>
+                Corner analysis quality varies by circuit. Circuits with distinct, separated braking zones produce clearer results than circuits with high-speed flowing corners where zones overlap.
+              </p>
+              <p>
+                The analysis uses publicly available speed and brake data to infer deceleration. Team-internal systems have access to higher-resolution brake pressure, individual brake temperatures, and damper data that enable more precise zone detection. Subtle technique differences (trail braking depth, brake bias adjustments) may not be fully captured from public telemetry.
+              </p>
+              <p>
+                Confidence is relative to this session only. A &quot;high&quot; confidence rating means the brake signal and deceleration data aligned closely at that corner — it does not guarantee the attribution is absolutely correct.
+              </p>
+              <p>
+                When this panel shows no data, it indicates the telemetry quality was insufficient for reliable corner-level analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -245,9 +313,9 @@ export function CornerBreakdownPanel({
 /**
  * Individual corner row component
  */
-function CornerRow({ corner }: { corner: CornerResult }) {
-  const isGaining = corner.deltaChange < -0.005
-  const isLosing = corner.deltaChange > 0.005
+function CornerRow({ corner }: { corner: PerformanceCornerResult }) {
+  const isGaining = corner.delta_change < -0.005
+  const isLosing = corner.delta_change > 0.005
   const isNeutral = !isGaining && !isLosing
 
   // Delta color
@@ -284,7 +352,7 @@ function CornerRow({ corner }: { corner: CornerResult }) {
     <tr className={`border-b border-f1gray/10 hover:bg-f1gray/10 ${rowHighlight}`}>
       {/* Corner Number */}
       <td className="py-2 px-2">
-        <span className="font-medium">T{corner.cornerNumber}</span>
+        <span className="font-medium">T{corner.corner_number}</span>
       </td>
 
       {/* Corner Name */}
@@ -294,7 +362,7 @@ function CornerRow({ corner }: { corner: CornerResult }) {
 
       {/* Delta Change */}
       <td className={`py-2 px-2 text-right font-mono ${deltaColor}`}>
-        {formatDelta(corner.deltaChange)}
+        {formatDelta(corner.delta_change)}
       </td>
 
       {/* Cause */}

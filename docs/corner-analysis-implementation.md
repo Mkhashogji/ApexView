@@ -76,7 +76,7 @@ The F1 Engineering App uses a multi-service architecture for performance analysi
          │                       │
          │                       ▼
          │              ┌─────────────────┐
-         └─────────────▶│   ML Service    │
+         └─────────────▶│   Analysis Service    │
                         │   (FastAPI)     │
                         │   Port 8501     │
                         └─────────────────┘
@@ -88,17 +88,17 @@ The F1 Engineering App uses a multi-service architecture for performance analysi
 |----------|---------|---------|
 | `/telemetry` | API (8000) | Raw telemetry data with lap times |
 | `/track/{round}` | API (8000) | Track layout including corner positions |
-| `/ml/corner-analysis` | ML (8501) | Standalone corner-by-corner analysis |
-| `/ml/performance-insights` | ML (8501) | Unified orchestrated analysis |
-| `/ml/scaled-delta` | ML (8501) | Delta scaling to match official timing |
+| `/analysis/corner-analysis` | ML (8501) | Standalone corner-by-corner analysis |
+| `/analysis/performance-insights` | ML (8501) | Unified orchestrated analysis |
+| `/analysis/scaled-delta` | ML (8501) | Delta scaling to match official timing |
 
 ### 2.3 Frontend Components
 
 | Component | Data Source | Display |
 |-----------|-------------|---------|
-| `PerformanceInsightsPanel` | `/ml/performance-insights` | Driver cards with official gap |
-| `CornerBreakdownPanel` | `/ml/corner-analysis` | Corner-by-corner delta table |
-| `ScalingMetadataPanel` | `/ml/scaled-delta` | Scaling factor and confidence |
+| `PerformanceInsightsPanel` | `/analysis/performance-insights` | Driver cards with official gap |
+| `CornerBreakdownPanel` | `/analysis/corner-analysis` | Corner-by-corner delta table |
+| `ScalingMetadataPanel` | `/analysis/scaled-delta` | Scaling factor and confidence |
 
 ---
 
@@ -119,21 +119,21 @@ curl -s "http://localhost:8000/telemetry?session=2025_20_Qualifying&drivers=LEC&
 
 We traced how lap times flow through the system:
 
-1. **Frontend** calls `/ml/performance-insights` for driver cards
-2. **ML Service** fetches telemetry from API via `/telemetry`
-3. **ML Service** extracts `lapTime` from response (if present)
-4. **ML Service** calculates delta using these lap times
+1. **Frontend** calls `/analysis/performance-insights` for driver cards
+2. **Analysis Service** fetches telemetry from API via `/telemetry`
+3. **Analysis Service** extracts `lapTime` from response (if present)
+4. **Analysis Service** calculates delta using these lap times
 
 ### 3.3 Step 3: Identify the Discrepancy Source
 
-We discovered the ML service was receiving telemetry without `lapTime`:
+We discovered the Analysis service was receiving telemetry without `lapTime`:
 
 ```python
 # In performance_orchestrator.py
 lap_time = telemetry.get("lapTime")  # This was returning None
 ```
 
-When `lapTime` was `None`, the ML service fell back to **estimating** lap time from telemetry data:
+When `lapTime` was `None`, the Analysis service fell back to **estimating** lap time from telemetry data:
 
 ```python
 # Fallback estimation (inaccurate)
@@ -173,25 +173,25 @@ The `lap_time` field was never included in the API response, even though FastF1 
 
 The `TelemetryResponse` model did not include a `lap_time` field. This meant:
 - The API extracted lap time from FastF1 but discarded it
-- The ML service never received official lap times
+- The Analysis service never received official lap times
 - Calculations fell back to telemetry-based estimation (inaccurate)
 
 ### 4.2 Root Cause #2: Inconsistent Lap Time Sources
 
-**Location:** `apps/ml_service/main.py`
+**Location:** `apps/analysis_service/main.py`
 
 Two different endpoints used different lap time sources:
 
 | Endpoint | Lap Time Source | Result |
 |----------|-----------------|--------|
-| `/ml/performance-insights` | `telemetry["lapTime"]` (after fix) | Correct |
-| `/ml/corner-analysis` | `sectors["totalTime"]` | Incorrect |
+| `/analysis/performance-insights` | `telemetry["lapTime"]` (after fix) | Correct |
+| `/analysis/corner-analysis` | `sectors["totalTime"]` | Incorrect |
 
-The `/ml/corner-analysis` endpoint was using sector total time which differed from the official lap time due to timing precision differences.
+The `/analysis/corner-analysis` endpoint was using sector total time which differed from the official lap time due to timing precision differences.
 
 ### 4.3 Root Cause #3: Zone Overlap (Previously Fixed)
 
-**Location:** `apps/ml_service/services/corner_analysis.py`
+**Location:** `apps/analysis_service/services/corner_analysis.py`
 
 Corner zones were overlapping, causing the same track sections to be counted multiple times. This was addressed in a prior fix by implementing zone clamping.
 
@@ -268,9 +268,9 @@ return TelemetryResponse(
 
 ### 5.4 Fix #4: Update Corner Analysis Endpoint
 
-**File:** `apps/ml_service/main.py`
+**File:** `apps/analysis_service/main.py`
 
-Updated the `/ml/corner-analysis` endpoint to prefer telemetry `lapTime` over sector total time:
+Updated the `/analysis/corner-analysis` endpoint to prefer telemetry `lapTime` over sector total time:
 
 ```python
 # Lines 592-597, 624-630
@@ -301,7 +301,7 @@ Prior to the lap time fixes, a separate issue was identified where corner zones 
 
 ### 6.2 Implementation
 
-**File:** `apps/ml_service/services/corner_analysis.py`
+**File:** `apps/analysis_service/services/corner_analysis.py`
 
 A zone clamping function was implemented (lines 1276-1385):
 
@@ -327,7 +327,7 @@ def _clamp_zones_to_prevent_overlap(
 
 ### 6.3 Integration
 
-**File:** `apps/ml_service/services/performance_orchestrator.py`
+**File:** `apps/analysis_service/services/performance_orchestrator.py`
 
 The orchestrator was updated to use V2 corner analysis when speed data is available:
 
@@ -344,7 +344,7 @@ if has_speed_data:
 
 ### 6.4 Unit Tests
 
-**File:** `apps/ml_service/tests/test_zone_overlap.py`
+**File:** `apps/analysis_service/tests/test_zone_overlap.py`
 
 Unit tests were created to verify zone clamping behavior:
 - Test adjacent corner overlap resolution
@@ -372,7 +372,7 @@ curl -s "http://localhost:8000/telemetry?session=2025_20_Qualifying&drivers=LEC&
 ### 7.2 Test 2: Verify Corner Analysis Endpoint
 
 ```bash
-curl -s -X POST "http://localhost:8501/ml/corner-analysis" \
+curl -s -X POST "http://localhost:8501/analysis/corner-analysis" \
   -H "Content-Type: application/json" \
   -d @test_corner_analysis.json
 ```
@@ -399,7 +399,7 @@ curl -s -X POST "http://localhost:8501/ml/corner-analysis" \
 ### 7.3 Test 3: Verify Performance Insights Endpoint
 
 ```bash
-curl -s -X POST "http://localhost:8501/ml/performance-insights" \
+curl -s -X POST "http://localhost:8501/analysis/performance-insights" \
   -H "Content-Type: application/json" \
   -d @test_request2.json
 ```
@@ -468,19 +468,19 @@ docker-compose up -d --build
 | `apps/api/app/models/dto.py` | Added `lap_time` field to `TelemetryResponse` | 58 |
 | `apps/api/app/services/telemetry/fastf1_client.py` | Extract and include `lap_time`, update cache handling | 470-478 |
 
-### 8.2 ML Service
+### 8.2 Analysis Service
 
 | File | Change | Lines |
 |------|--------|-------|
-| `apps/ml_service/main.py` | Updated `/ml/corner-analysis` to prefer telemetry lapTime | 592-597, 624-630 |
-| `apps/ml_service/services/corner_analysis.py` | Added `_clamp_zones_to_prevent_overlap()` | 1276-1385 |
-| `apps/ml_service/services/performance_orchestrator.py` | Use V2 corner analysis with zone clamping | Multiple |
+| `apps/analysis_service/main.py` | Updated `/analysis/corner-analysis` to prefer telemetry lapTime | 592-597, 624-630 |
+| `apps/analysis_service/services/corner_analysis.py` | Added `_clamp_zones_to_prevent_overlap()` | 1276-1385 |
+| `apps/analysis_service/services/performance_orchestrator.py` | Use V2 corner analysis with zone clamping | Multiple |
 
 ### 8.3 Tests
 
 | File | Purpose |
 |------|---------|
-| `apps/ml_service/tests/test_zone_overlap.py` | Unit tests for zone clamping function |
+| `apps/analysis_service/tests/test_zone_overlap.py` | Unit tests for zone clamping function |
 
 ### 8.4 Frontend (Reference Only)
 
@@ -530,12 +530,12 @@ FastF1 Data
 API Service (/telemetry)
     │ Returns: lapTime: 75.848s (LEC), 75.586s (NOR)
     ▼
-ML Service (/ml/corner-analysis)
+Analysis Service (/analysis/corner-analysis)
     │ Calculates: delta per corner using V2 algorithm
     │ Applies: zone clamping to prevent overlap
     │ Returns: total_delta: +0.123s, gaining: 5, losing: 7
     ▼
-ML Service (/ml/performance-insights)
+Analysis Service (/analysis/performance-insights)
     │ Orchestrates: all analysis phases
     │ Returns: official_gap: -0.262s, corner_delta: +0.123s
     ▼
@@ -553,7 +553,7 @@ User Interface
 
 1. **Always include source data in DTOs**: The `lap_time` field should have been in `TelemetryResponse` from the start. Omitting it forced downstream services to estimate, introducing errors.
 
-2. **Ensure endpoint consistency**: Different endpoints serving similar data should use the same source of truth. The discrepancy between `/ml/corner-analysis` and `/ml/performance-insights` caused confusion.
+2. **Ensure endpoint consistency**: Different endpoints serving similar data should use the same source of truth. The discrepancy between `/analysis/corner-analysis` and `/analysis/performance-insights` caused confusion.
 
 3. **Validate against known values**: Having the expected official timing (75.848s, 75.586s, -0.262s gap) made it possible to quickly identify incorrect calculations.
 
@@ -568,8 +568,8 @@ User Interface
 
 ### 10.3 Future Recommendations
 
-1. **Add integration tests**: Automated tests that verify the full data flow from API to ML service
-2. **Add data validation**: ML service should validate that received lap times are within expected ranges
+1. **Add integration tests**: Automated tests that verify the full data flow from API to Analysis service
+2. **Add data validation**: Analysis service should validate that received lap times are within expected ranges
 3. **Logging**: Add structured logging at each transformation step for easier debugging
 4. **Documentation**: Keep API contracts documented with expected field types and sources
 
@@ -638,7 +638,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 # View logs
 docker logs f1-web --tail 50
 docker logs f1-api --tail 50
-docker logs f1-ml --tail 50
+docker logs f1-analysis --tail 50
 
 # Restart all services
 docker-compose restart

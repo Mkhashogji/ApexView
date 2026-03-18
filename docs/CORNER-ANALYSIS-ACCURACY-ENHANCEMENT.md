@@ -132,7 +132,7 @@ Telemetry Input
 
 ### Step 1: Add Confidence Combination Helper
 
-**File**: `apps/ml_service/services/corner_analysis.py`
+**File**: `apps/analysis_service/services/corner_analysis.py`
 **Location**: After existing helper functions (line ~196)
 
 **Purpose**: When detecting braking points for two drivers, we need to combine their confidence levels. The conservative approach uses the lower confidence to avoid overstating accuracy.
@@ -187,7 +187,7 @@ def test_combine_confidence_high_low(self):
 
 ### Step 2: Add Approach Margin Constant
 
-**File**: `apps/ml_service/services/corner_analysis.py`
+**File**: `apps/analysis_service/services/corner_analysis.py`
 **Location**: Constants section (line 54)
 
 **Purpose**: Define how much distance before the earliest braking point should be included in the analysis zone. This provides a clean baseline before any braking begins.
@@ -213,7 +213,7 @@ APPROACH_MARGIN_METERS = 20       # Distance before earliest braking point for z
 
 ### Step 3: Update `analyze_single_corner()` Signature
 
-**File**: `apps/ml_service/services/corner_analysis.py`
+**File**: `apps/analysis_service/services/corner_analysis.py`
 **Location**: Line 390
 
 **Change**: Add `comp_distance` and `comp_brake` parameters.
@@ -273,7 +273,7 @@ Returns:
 
 ### Step 4: Implement Dual-Driver Braking Detection
 
-**File**: `apps/ml_service/services/corner_analysis.py`
+**File**: `apps/analysis_service/services/corner_analysis.py`
 **Location**: Inside `analyze_single_corner()`, replacing single-driver detection
 
 **Before** (Single-driver detection):
@@ -344,7 +344,7 @@ logger.debug(
 
 ### Step 5: Update `analyze_corners()` Signature and Loop
 
-**File**: `apps/ml_service/services/corner_analysis.py`
+**File**: `apps/analysis_service/services/corner_analysis.py`
 **Location**: Line 483
 
 **Signature Change**:
@@ -399,7 +399,7 @@ for corner in corners:
 
 ### Step 6: Update `run_phase3_corner()` in Orchestrator
 
-**File**: `apps/ml_service/services/performance_orchestrator.py`
+**File**: `apps/analysis_service/services/performance_orchestrator.py`
 **Location**: Line 529
 
 **Before**:
@@ -457,7 +457,7 @@ def run_phase3_corner(
 
 ### Step 7: Update Orchestration Loop (Stage 3)
 
-**File**: `apps/ml_service/services/performance_orchestrator.py`
+**File**: `apps/analysis_service/services/performance_orchestrator.py`
 **Location**: Lines 747-763
 
 **Before**:
@@ -505,7 +505,7 @@ for driver, delta_result in delta_results.items():
 
 ### Step 8: Update Tests
 
-**File**: `apps/ml_service/tests/test_corner_analysis.py`
+**File**: `apps/analysis_service/tests/test_corner_analysis.py`
 
 **Changes Made**:
 
@@ -602,7 +602,7 @@ class TestPhaseNormalization:
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-9.0.2, pluggy-1.6.0
-rootdir: C:\f1-engineering-app\apps\ml_service
+rootdir: C:\f1-engineering-app\apps\analysis_service
 configfile: pyproject.toml
 plugins: anyio-4.11.0
 collected 38 items
@@ -663,7 +663,7 @@ tests/test_corner_analysis.py::TestPhaseNormalization::test_approach_margin_cons
 | TestPhaseNormalization | 7 | All Passed |
 | **Total** | **38** | **All Passed** |
 
-### Full ML Service Test Suite
+### Full Analysis Service Test Suite
 
 ```
 ================== 200 passed, 2 skipped in 7.69s ==================
@@ -677,10 +677,10 @@ Note: The 2 skipped tests are async integration tests requiring `pytest-asyncio`
 
 | File | Lines Changed | Purpose |
 |------|---------------|---------|
-| `apps/ml_service/services/corner_analysis.py` | ~80 | Core dual-driver braking detection |
-| `apps/ml_service/services/performance_orchestrator.py` | ~25 | Pass comparison telemetry through pipeline |
-| `apps/ml_service/tests/test_corner_analysis.py` | ~150 | Updated tests + new phase normalization tests |
-| `apps/ml_service/tests/test_performance_orchestrator.py` | ~10 | Updated test calls for new signature |
+| `apps/analysis_service/services/corner_analysis.py` | ~80 | Core dual-driver braking detection |
+| `apps/analysis_service/services/performance_orchestrator.py` | ~25 | Pass comparison telemetry through pipeline |
+| `apps/analysis_service/tests/test_corner_analysis.py` | ~150 | Updated tests + new phase normalization tests |
+| `apps/analysis_service/tests/test_performance_orchestrator.py` | ~10 | Updated test calls for new signature |
 
 ---
 
@@ -688,7 +688,7 @@ Note: The 2 skipped tests are async integration tests requiring `pytest-asyncio`
 
 ### Unit Testing
 ```bash
-cd apps/ml_service
+cd apps/analysis_service
 pytest tests/test_corner_analysis.py -v --tb=short
 pytest tests/test_performance_orchestrator.py -v --tb=short
 ```

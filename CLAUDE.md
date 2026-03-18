@@ -1,8 +1,8 @@
 # ApexView — Codebase Reference
 
-**Document Version:** 5.0 | **Last Updated:** March 2026
+**Document Version:** 6.0 | **Last Updated:** March 2026
 **Status:** Qualifying ✅ | Race ✅ | Practice ✅
-**Test Baseline:** 313 API tests, 271 ML tests passing
+**Test Baseline:** 313 API tests, 271 analysis tests passing
 **Lighthouse:** 94–97 (Qualifying), high 90s (Race)
 
 ---
@@ -13,7 +13,7 @@
 2. [Implementation Status](#2-implementation-status)
 3. [Practice Page — Implementation](#3-practice-page--implementation)
 4. [Architecture & Conventions](#4-architecture--conventions)
-5. [Refined AI Architecture (Qualifying)](#5-refined-ai-architecture-qualifying)
+5. [Telemetry Analysis Pipeline (Qualifying)](#5-telemetry-analysis-pipeline-qualifying)
 6. [Track Intelligence](#6-track-intelligence)
 7. [Issues & Lessons Learned](#7-issues--lessons-learned)
 8. [Verification Commands](#8-verification-commands)
@@ -41,11 +41,13 @@ apps/
 │   ├── models/dto.py           # Pydantic DTOs (CamelCaseModel base)
 │   └── utils/transforms.py
 ├── api/tests/                  # pytest (313 tests)
-├── ml_service/                 # ML service (qualifying analysis, 271 tests)
+├── analysis_service/                 # Analysis service (qualifying analysis, 271 tests)
 ├── web/
 │   ├── app/qualifying/
 │   ├── app/race/
 │   ├── app/practice/
+│   ├── app/track/
+│   ├── app/transparency/       # Privacy, data sources, methodology
 │   ├── components/
 │   └── lib/                    # Hooks, API client, utilities
 └── packages/models/src/
@@ -66,7 +68,9 @@ apps/
 
 ### Qualifying Page — ✅ COMPLETE
 
-Interactive qualifying analysis: Q1/Q2/Q3 tabs, lap time comparisons, gap analysis, sector breakdowns, and full Refined AI Architecture pipeline (delta, corner, technique, insight generation).
+Interactive qualifying analysis: Q1/Q2/Q3 tabs, lap time comparisons, gap analysis, sector breakdowns, and full Telemetry Analysis Pipeline (delta, corner, technique, insight generation). All 7 components include "How to read this chart" interpretability guides with methodology descriptions verified against production code.
+
+**Race condition fix:** Added `!isTrackPlaceholder` guard to `usePerformanceInsightsQuery` — prevents stale corner data from a previous circuit feeding the analysis request when switching GPs via `keepPreviousData`.
 
 | Metric | Before | After |
 |--------|--------|-------|
@@ -118,9 +122,9 @@ Three-phase build. See [Section 3](#3-practice-page--implementation) for full de
 
 All 24 GP circuits. See [Section 6](#6-track-intelligence).
 
-### Refined AI Architecture (Qualifying) — ✅ COMPLETE
+### Telemetry Analysis Pipeline (Qualifying) — ✅ COMPLETE
 
-7-phase pipeline, 271 ML tests. See [Section 5](#5-refined-ai-architecture-qualifying).
+7-phase pipeline, 271 analysis tests. See [Section 5](#5-telemetry-analysis-pipeline-qualifying).
 
 ---
 
@@ -273,7 +277,8 @@ Both endpoints query the same cached `get_processed_practice_data()`.
 - **State:** Props drilling from Content to panels (no Context providers)
 - **Session IDs:** `${season}_${round}_${sessionType}` (e.g. `2025_1_FP2`, `2025_24_Race`)
 - **Cache:** `staleTime: Infinity` for historical data, `keepPreviousData` for smooth GP switching
-- **"How to read this chart" guides:** Collapsible section at bottom of each panel. `showGuide` state, `&#9656;` chevron, `border-white/10 bg-white/[0.02]` container.
+- **Weekend persistence:** `ANALYSIS_PAGES` set in `Navigation.tsx` controls which nav links forward `round`/`season` URL params. Includes all 5 pages: `/`, `/qualifying`, `/race`, `/practice`, `/track`. Home page feature cards also forward params via `buildCardHref()`.
+- **"How to read this chart" guides:** Collapsible section at bottom of each panel. `showGuide` state, `&#9656;` chevron, `border-white/10 bg-white/[0.02]` container. Present on all analytical pages (Qualifying, Race, Practice). Qualifying guides include methodology verification against production code.
 
 ### Shared Infrastructure
 
@@ -314,11 +319,18 @@ Both endpoints query the same cached `get_processed_practice_data()`.
 - `GET /practice/sector-analysis` — sector times, speed traps, theoretical best
 - `GET /practice/progression` — cross-session gap-to-best (weekend-level)
 
+**Analysis Service** (`/analysis`, port 8501):
+- `POST /analysis/performance-insights` — unified qualifying analysis (orchestrates all phases)
+- `POST /analysis/scaled-delta` — delta computation with official timing scaling
+- `POST /analysis/corner-analysis` — corner-by-corner time attribution
+- `POST /analysis/technique-profile` — 5-dimension technique profiling
+- `POST /analysis/generate-insight` — template-based insight generation
+
 ### Test Coverage
 
 | Area | Files | Tests |
 |------|-------|-------|
-| ML Service (qualifying) | 8 | 271 |
+| Analysis Service (qualifying) | 8 | 271 |
 | Race transforms | 1 | 38 |
 | Race data service | 1 | 21 |
 | Race integration | 1 | 2 |
@@ -334,7 +346,7 @@ Both endpoints query the same cached `get_processed_practice_data()`.
 
 ---
 
-## 5. Refined AI Architecture (Qualifying)
+## 5. Telemetry Analysis Pipeline (Qualifying)
 
 Replaces a failed cosine similarity approach (measured vector angles — 99.9% similar for all drivers — rather than magnitude differences creating 0.1–2.0s gaps). Answers WHERE, WHY, and WHAT.
 
@@ -354,7 +366,7 @@ Replaces a failed cosine similarity approach (measured vector angles — 99.9% s
 
 **RelativeDistance (Phase 2):** `RelativeDistance = Distance / TotalLapDistance` normalises all drivers to 0–1. Official timing scaling: `scale = official_time / telemetry_span` guarantees `scaled_time[-1] == official_time`.
 
-**Brake Detection V2 (Phase 3):** `gradient = (brake_diff / distance_diff) × 10`. Brake point = first index where `brake[i+1] ≥ 20%` AND `gradient[i] ≥ 5%/10m` (checks INTO the point, not FROM — fixed off-by-one bug).
+**Brake Detection V2 (Phase 3):** Two-stage detection. Stage 1 finds boolean brake candidate where `brake_normalized >= 0.5` (50%). Stage 2 refines backward using v² kinematics deceleration `(v2² - v1²) / (2 × Δd)`, locating where heavy deceleration first begins — where deceleration crosses the circuit-specific threshold (-4.0 to -6.5 m/s², configurable per circuit via `CornerAnalysisConfig`). Confidence = alignment distance between the two stages (High ≤20m, Medium ≤40m, Low >40m).
 
 **Straight-Line Integration (5th Dimension):** Mathematical closure — Corners + Straights = Official within 5ms. Primary factor classified as `aero_efficiency`, `high_drag_setup`, `exit_traction`, `poor_traction`, or `balanced`.
 
@@ -374,7 +386,9 @@ PerformanceInsightsPanel
 
 All 24 circuits on the 2025 F1 calendar. Located in `packages/models/src/data/tracks/`.
 
-**Data per circuit:** metadata, sector breakdowns, DRS zones, corner data, elevation, Pirelli characteristics (traction/braking/lateral/track evolution/asphalt grip, 1–5), defining characteristics (~60–80 chars), strategic insights, weather profile, `fuelEffectPerKg`.
+**Data per circuit:** metadata, sector breakdowns, DRS zones, corner data (including validated corner names), elevation, Pirelli characteristics (traction/braking/lateral/track evolution/asphalt grip, 1–5), defining characteristics (~60–80 chars), strategic insights, weather profile, `fuelEffectPerKg`.
+
+**Corner names:** All 24 circuits include validated corner names in their JSON data files (`apps/api/app/data/tracks/*.json`), mapped from an official reference. Five circuits required physical feature matching (corner type and distance) where turn numbering differs between sources.
 
 **Fuel sensitivity tiers:**
 
@@ -397,6 +411,8 @@ All 24 circuits on the 2025 F1 calendar. Located in `packages/models/src/data/tr
 | 3 | All corners "MEDIUM" confidence | Medium | Gradient checked at wrong index (FROM vs INTO brake point) | Check `zone_brake[i+1]` against `gradient[i]` |
 | 4 | Floating-point test failures | Low | Direct equality on floats | Use `pytest.approx()` with `abs=1e-6` |
 | 5 | Catastrophic corner analysis (Singapore) | High | Telemetry contradicts official timing on some circuits | Hide corner analysis when `abs(scale_factor) > 2.0` |
+| 6 | Corner Analysis not updating on GP switch | High | Race condition: `keepPreviousData` on both `useTrackQuery` and `usePerformanceInsightsQuery` — stale corners fed to analysis request | Add `!isTrackPlaceholder` guard to performance query `enabled` condition |
+| 7 | Weekend selector resetting on navigation | Medium | Home and Track Intelligence excluded from `ANALYSIS_PAGES` set — params stripped on navigation | Expand set to all 5 pages, forward params through Home feature cards and logo link |
 
 **Key principle:** Display accurate results or no results — never misleading data.
 
@@ -411,8 +427,8 @@ cd apps/api && python -m pytest tests/ -v
 # Practice-specific tests
 cd apps/api && python -m pytest tests/test_practice_transforms.py tests/test_practice_data_service.py tests/test_practice_short_runs.py tests/test_practice_sector_analysis.py tests/test_practice_session_progression.py -v
 
-# ML service tests
-docker exec f1-ml pytest tests/ -v
+# Analysis service tests
+docker exec f1-analysis pytest tests/ -v
 
 # Practice endpoints
 curl "http://localhost:8000/practice/sessions?year=2025&round_num=1" | python -m json.tool
@@ -426,7 +442,7 @@ curl "http://localhost:8000/practice/progression?year=2025&round_num=24" | pytho
 curl "http://localhost:8000/race/pace?session=2025_17_Race" | python -m json.tool
 
 # Verify delta accuracy
-curl -X POST http://localhost:8501/ml/performance-insights \
+curl -X POST http://localhost:8501/analysis/performance-insights \
   -H "Content-Type: application/json" \
   -d '{"year":2025,"event":"Monaco","session":"Q3","reference_driver":"VER","compare_drivers":["LEC"]}' \
   | jq '.insights[0].delta_analysis | {official_gap, scaling_factor, confidence}'
@@ -437,4 +453,4 @@ pnpm --filter web build
 
 ---
 
-*Documentation Version 5.0 — March 2026*
+*Documentation Version 6.0 — March 2026*

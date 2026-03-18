@@ -4,7 +4,7 @@
 
 The qualifying page provides detailed lap-by-lap analysis with multi-driver comparison, delta charts, sector breakdowns, and ML-powered insights. It supports both traditional qualifying (Q1/Q2/Q3) and sprint qualifying (SQ1/SQ2/SQ3) formats.
 
-**Updated:** December 2025 - React Query integration, ML service, 2x2 grid layout
+**Updated:** December 2025 - React Query integration, Analysis service, 2x2 grid layout
 
 ## Layout Structure
 
@@ -24,7 +24,7 @@ The qualifying page provides detailed lap-by-lap analysis with multi-driver comp
 │ - Corner annotations │ - Chart sync with telemetry  │
 ├──────────────────────┼──────────────────────────────┤
 │ SECTOR BREAKDOWN     │ AI INSIGHTS                  │
-│ (SectorCards)        │ (AIInsights - ML powered)    │
+│ (SectorCards)        │ (AnalysisInsights - analysis powered)    │
 │ - Theoretical best   │ - Lap similarity scores      │
 │ - Purple sectors     │ - Driving style clusters     │
 │ - Delta table        │ - Braking differences        │
@@ -159,14 +159,14 @@ interface SectorCardsProps {
 }
 ```
 
-### 6. AI Insights Panel (`AIInsights`)
+### 6. AI Insights Panel (`AnalysisInsights`)
 
 **Purpose:** ML-powered analysis with rule-based fallback
 
 **Data Sources:**
-- `/ml/insights/{session_id}` - Combined insights
-- `/ml/lap-similarity` - Pairwise driver similarity
-- `/ml/driver-style-clustering` - Driving style groups
+- `/analysis/insights/{session_id}` - Combined insights
+- `/analysis/lap-similarity` - Pairwise driver similarity
+- `/analysis/driver-style-clustering` - Driving style groups
 
 **Insight Types:**
 - **Similarity:** "VER & NOR: 92% similar, main difference in braking"
@@ -182,7 +182,7 @@ interface SectorCardsProps {
 
 **Props:**
 ```typescript
-interface AIInsightsProps {
+interface AnalysisInsightsProps {
   sessionId: string
   sectorData: SectorComparison[]
   referenceDriver: string
@@ -314,9 +314,9 @@ On Plotly `relayout` event, both charts sync their x-axis range.
 └─────────────────────────────────────┘
 ```
 
-### ML Service Unavailable
+### Analysis Service Unavailable
 
-AIInsights automatically falls back to rule-based insights when ML endpoints fail.
+AnalysisInsights automatically falls back to rule-based insights when ML endpoints fail.
 
 ## Testing Checklist
 

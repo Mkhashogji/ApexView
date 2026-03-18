@@ -518,7 +518,7 @@ cd apps/api && python -m pytest tests/ -v
 
 | Area | Test Files | Tests | Status |
 |------|-----------|-------|--------|
-| ML Service (qualifying) | 7 files | 167+ | ✅ |
+| Analysis Service (qualifying) | 7 files | 167+ | ✅ |
 | Race transforms | 1 file | 37 | ✅ |
 | Race data service | 1 file | 22 | ✅ |
 | Race integration | 1 file | 2 | ✅ |

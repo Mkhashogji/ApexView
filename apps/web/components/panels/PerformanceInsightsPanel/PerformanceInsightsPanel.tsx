@@ -1,31 +1,35 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import type { Corner, InsightMode } from '@/../../packages/models/src/types'
-import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'
+import { useState } from 'react'
+import type { InsightMode, PerformanceInsightsResponse } from '@/../../packages/models/src/types'
 import { ModeToggle } from './ModeToggle'
 import { DriverInsightCard } from './DriverInsightCard'
 
 interface PerformanceInsightsPanelProps {
-  /** Session identifier */
-  sessionId: string
+  /** Performance data from the unified Phase 6 endpoint */
+  data: PerformanceInsightsResponse | undefined
   /** Reference driver code */
   referenceDriver: string
-  /** Drivers to compare against reference */
-  selectedDrivers: string[]
-  /** Track corner definitions */
-  corners: Corner[]
-  /** Qualifying session part (Q1, Q2, Q3) */
-  sessionPart?: string
-  /** Track length in meters (required for lap breakdown) */
-  trackLength?: number
+  /** Drivers being compared against reference */
+  compareDrivers: string[]
+  /** Whether data is loading */
+  isLoading: boolean
+  /** Whether there was an error */
+  isError: boolean
+  /** Error object if isError */
+  error: Error | null
+  /** Current insight mode */
+  mode: InsightMode
+  /** Callback when mode changes */
+  onModeChange: (mode: InsightMode) => void
 }
 
 /**
  * Performance Insights Panel - Phase 7 Component
  *
  * Displays rich, actionable performance analysis from the unified
- * Phase 6 endpoint, replacing the old AIInsights component.
+ * Phase 6 endpoint. Now receives data as props from QualifyingContent
+ * instead of self-fetching, to avoid redundant analysis calls.
  *
  * Features:
  * - Engineer/Driver mode toggle
@@ -35,31 +39,16 @@ interface PerformanceInsightsPanelProps {
  * - Natural language summaries
  */
 export function PerformanceInsightsPanel({
-  sessionId,
+  data,
   referenceDriver,
-  selectedDrivers,
-  corners,
-  sessionPart,
-  trackLength,
+  compareDrivers,
+  isLoading,
+  isError,
+  error,
+  mode,
+  onModeChange,
 }: PerformanceInsightsPanelProps) {
-  const [mode, setMode] = useState<InsightMode>('engineer')
-
-  // Filter out reference driver from comparison list
-  const compareDrivers = useMemo(
-    () => selectedDrivers.filter((d) => d !== referenceDriver),
-    [selectedDrivers, referenceDriver]
-  )
-
-  // Fetch performance insights
-  const { data, isLoading, isError, error, refetch } = usePerformanceInsightsQuery({
-    sessionId,
-    referenceDriver,
-    compareDrivers,
-    corners,
-    mode,
-    sessionPart,
-    trackLength,
-  })
+  const [showGuide, setShowGuide] = useState(false)
 
   // ═══════════════════════════════════════════════════════════════════════════
   // IDLE STATE: No drivers selected
@@ -140,13 +129,9 @@ export function PerformanceInsightsPanel({
         <p className="text-sm text-red-400/80 mb-4">
           {error?.message || 'Failed to load performance insights.'}
         </p>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="rounded-md bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-        >
-          Retry
-        </button>
+        <p className="text-xs text-red-400/60 mt-2">
+          Try changing the driver selection or refreshing the page.
+        </p>
       </div>
     )
   }
@@ -179,7 +164,7 @@ export function PerformanceInsightsPanel({
           Performance Insights
         </h2>
         <div className="flex items-center gap-3">
-          <ModeToggle mode={mode} onChange={setMode} />
+          <ModeToggle mode={mode} onChange={onModeChange} />
           <span className="inline-flex items-center gap-1 text-xs text-f1red">
             <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -188,7 +173,7 @@ export function PerformanceInsightsPanel({
                 clipRule="evenodd"
               />
             </svg>
-            AI Enhanced
+            Advanced Analysis
           </span>
         </div>
       </div>
@@ -224,6 +209,75 @@ export function PerformanceInsightsPanel({
           {data.total_corners} corners in {data.total_duration_ms}ms
         </p>
       </div>
+
+      {/* How to read these insights */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="flex items-center gap-2 mt-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className={`inline-block transition-transform duration-200 ${showGuide ? 'rotate-90' : ''}`}
+        >
+          &#9656;
+        </span>
+        How to read these insights
+      </button>
+      {showGuide && (
+        <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">How Insights Are Generated</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                All insights are computationally generated from the telemetry analysis pipeline. Every statement traces to a specific calculation — there is no AI-generated reasoning or speculation involved. The system uses structured templates filled with measured values.
+              </p>
+              <p>
+                Engineer mode shows technical detail (percentiles, deltas in milliseconds, corner numbers). Driver mode uses simplified language focused on strengths and areas to work on.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Technique Profile Bars</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                Each bar represents a dimension of performance: Braking (corner entry), Apex (mid-corner speed), Exit (corner exit acceleration), Consistency (variation in deltas across corners), and Straight-Line (speed between corners).
+              </p>
+              <p>
+                The percentile (P0–P100) ranks the comparison driver against all drivers in this session. P0 = best in session, P100 = worst. Lower is better.
+              </p>
+              <p>
+                Bar colour: green (strong, top third), yellow (neutral, middle third), red (weak, bottom third). The delta value in milliseconds shows the total time gained or lost across all corners in that dimension.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Focus Areas</h4>
+            <div className="text-sm text-gray-500 space-y-1.5">
+              <p>
+                Gaining/losing corners list the specific turns where the driver has the largest positive or negative time deltas — the highest-leverage areas for performance improvement.
+              </p>
+              <p>
+                Straight-line focus areas identify specific straights with the largest speed advantages or disadvantages.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-gray-300 mb-2">Data Source &amp; Limitations</h4>
+            <div className="text-sm text-gray-500/80 italic space-y-1.5">
+              <p>
+                All analysis is derived from publicly broadcast telemetry data accessed via the FastF1 library. This data has lower sampling rates and fewer channels than the proprietary telemetry available to F1 teams. Teams have access to hundreds of additional sensor channels (ride height, aero load, damper positions, brake temperatures, energy deployment maps) that enable deeper analysis. The insights shown here represent what can be reliably determined from public data and should be interpreted as informative rather than definitive.
+              </p>
+              <p>
+                Percentiles are session-relative: a &quot;strong braking&quot; profile in one session is not directly comparable to the same rating in a different session with different conditions or fewer drivers.
+              </p>
+              <p>
+                Profiles are based on a limited sample of corners that varies by circuit (as few as 8 on low-downforce circuits, up to 20+ on street circuits). A single unusual corner result can noticeably affect a dimension&apos;s percentile. These profiles are indicative of tendencies rather than precise measurements.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

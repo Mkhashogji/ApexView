@@ -953,7 +953,7 @@ Breakdown:
 
 ### 8.3 Docker Integration Testing
 
-All integration testing was performed against the live Docker stack (f1-api, f1-ml, f1-web) using real FastF1 data.
+All integration testing was performed against the live Docker stack (f1-api, f1-analysis, f1-web) using real FastF1 data.
 
 #### Session Coverage
 

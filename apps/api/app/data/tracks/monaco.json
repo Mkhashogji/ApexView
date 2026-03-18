@@ -4,33 +4,145 @@
   "country": "Monaco",
   "length": 3337,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1100 },
-    { "sectorNumber": 2, "startDistance": 1100, "endDistance": 2200 },
-    { "sectorNumber": 3, "startDistance": 2200, "endDistance": 3337 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1100
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1100,
+      "endDistance": 2200
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 2200,
+      "endDistance": 3337
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 2880, "activationPoint": 3318, "endPoint": 200, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 2880,
+      "activationPoint": 3318,
+      "endPoint": 200,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 200, "type": "right", "name": "Sainte Devote" },
-    { "cornerNumber": 2, "distance": 450, "type": "left", "name": "Beau Rivage" },
-    { "cornerNumber": 3, "distance": 650, "type": "left", "name": "Massenet" },
-    { "cornerNumber": 4, "distance": 800, "type": "right", "name": "Casino" },
-    { "cornerNumber": 5, "distance": 950, "type": "right", "name": "Mirabeau Haute" },
-    { "cornerNumber": 6, "distance": 1100, "type": "right", "name": "Fairmont Hairpin" },
-    { "cornerNumber": 7, "distance": 1200, "type": "right", "name": "Mirabeau Bas" },
-    { "cornerNumber": 8, "distance": 1350, "type": "right", "name": "Portier" },
-    { "cornerNumber": 9, "distance": 1700, "type": "left", "name": "Tunnel" },
-    { "cornerNumber": 10, "distance": 2050, "type": "left", "name": "Nouvelle Chicane Entry" },
-    { "cornerNumber": 11, "distance": 2100, "type": "right", "name": "Nouvelle Chicane Exit" },
-    { "cornerNumber": 12, "distance": 2250, "type": "left", "name": "Tabac" },
-    { "cornerNumber": 13, "distance": 2450, "type": "left", "name": "Swimming Pool 1 Entry" },
-    { "cornerNumber": 14, "distance": 2550, "type": "right", "name": "Swimming Pool 1 Exit" },
-    { "cornerNumber": 15, "distance": 2700, "type": "left", "name": "Swimming Pool 2 Entry" },
-    { "cornerNumber": 16, "distance": 2800, "type": "right", "name": "Swimming Pool 2 Exit" },
-    { "cornerNumber": 17, "distance": 3000, "type": "right", "name": "La Rascasse" },
-    { "cornerNumber": 18, "distance": 3150, "type": "right", "name": "Antony Noghes" },
-    { "cornerNumber": 19, "distance": 3300, "type": "left", "name": "Start/Finish" }
+    {
+      "cornerNumber": 1,
+      "distance": 200,
+      "type": "right",
+      "name": "Sainte-Dévote"
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 450,
+      "type": "left",
+      "name": "Beau Rivage"
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 650,
+      "type": "left",
+      "name": "Massenet"
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 800,
+      "type": "right",
+      "name": "Casino Square"
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 950,
+      "type": "right",
+      "name": "Mirabeau Haute"
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1100,
+      "type": "right",
+      "name": "Grand Hôtel Hairpin"
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 1200,
+      "type": "right",
+      "name": "Mirabeau Bas"
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 1350,
+      "type": "right",
+      "name": "Portier"
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 1700,
+      "type": "left",
+      "name": "Tunnel"
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 2050,
+      "type": "left",
+      "name": "Nouvelle Chicane"
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 2100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 2250,
+      "type": "left",
+      "name": "Tabac"
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 2450,
+      "type": "left",
+      "name": "Louis Chiron"
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 2550,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 2700,
+      "type": "left",
+      "name": "Piscine"
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 2800,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 17,
+      "distance": 3000,
+      "type": "right",
+      "name": "La Rascasse"
+    },
+    {
+      "cornerNumber": 18,
+      "distance": 3150,
+      "type": "right",
+      "name": "Antony Noghès"
+    },
+    {
+      "cornerNumber": 19,
+      "distance": 3300,
+      "type": "left",
+      "name": null
+    }
   ]
 }
-

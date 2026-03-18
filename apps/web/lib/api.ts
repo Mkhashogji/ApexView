@@ -6,7 +6,7 @@ import {
   SectorComparison,
   Track,
   Corner,
-  MLInsightsResponse,
+  AnalysisInsightsResponse,
   LapSimilarityResponse,
   ClusteringResponse,
   ScaledDeltaResponse,
@@ -237,20 +237,20 @@ export async function fetchProgression(
 }
 
 // ============================================================================
-// ML Service Endpoints
+// Analysis Service Endpoints
 // ============================================================================
 
 /**
- * Fetch combined ML insights for a session.
+ * Fetch combined analysis insights for a session.
  * Includes clustering data and automated insights.
  */
-export async function fetchMLInsights(
+export async function fetchAnalysisInsights(
   sessionId: string, 
   drivers: string[]
-): Promise<MLInsightsResponse> {
+): Promise<AnalysisInsightsResponse> {
   const driverParams = drivers.map(d => `drivers=${d}`).join('&')
-  return fetchApi<MLInsightsResponse>(
-    `${API_BASE_URL}/ml/insights/${sessionId}?${driverParams}`
+  return fetchApi<AnalysisInsightsResponse>(
+    `${API_BASE_URL}/analysis/insights/${sessionId}?${driverParams}`
   )
 }
 
@@ -263,7 +263,7 @@ export async function fetchLapSimilarity(
   driver1: string,
   driver2: string
 ): Promise<LapSimilarityResponse> {
-  return postApi<LapSimilarityResponse>(`${API_BASE_URL}/ml/lap-similarity`, {
+  return postApi<LapSimilarityResponse>(`${API_BASE_URL}/analysis/lap-similarity`, {
     session_id: sessionId,
     driver1,
     driver2,
@@ -279,7 +279,7 @@ export async function fetchDriverClustering(
   drivers: string[],
   nClusters: number = 3
 ): Promise<ClusteringResponse> {
-  return postApi<ClusteringResponse>(`${API_BASE_URL}/ml/driver-style-clustering`, {
+  return postApi<ClusteringResponse>(`${API_BASE_URL}/analysis/driver-style-clustering`, {
     session_id: sessionId,
     drivers,
     n_clusters: nClusters,
@@ -290,10 +290,10 @@ export async function fetchDriverClustering(
 // Phase 2: Scaled Delta API
 // =============================================================================
 
-const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8501'
+const ANALYSIS_SERVICE_URL = process.env.NEXT_PUBLIC_ANALYSIS_SERVICE_URL || 'http://localhost:8501'
 
 /**
- * Fetch scaled delta analysis from ML service.
+ * Fetch scaled delta analysis from Analysis service.
  *
  * Uses Phase 2's algorithm that:
  * - Calculates delta from telemetry (WHERE time is gained/lost)
@@ -306,7 +306,7 @@ export async function fetchScaledDelta(
   compareDrivers: string[],
   sessionPart?: string
 ): Promise<ScaledDeltaResponse> {
-  const response = await fetch(`${ML_SERVICE_URL}/ml/scaled-delta`, {
+  const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/scaled-delta`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -355,7 +355,7 @@ export async function fetchScaledDelta(
 // =============================================================================
 
 /**
- * Fetch corner-by-corner analysis from ML service.
+ * Fetch corner-by-corner analysis from Analysis service.
  *
  * Uses Phase 3's algorithm that:
  * - Detects braking zones using telemetry
@@ -370,7 +370,7 @@ export async function fetchCornerAnalysis(
   corners: Corner[],
   sessionPart?: string
 ): Promise<CornerAnalysisResponse> {
-  const response = await fetch(`${ML_SERVICE_URL}/ml/corner-analysis`, {
+  const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/corner-analysis`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -449,7 +449,7 @@ export async function fetchPerformanceInsights(
   sessionPart?: string,
   trackLength?: number
 ): Promise<PerformanceInsightsResponse> {
-  const response = await fetch(`${ML_SERVICE_URL}/ml/performance-insights`, {
+  const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/performance-insights`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -466,7 +466,7 @@ export async function fetchPerformanceInsights(
       })),
       mode,
       session_part: sessionPart ?? null,
-      include_telemetry: false, // Don't include large arrays for frontend
+      include_telemetry: true, // Required for DeltaPlot delta/distance arrays
       track_length: trackLength ?? null,
     }),
   })

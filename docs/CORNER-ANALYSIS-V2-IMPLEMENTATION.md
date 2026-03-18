@@ -44,12 +44,12 @@ The Corner Analysis Architecture Revision aimed to replace the boolean brake-bas
 
 | File | Type | Description |
 |------|------|-------------|
-| `apps/ml_service/core/corner_config.py` | **NEW** | Per-circuit configuration dataclasses |
-| `apps/ml_service/core/comparison_logger.py` | **NEW** | V1/V2 comparison logging utilities |
-| `apps/ml_service/services/corner_analysis.py` | Modified | Added V2 detection functions |
-| `apps/ml_service/main.py` | Modified | Updated endpoints to support V2 |
-| `apps/ml_service/models/schemas.py` | Modified | Added `circuit_id` field to requests |
-| `apps/ml_service/tests/test_corner_analysis_v2.py` | **NEW** | 25 comprehensive tests for V2 |
+| `apps/analysis_service/core/corner_config.py` | **NEW** | Per-circuit configuration dataclasses |
+| `apps/analysis_service/core/comparison_logger.py` | **NEW** | V1/V2 comparison logging utilities |
+| `apps/analysis_service/services/corner_analysis.py` | Modified | Added V2 detection functions |
+| `apps/analysis_service/main.py` | Modified | Updated endpoints to support V2 |
+| `apps/analysis_service/models/schemas.py` | Modified | Added `circuit_id` field to requests |
+| `apps/analysis_service/tests/test_corner_analysis_v2.py` | **NEW** | 25 comprehensive tests for V2 |
 
 ---
 
@@ -57,7 +57,7 @@ The Corner Analysis Architecture Revision aimed to replace the boolean brake-bas
 
 ### Step 1: Create Configuration Module
 
-**File**: `apps/ml_service/core/corner_config.py`
+**File**: `apps/analysis_service/core/corner_config.py`
 
 **Purpose**: Provide per-circuit tunable parameters for the V2 corner analysis system.
 
@@ -289,9 +289,9 @@ def analyze_single_corner_v2(...):
 ### Step 8: Update Endpoints
 
 **Modified Endpoints**:
-- `/ml/corner-analysis`
-- `/ml/technique-profile`
-- `/ml/generate-insight`
+- `/analysis/corner-analysis`
+- `/analysis/technique-profile`
+- `/analysis/generate-insight`
 
 **V2 Selection Logic**:
 ```python
@@ -321,7 +321,7 @@ class CornerAnalysisRequest(BaseModel):
 
 ### Step 9: Add Comparison Logging
 
-**File**: `apps/ml_service/core/comparison_logger.py`
+**File**: `apps/analysis_service/core/comparison_logger.py`
 
 **Purpose**: Log V1 vs V2 comparisons during transition period.
 
@@ -408,7 +408,7 @@ class CornerAnalysisRequest(BaseModel):
 │  ├── Functional tests                                           │
 │  │   └── Result: All V2 functions working                       │
 │  └── Endpoint tests                                             │
-│      └── Result: /ml/corner-analysis returns valid response     │
+│      └── Result: /analysis/corner-analysis returns valid response     │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -478,7 +478,7 @@ class CornerAnalysisRequest(BaseModel):
 
 **Command**:
 ```bash
-cd apps/ml_service
+cd apps/analysis_service
 python -m pytest tests/test_corner_analysis_v2.py -v --tb=short
 ```
 
@@ -552,11 +552,11 @@ docker-compose logs ml --tail=10
 
 **Output**:
 ```
-f1-ml  | INFO:     Started server process [1]
-f1-ml  | INFO:     Waiting for application startup.
-f1-ml  | INFO:     Application startup complete.
-f1-ml  | 2026-01-26 10:46:38 | INFO | F1 ML Service v0.1.0 starting
-f1-ml  | INFO:     Uvicorn running on http://0.0.0.0:8501 (Press CTRL+C to quit)
+f1-analysis  | INFO:     Started server process [1]
+f1-analysis  | INFO:     Waiting for application startup.
+f1-analysis  | INFO:     Application startup complete.
+f1-analysis  | 2026-01-26 10:46:38 | INFO | F1 Analysis Service v0.1.0 starting
+f1-analysis  | INFO:     Uvicorn running on http://0.0.0.0:8501 (Press CTRL+C to quit)
 ```
 
 ### 4.5 Docker Import Verification
@@ -620,7 +620,7 @@ Apex: 348m, speed=103 km/h, confidence=high
 
 **Command**:
 ```bash
-curl -s -X POST "http://localhost:8501/ml/corner-analysis" \
+curl -s -X POST "http://localhost:8501/analysis/corner-analysis" \
   -H "Content-Type: application/json" \
   -d '{"session_id": "2025_1_Qualifying", "reference_driver": "VER",
        "compare_drivers": ["NOR"], "corners": [{"corner_number": 1,
@@ -669,8 +669,8 @@ docker-compose logs ml --tail=10
 
 **Output**:
 ```
-f1-ml  | 2026-01-26 10:49:19 | INFO | Analyzing 1 corners (v2) for VER vs NOR
-f1-ml  | 2026-01-26 10:49:19 | INFO | Corner analysis (v2) complete: total_delta=+0.069s
+f1-analysis  | 2026-01-26 10:49:19 | INFO | Analyzing 1 corners (v2) for VER vs NOR
+f1-analysis  | 2026-01-26 10:49:19 | INFO | Corner analysis (v2) complete: total_delta=+0.069s
 ```
 
 **Key Evidence**: Log message `Analyzing 1 corners (v2)` confirms V2 is being used.
@@ -710,7 +710,7 @@ f1-ml  | 2026-01-26 10:49:19 | INFO | Corner analysis (v2) complete: total_delta
 2. **Add V2 Fields to Response Schema** - Expose `detected_apex`, `entry_speed`, `apex_speed`, `exit_distance`
 3. **Implement V1/V2 A/B Testing** - Run both and compare results for same session
 4. **Add More Circuit Configs** - Currently 15, expand to all 24 circuits
-5. **Machine Learning Refinement** - Use historical data to tune thresholds per corner
+5. **Telemetry Analysis Refinement** - Use historical data to tune thresholds per corner
 
 ---
 

@@ -10,7 +10,7 @@ services:
       - DEFAULT_SEASON=${DEFAULT_SEASON:-2025}
       - PARQUET_DIR=/app/data/cache/parquet
       - FASTF1_CACHE=/app/data/cache/sqlite
-      - ML_SERVICE_URL=http://ml:8501
+      - ANALYSIS_SERVICE_URL=http://analysis:8501
     volumes:
       - ./data/cache:/app/data/cache
     ports:
@@ -25,12 +25,12 @@ services:
       retries: 3
       start_period: 15s
 
-  # ML microservice
-  ml:
+  # Analysis microservice
+  analysis:
     build:
       context: .
-      dockerfile: apps/ml_service/Dockerfile
-    container_name: f1-ml
+      dockerfile: apps/analysis_service/Dockerfile
+    container_name: f1-analysis
     environment:
       - WORKERS=2
     ports:
@@ -53,7 +53,7 @@ services:
     container_name: f1-web
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_ML_URL=http://localhost:8501
+      - NEXT_PUBLIC_ANALYSIS_SERVICE_URL=http://localhost:8501
       - NODE_ENV=production
     ports:
       - "3000:3000"
@@ -62,7 +62,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
-      ml:
+      analysis:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:

@@ -27,7 +27,7 @@
 
 ### What Was Changed
 
-The **DeltaPlot** component in the Qualifying Analysis page was updated to consume accurate Tier 1 delta data from the ML service instead of inaccurate speed-integration delta data from the legacy API endpoint.
+The **DeltaPlot** component in the Qualifying Analysis page was updated to consume accurate Tier 1 delta data from the Analysis service instead of inaccurate speed-integration delta data from the legacy API endpoint.
 
 ### The Gap Fixed
 
@@ -82,7 +82,7 @@ The application had two separate data pipelines for delta analysis, each produci
 │       │                                                                     │
 │       └──► useScaledDeltaQuery()                                            │
 │                 │                                                           │
-│                 └──► /ml/scaled-delta (ML Service)                          │
+│                 └──► /analysis/scaled-delta (Analysis Service)                          │
 │                           │                                                 │
 │                           └──► delta_analysis.calculate_scaled_delta()      │
 │                                     │                                       │
@@ -135,7 +135,7 @@ delta = comp_times - ref_times
 
 ### 3.2 The Three-Tier Algorithm Solution
 
-The ML service implements a **three-tier algorithm** that guarantees accuracy:
+The Analysis service implements a **three-tier algorithm** that guarantees accuracy:
 
 #### Tier 1: RelativeDistance + Time Scaling (PREFERRED)
 
@@ -224,9 +224,9 @@ The following backend changes enable the three-tier algorithm:
 |------|--------|---------|
 | `apps/api/app/models/dto.py` | Added `relative_distance` and `time` fields to `TelemetryResponse` | Enable API to return Tier 1 data |
 | `apps/api/app/services/telemetry/fastf1_client.py` | Extract `RelativeDistance` and `Time` from FastF1 | Source Tier 1 data from telemetry |
-| `apps/ml_service/services/delta_analysis.py` | Implemented three-tier algorithm | Core algorithm logic |
-| `apps/ml_service/main.py` | Updated 4 endpoints to pass new fields | Pass Tier 1 data through pipeline |
-| `apps/ml_service/services/performance_orchestrator.py` | Updated `fetch_driver_telemetry()` | Include new fields in orchestrator |
+| `apps/analysis_service/services/delta_analysis.py` | Implemented three-tier algorithm | Core algorithm logic |
+| `apps/analysis_service/main.py` | Updated 4 endpoints to pass new fields | Pass Tier 1 data through pipeline |
+| `apps/analysis_service/services/performance_orchestrator.py` | Updated `fetch_driver_telemetry()` | Include new fields in orchestrator |
 
 ### 4.2 Frontend Changes (This Implementation)
 
@@ -328,7 +328,7 @@ The following backend changes enable the three-tier algorithm:
 │       │                                                                     │
 │       └──► useScaledDeltaQuery() ◄── SINGLE SOURCE OF TRUTH                │
 │                 │                                                           │
-│                 └──► /ml/scaled-delta (ML Service)                          │
+│                 └──► /analysis/scaled-delta (Analysis Service)                          │
 │                           │                                                 │
 │                           └──► delta_analysis.calculate_scaled_delta()      │
 │                                     │                                       │
@@ -371,7 +371,7 @@ The following backend changes enable the three-tier algorithm:
 │     └── Returns JSON with relativeDistance and time arrays                  │
 │                │                                                            │
 │                ▼                                                            │
-│  4. ML Service: /ml/scaled-delta                                            │
+│  4. Analysis Service: /analysis/scaled-delta                                            │
 │     │   └── Fetches telemetry from API                                      │
 │     │   └── Extracts relativeDistance and time fields                       │
 │     │   └── Calls calculate_scaled_delta() with all fields                  │
@@ -384,7 +384,7 @@ The following backend changes enable the three-tier algorithm:
 │                │                                                            │
 │                ▼                                                            │
 │  5. Frontend: useScaledDeltaQuery                                           │
-│     └── React Query hook fetches /ml/scaled-delta                           │
+│     └── React Query hook fetches /analysis/scaled-delta                           │
 │                │                                                            │
 │                ▼                                                            │
 │  6. QualifyingContent.tsx                                                   │
@@ -414,9 +414,9 @@ The following backend changes enable the three-tier algorithm:
 |------|------|--------------|
 | `apps/api/app/models/dto.py` | Data Transfer Objects | Added `relative_distance: Optional[List[float]]` and `time: Optional[List[float]]` to TelemetryResponse |
 | `apps/api/app/services/telemetry/fastf1_client.py` | FastF1 data extraction | Extract RelativeDistance and Time columns, include in response and cache |
-| `apps/ml_service/services/delta_analysis.py` | Core delta algorithm | Implemented three-tier algorithm with Tier 1 as preferred method |
-| `apps/ml_service/main.py` | ML service endpoints | Updated 4 endpoints to pass `relative_distance` and `time` fields |
-| `apps/ml_service/services/performance_orchestrator.py` | Performance orchestration | Updated `fetch_driver_telemetry()` to include new fields |
+| `apps/analysis_service/services/delta_analysis.py` | Core delta algorithm | Implemented three-tier algorithm with Tier 1 as preferred method |
+| `apps/analysis_service/main.py` | Analysis service endpoints | Updated 4 endpoints to pass `relative_distance` and `time` fields |
+| `apps/analysis_service/services/performance_orchestrator.py` | Performance orchestration | Updated `fetch_driver_telemetry()` to include new fields |
 
 ### 6.3 Unchanged Files (Already Compatible)
 
@@ -491,7 +491,7 @@ const transformedDeltaData = useMemo((): DeltaData[] => {
 The `ScaledDeltaDriverResult` interface has more fields than `DeltaData` requires:
 
 ```typescript
-// What ML service returns (ScaledDeltaDriverResult)
+// What Analysis service returns (ScaledDeltaDriverResult)
 interface ScaledDeltaDriverResult {
   referenceDriver: string    // ✅ Needed
   compareDriver: string      // ✅ Needed
@@ -578,7 +578,7 @@ docker compose build web
 docker compose up -d
 
 # Output:
-# Container f1-ml Running
+# Container f1-analysis Running
 # Container f1-api Running
 # Container f1-web Recreate
 # Container f1-web Recreated
@@ -607,7 +607,7 @@ time sample: [0.0, 0.034, 0.122, 0.254, 0.282]
 
 **Command:**
 ```bash
-curl -s -X POST "http://localhost:8501/ml/scaled-delta" \
+curl -s -X POST "http://localhost:8501/analysis/scaled-delta" \
   -H "Content-Type: application/json" \
   -d '{"session_id": "2025_01_Qualifying", "reference_driver": "VER", "compare_drivers": ["NOR", "LEC"], "session_part": "Q3"}'
 ```
@@ -619,10 +619,10 @@ curl -s -X POST "http://localhost:8501/ml/scaled-delta" \
 | VER vs NOR | -0.385s | -0.385s | 1.0000 | 100% | ✅ |
 | VER vs LEC | +0.274s | +0.274s | 1.0000 | 100% | ✅ |
 
-### 9.4 ML Service Logs
+### 9.4 Analysis Service Logs
 
 ```
-docker logs f1-ml --tail 20 | grep -E "(Tier|PREFERRED)"
+docker logs f1-analysis --tail 20 | grep -E "(Tier|PREFERRED)"
 ```
 
 **Output:**
@@ -654,7 +654,7 @@ Tier 1 complete: ref_scale=1.0000, comp_scale=1.0000, confidence=1.00
 | Metric | Before (Tier 3) | After (Tier 1) |
 |--------|-----------------|----------------|
 | **Data Source** | useDeltaQuery | useScaledDeltaQuery |
-| **Endpoint** | /telemetry/delta | /ml/scaled-delta |
+| **Endpoint** | /telemetry/delta | /analysis/scaled-delta |
 | **Algorithm** | Speed integration | RelativeDistance + Time scaling |
 | **Scale Factor** | 2-10x (variable) | 1.0000 (always) |
 | **Confidence** | 30-60% | 100% |

@@ -9,8 +9,8 @@ import { useTelemetryQuery } from '@/lib/hooks/useTelemetryQuery'
 import { useSectorsQuery } from '@/lib/hooks/useSectorsQuery'
 import { useTrackQuery } from '@/lib/hooks/useTrackQuery'
 import { useLapsQuery } from '@/lib/hooks/useLapsQuery'
-import { useScaledDeltaQuery } from '@/lib/hooks/useScaledDeltaQuery'
-import { useCornerAnalysisQuery } from '@/lib/hooks/useCornerAnalysisQuery'
+import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'
+import { useVisibility } from '@/lib/hooks/useVisibility'
 
 // Components
 import { QualifyingSidebar } from '@/components/qualifying/QualifyingSidebar'
@@ -22,7 +22,7 @@ import { CornerBreakdownPanel } from '@/components/panels/CornerBreakdownPanel'
 import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsightsPanel'
 
 // Types
-import { Telemetry, QualifyingSessionPart, DeltaData } from '@/../../packages/models/src/types'
+import { Telemetry, QualifyingSessionPart, DeltaData, InsightMode } from '@/../../packages/models/src/types'
 
 // Default values
 const DEFAULT_DRIVERS = ['VER', 'NOR', 'PIA']
@@ -32,15 +32,15 @@ const DEFAULT_ROUND = 24 // Abu Dhabi
 
 /**
  * Qualifying Analysis Page Content
- * 
+ *
  * This client component contains all the logic for the qualifying page.
  * It must be wrapped in a Suspense boundary because it uses useSearchParams().
- * 
+ *
  * Provides comprehensive qualifying session analysis with:
  * - Multi-driver telemetry comparison
  * - Delta analysis vs reference driver
  * - Sector breakdown with theoretical best
- * - ML-powered insights
+ * - Data-driven insights (single unified call, visibility-gated)
  */
 export function QualifyingContent() {
   const router = useRouter()
@@ -49,7 +49,7 @@ export function QualifyingContent() {
   // Parse URL state - these are derived directly from URL and update when URL changes
   const season = parseInt(searchParams.get('season') || String(DEFAULT_SEASON))
   const round = parseInt(searchParams.get('round') || String(DEFAULT_ROUND))
-  
+
   // These can be state since they're user-controlled within the page
   const initialDrivers = searchParams.get('drivers')?.split(',').filter(Boolean) || DEFAULT_DRIVERS
   const initialSession = (searchParams.get('session') as QualifyingSessionPart) || DEFAULT_SESSION
@@ -59,9 +59,15 @@ export function QualifyingContent() {
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>(initialDrivers)
   const [referenceDriver, setReferenceDriver] = useState<string>(initialRef)
   const [sessionPart, setSessionPart] = useState<QualifyingSessionPart>(initialSession)
-  
+
   // Chart sync state for zoom/pan
   const [chartXRange, setChartXRange] = useState<[number, number] | null>(null)
+
+  // Insight mode state (lifted from PerformanceInsightsPanel)
+  const [insightMode, setInsightMode] = useState<InsightMode>('engineer')
+
+  // Visibility gate — defers analysis query until user scrolls near the Delta panel
+  const { containerRef: analysisPanelRef, isVisible: isAnalysisPanelVisible } = useVisibility()
 
   // Construct session ID - base session without the Q1/Q2/Q3 part
   // The session part filtering is handled via the session_part API parameter
@@ -82,7 +88,7 @@ export function QualifyingContent() {
   }, [sessionPart])
 
   // Delta query helper - compare all non-reference drivers to reference
-  const compareDrivers = useMemo(() => 
+  const compareDrivers = useMemo(() =>
     selectedDrivers.filter(d => d !== referenceDriver),
     [selectedDrivers, referenceDriver]
   )
@@ -123,26 +129,27 @@ export function QualifyingContent() {
     isPlaceholderData: isTrackPlaceholder,
   } = useTrackQuery(round, season)
 
-  // Phase 2: Scaled Delta Query (provides accurate delta for DeltaPlot)
+  // Unified analysis query — replaces separate scaled-delta, corner-analysis, and performance-insights calls
+  // Visibility-gated: only fires when user scrolls near the Delta panel
   const {
-    data: scaledDeltaData,
-    isLoading: isScaledDeltaLoading,
-    isError: isScaledDeltaError,
-    isPlaceholderData: isScaledDeltaPlaceholder,
-    error: scaledDeltaError,
-  } = useScaledDeltaQuery(sessionId, referenceDriver, compareDrivers, qualifyingPart)
-
-  // Phase 3: Corner Analysis Query
-  const {
-    data: cornerAnalysisData,
-    isLoading: isCornerAnalysisLoading,
-    isError: isCornerAnalysisError,
-    isPlaceholderData: isCornerAnalysisPlaceholder,
-    error: cornerAnalysisError,
-  } = useCornerAnalysisQuery(sessionId, referenceDriver, compareDrivers, trackData?.corners ?? [], qualifyingPart)
+    data: performanceData,
+    isLoading: isPerformanceLoading,
+    isError: isPerformanceError,
+    error: performanceError,
+    isPlaceholderData: isPerformancePlaceholder,
+  } = usePerformanceInsightsQuery({
+    sessionId,
+    referenceDriver,
+    compareDrivers,
+    corners: trackData?.corners,
+    mode: insightMode,
+    sessionPart: qualifyingPart,
+    trackLength: trackData?.length,
+    enabled: isAnalysisPanelVisible && !isTrackPlaceholder,
+  })
 
   // Aggregate placeholder state for transition visual indicator
-  const isAnyPlaceholder = isTelemetryPlaceholder || isSectorsPlaceholder || isTrackPlaceholder || isScaledDeltaPlaceholder
+  const isAnyPlaceholder = isTelemetryPlaceholder || isSectorsPlaceholder || isTrackPlaceholder || isPerformancePlaceholder
 
   // Derived data - safe access with guards
   const isSprintWeekend = sessionsData?.some(s => s?.isSprintWeekend) ?? false
@@ -160,18 +167,18 @@ export function QualifyingContent() {
     return map
   }, [telemetryData])
 
-  // Transform scaledDeltaData to DeltaData format for DeltaPlot
-  // This ensures DeltaPlot uses accurate Tier 1 data (scale_factor=1.0, confidence=100%)
+  // Transform performanceData results to DeltaData format for DeltaPlot
+  // Sources delta from the unified analysis endpoint (Phase 2 data embedded in results)
   const transformedDeltaData = useMemo((): DeltaData[] => {
-    if (!scaledDeltaData?.results) return []
+    if (!performanceData?.results) return []
 
-    return scaledDeltaData.results.map(result => ({
-      referenceDriver: result.referenceDriver,
-      compareDriver: result.compareDriver,
-      distance: result.distance,
-      delta: result.delta,  // Now uses accurate Tier 1 data!
+    return performanceData.results.map(result => ({
+      referenceDriver,
+      compareDriver: result.driver,
+      distance: result.distance ?? [],
+      delta: result.delta ?? [],
     }))
-  }, [scaledDeltaData])
+  }, [performanceData, referenceDriver])
 
   // Update URL when state changes
   const updateURL = useCallback((
@@ -288,19 +295,19 @@ export function QualifyingContent() {
               </div>
             </div>
 
-            {/* Delta to Reference — loads when scaled delta ready */}
-            <div className="card-panel">
+            {/* Delta to Reference — visibility trigger for analysis query */}
+            <div ref={analysisPanelRef} className="card-panel">
               <h2 className="card-panel-header">
                 Delta to Reference ({referenceDriver})
               </h2>
-              {(isScaledDeltaLoading || isTrackLoading) && !scaledDeltaData ? (
+              {(isPerformanceLoading || isTrackLoading) && !performanceData ? (
                 <div className="h-96 skeleton rounded-lg" />
-              ) : isScaledDeltaError ? (
+              ) : isPerformanceError ? (
                 <div className="h-96 flex items-center justify-center text-red-400 text-sm">
-                  Failed to load delta data: {(scaledDeltaError as Error)?.message}
+                  Failed to load delta data: {(performanceError as Error)?.message}
                 </div>
               ) : (
-                <div className={`transition-opacity duration-300 ${isScaledDeltaPlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
+                <div className={`transition-opacity duration-300 ${isPerformancePlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
                   <DeltaPlot
                     deltaData={transformedDeltaData}
                     referenceDriver={referenceDriver}
@@ -313,35 +320,37 @@ export function QualifyingContent() {
               )}
             </div>
 
-            {/* Phase 2: Scaled Delta Analysis Metadata — self-contained loading */}
+            {/* Phase 2: Scaled Delta Analysis Metadata — fed from unified analysis response */}
             <div className="content-defer">
               <ScalingMetadataPanel
-                results={scaledDeltaData?.results ?? []}
+                results={performanceData?.results ?? []}
                 referenceDriver={referenceDriver}
-                isLoading={isScaledDeltaLoading}
-                error={isScaledDeltaError ? (scaledDeltaError as Error)?.message : undefined}
+                isLoading={isPerformanceLoading}
+                error={isPerformanceError ? (performanceError as Error)?.message : undefined}
               />
             </div>
 
-            {/* Phase 3: Corner Analysis Breakdown — self-contained loading */}
+            {/* Phase 3: Corner Analysis Breakdown — fed from unified analysis response */}
             <div className="content-defer">
               <CornerBreakdownPanel
-                results={cornerAnalysisData?.results ?? []}
+                results={performanceData?.results ?? []}
                 referenceDriver={referenceDriver}
-                isLoading={isCornerAnalysisLoading}
-                error={isCornerAnalysisError ? (cornerAnalysisError as Error)?.message : undefined}
+                isLoading={isPerformanceLoading}
+                error={isPerformanceError ? (performanceError as Error)?.message : undefined}
               />
             </div>
 
-            {/* Performance Insights — Phase 7, self-contained loading */}
+            {/* Performance Insights — Phase 7, fed from unified analysis response */}
             <div className="content-defer">
               <PerformanceInsightsPanel
-                sessionId={sessionId}
+                data={performanceData}
                 referenceDriver={referenceDriver}
-                selectedDrivers={selectedDrivers}
-                corners={trackData?.corners ?? []}
-                sessionPart={qualifyingPart}
-                trackLength={trackData?.length}
+                compareDrivers={compareDrivers}
+                isLoading={isPerformanceLoading}
+                isError={isPerformanceError}
+                error={performanceError}
+                mode={insightMode}
+                onModeChange={setInsightMode}
               />
             </div>
           </>

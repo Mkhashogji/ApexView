@@ -208,13 +208,13 @@ describe('Query Keys', () => {
     expect(JSON.stringify(key1)).toBe(JSON.stringify(key2))
   })
 
-  it('should include ML query keys', async () => {
+  it('should include analysis query keys', async () => {
     const { queryKeys } = await import('@/lib/hooks/queryKeys')
 
-    expect(queryKeys.ml).toBeDefined()
-    expect(queryKeys.ml.insights).toBeDefined()
-    expect(queryKeys.ml.similarity).toBeDefined()
-    expect(queryKeys.ml.clustering).toBeDefined()
+    expect(queryKeys.analysis).toBeDefined()
+    expect(queryKeys.analysis.insights).toBeDefined()
+    expect(queryKeys.analysis.similarity).toBeDefined()
+    expect(queryKeys.analysis.clustering).toBeDefined()
   })
 })
 
@@ -271,7 +271,7 @@ describe('Component Props Validation', () => {
     expect(props.deltaData[0].referenceDriver).toBe(props.referenceDriver)
   })
 
-  it('should accept valid AIInsights props', () => {
+  it('should accept valid AnalysisInsights props', () => {
     const props = {
       sessionId: MOCK_SESSION_ID,
       sectorData: MOCK_SECTOR_DATA,

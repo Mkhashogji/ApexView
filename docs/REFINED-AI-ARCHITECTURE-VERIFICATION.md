@@ -1,4 +1,4 @@
-# Refined AI Architecture: Comprehensive Verification Analysis
+# Telemetry Analysis Pipeline: Comprehensive Verification Analysis
 
 **Version**: 1.0  
 **Date**: February 5, 2026  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document consolidates the complete verification analysis for ApexView's **10-phase Refined AI Architecture**. Each phase has been rigorously verified to ensure end-to-end integrity before proceeding with Race Page development.
+This document consolidates the complete verification analysis for ApexView's **10-phase Telemetry Analysis Pipeline**. Each phase has been rigorously verified to ensure end-to-end integrity before proceeding with Race Page development.
 
 The architecture transforms raw F1 telemetry into actionable insights through a disciplined pipeline:
 
@@ -54,7 +54,7 @@ Environment configuration follows the "fail-fast" principle. By verifying config
 The configuration hierarchy is:
 1. Root `.env` (primary)
 2. `apps/api/.env` (override risk)
-3. `apps/ml_service/.env` (override risk)
+3. `apps/analysis_service/.env` (override risk)
 4. Docker Compose environment variables
 
 ### Technical Implementation
@@ -74,8 +74,8 @@ The configuration hierarchy is:
 |-------|----------|--------|
 | Root `.env` LIVE_DATA | `true` | ✅ Verified |
 | No `apps/api/.env` | File absent | ✅ Verified |
-| No `apps/ml_service/.env` | File absent | ✅ Verified |
-| Docker services healthy | All 3 up | ✅ f1-api, f1-ml, f1-web running |
+| No `apps/analysis_service/.env` | File absent | ✅ Verified |
+| Docker services healthy | All 3 up | ✅ f1-api, f1-analysis, f1-web running |
 | Container LIVE_DATA | `true` | ✅ Confirmed via `docker compose exec` |
 
 ---
@@ -112,7 +112,7 @@ F1 telemetry quality varies significantly. Rather than using a single calculatio
 
 ### Technical Implementation
 
-**Core File**: `apps/ml_service/services/delta_analysis.py`
+**Core File**: `apps/analysis_service/services/delta_analysis.py`
 
 **Key Functions**:
 ```python
@@ -215,7 +215,7 @@ Users historically asked: "The corners only show +0.2s, but the gap is +0.5s—w
 
 ### Technical Implementation
 
-**Core File**: `apps/ml_service/services/corner_analysis.py`
+**Core File**: `apps/analysis_service/services/corner_analysis.py`
 
 **Key Data Classes**:
 ```python
@@ -333,7 +333,7 @@ Straight-line deltas are attributed to causes:
 
 ### Technical Implementation
 
-**Core File**: `apps/ml_service/services/technique_profiling.py`
+**Core File**: `apps/analysis_service/services/technique_profiling.py`
 
 **Key Data Class**:
 ```python
@@ -451,7 +451,7 @@ The Exit → Straight chain reveals setup trade-offs:
 
 ### Technical Implementation
 
-**Core File**: `apps/ml_service/services/insight_generation.py`
+**Core File**: `apps/analysis_service/services/insight_generation.py`
 
 **Template Categories**:
 ```python
@@ -517,7 +517,7 @@ def generate_exit_straight_opportunity(
 The Performance Orchestrator (Phase 6 in the pipeline) implements the **Backend-for-Frontend (BFF) pattern**, reducing frontend complexity from 4 API calls to 1.
 
 **Before Orchestrator**: Frontend called Phase 2 → 3 → 4 → 5 sequentially
-**After Orchestrator**: Single `/ml/performance-insights` call returns everything
+**After Orchestrator**: Single `/analysis/performance-insights` call returns everything
 
 ### Theoretical and Logical Background
 
@@ -537,7 +537,7 @@ If any link breaks, `lap_breakdown` returns `null` (graceful degradation).
 
 ### Technical Implementation
 
-**Core File**: `apps/ml_service/services/performance_orchestrator.py`
+**Core File**: `apps/analysis_service/services/performance_orchestrator.py`
 
 **Configuration Data Class**:
 ```python
@@ -601,7 +601,7 @@ corner_result, error = run_phase3_corner(
 4. **Pass-through Check**: `track_length=config.track_length` at line 855
 5. **Serialization Check**: `lap_breakdown` included in result assembly (lines 959-963)
 
-**Pydantic Schema Verification** (`apps/ml_service/models/schemas.py`):
+**Pydantic Schema Verification** (`apps/analysis_service/models/schemas.py`):
 - `StraightSegmentSchema`: line 225
 - `LapBreakdownSchema`: line 242
 - `PerformanceInsightsRequest.track_length`: line 807
@@ -633,7 +633,7 @@ The straight-line integration test suite covers:
 
 ### Technical Implementation
 
-**Test File**: `apps/ml_service/tests/test_straight_line_integration.py`
+**Test File**: `apps/analysis_service/tests/test_straight_line_integration.py`
 
 **Test Classes**:
 ```python
@@ -663,7 +663,7 @@ class TestEndToEndIntegration:
 
 **Test Execution**:
 ```bash
-docker exec -w /app f1-ml /bin/bash -c 'PYTHONPATH=/app pytest tests/test_straight_line_integration.py -v'
+docker exec -w /app f1-analysis /bin/bash -c 'PYTHONPATH=/app pytest tests/test_straight_line_integration.py -v'
 ```
 
 **Results**:
@@ -688,7 +688,7 @@ pytest tests/ --tb=no -q
 
 ### Purpose and Significance
 
-Live API testing confirms that the entire backend stack works correctly with real data. This phase verifies the `/ml/performance-insights` endpoint returns properly structured `lap_breakdown` data.
+Live API testing confirms that the entire backend stack works correctly with real data. This phase verifies the `/analysis/performance-insights` endpoint returns properly structured `lap_breakdown` data.
 
 ### Theoretical and Logical Background
 
@@ -705,7 +705,7 @@ Live API testing confirms that the entire backend stack works correctly with rea
 
 ### Technical Implementation
 
-**Endpoint**: `POST /ml/performance-insights`
+**Endpoint**: `POST /analysis/performance-insights`
 
 **Request Body**:
 ```json
@@ -929,7 +929,7 @@ $body = @{
 
 ### Diagnostic Execution Overview
 
-On February 5, 2026, a comprehensive 10-phase verification was executed against the ApexView codebase using a structured diagnostic prompt. The verification covered all layers of the Refined AI Architecture.
+On February 5, 2026, a comprehensive 10-phase verification was executed against the ApexView codebase using a structured diagnostic prompt. The verification covered all layers of the Telemetry Analysis Pipeline.
 
 ### Verification Steps Performed
 
@@ -961,7 +961,7 @@ usePerformanceInsightsQuery.ts (passes to API)
   ↓
 fetchPerformanceInsights() (sends track_length)
   ↓
-ML API /ml/performance-insights (receives track_length)
+ML API /analysis/performance-insights (receives track_length)
   ↓
 PerformanceInsightsConfig (stores track_length)
   ↓
@@ -1007,13 +1007,13 @@ LapBreakdownPanel.tsx [DISPLAYS]
 
 | File | Purpose | Key Lines |
 |------|---------|-----------|
-| `apps/ml_service/services/delta_analysis.py` | Three-tier delta calculation | 232-560 |
-| `apps/ml_service/services/corner_analysis.py` | Corner + straight-line analysis | 123-1983 |
-| `apps/ml_service/services/technique_profiling.py` | 5th dimension classification | 150-1089 |
-| `apps/ml_service/services/insight_generation.py` | Template-based text generation | 537-1159 |
-| `apps/ml_service/services/performance_orchestrator.py` | BFF orchestration | 92-999 |
-| `apps/ml_service/models/schemas.py` | Pydantic validation schemas | 225-937 |
-| `apps/ml_service/main.py` | FastAPI endpoints | 1506-1623 |
+| `apps/analysis_service/services/delta_analysis.py` | Three-tier delta calculation | 232-560 |
+| `apps/analysis_service/services/corner_analysis.py` | Corner + straight-line analysis | 123-1983 |
+| `apps/analysis_service/services/technique_profiling.py` | 5th dimension classification | 150-1089 |
+| `apps/analysis_service/services/insight_generation.py` | Template-based text generation | 537-1159 |
+| `apps/analysis_service/services/performance_orchestrator.py` | BFF orchestration | 92-999 |
+| `apps/analysis_service/models/schemas.py` | Pydantic validation schemas | 225-937 |
+| `apps/analysis_service/main.py` | FastAPI endpoints | 1506-1623 |
 | `apps/api/app/models/dto.py` | API data transfer objects | 64-66 |
 | `apps/api/app/services/telemetry/fastf1_client.py` | FastF1 data extraction | 459-529 |
 
@@ -1033,8 +1033,8 @@ LapBreakdownPanel.tsx [DISPLAYS]
 
 | File | Tests | Status |
 |------|-------|--------|
-| `apps/ml_service/tests/test_straight_line_integration.py` | 32 | ✅ All passed |
-| `apps/ml_service/tests/test_delta_analysis.py` | ~50 | ✅ All passed |
-| `apps/ml_service/tests/test_corner_analysis.py` | ~60 | ✅ All passed |
-| `apps/ml_service/tests/test_technique_profiling.py` | ~40 | ✅ All passed |
-| `apps/ml_service/tests/test_insight_generation.py` | ~50 | ✅ All passed |
+| `apps/analysis_service/tests/test_straight_line_integration.py` | 32 | ✅ All passed |
+| `apps/analysis_service/tests/test_delta_analysis.py` | ~50 | ✅ All passed |
+| `apps/analysis_service/tests/test_corner_analysis.py` | ~60 | ✅ All passed |
+| `apps/analysis_service/tests/test_technique_profiling.py` | ~40 | ✅ All passed |
+| `apps/analysis_service/tests/test_insight_generation.py` | ~50 | ✅ All passed |

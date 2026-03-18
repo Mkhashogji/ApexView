@@ -4,7 +4,7 @@ import { DeltaData, SectorInfo } from '@/../../packages/models/src/types'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { formatDelta } from '@/lib/formatters'
 import Plot from './PlotlyLazy'
-import { useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 interface DeltaPlotProps {
   /** Delta data for each driver comparison */
@@ -21,14 +21,15 @@ interface DeltaPlotProps {
   xRange?: [number, number] | null
 }
 
-export function DeltaPlot({ 
-  deltaData, 
+export function DeltaPlot({
+  deltaData,
   referenceDriver,
   sectors = [],
   trackLength,
   onRangeChange,
   xRange,
 }: DeltaPlotProps) {
+  const [showGuide, setShowGuide] = useState(false)
 
   // Calculate final deltas for each driver
   const finalDeltas = useMemo(() => {
@@ -304,11 +305,41 @@ export function DeltaPlot({
         />
       </div>
 
-      {/* Help text */}
-      <p className="text-xs text-gray-500">
-        <strong>Tip:</strong> Positive values (above zero) mean the driver is losing time compared to {referenceDriver}. 
-        Negative values mean they are gaining time.
-      </p>
+      {/* How to read this chart */}
+      <button
+        onClick={() => setShowGuide(!showGuide)}
+        className="text-xs text-gray-500 hover:text-gray-400 transition-colors flex items-center gap-1"
+        type="button"
+        aria-expanded={showGuide}
+      >
+        <span
+          className="inline-block transition-transform duration-200"
+          style={{ transform: showGuide ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
+          &#9656;
+        </span>
+        How to read this chart
+      </button>
+      {showGuide && (
+        <div className="mt-2 p-3 rounded border border-white/10 bg-white/[0.02] text-sm text-gray-500 space-y-2">
+          <div>
+            <span className="text-gray-400 font-medium">What this shows: </span>
+            The cumulative time delta between the reference driver and each comparison driver, plotted across track distance. The reference driver is the zero line.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Reading the curve: </span>
+            When the line goes up (positive, red shading), the comparison driver is losing time through that track section. When it goes down (negative, green shading), they are gaining time. The final value at the end equals the official gap.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">Sector boundaries: </span>
+            Vertical dashed lines mark where sectors begin and end, helping identify which sector contributed most to the gap.
+          </div>
+          <div>
+            <span className="text-gray-400 font-medium">How deltas are calculated: </span>
+            The shape of the curve comes from telemetry speed data, but the overall magnitude is scaled to exactly match the official FIA lap time gap. This means where on track time is gained or lost is derived from telemetry, while the total gap is anchored to official timing.
+          </div>
+        </div>
+      )}
     </div>
   )
 }

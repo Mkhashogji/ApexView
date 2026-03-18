@@ -1,7 +1,7 @@
 'use client'
 
-import { SectorComparison, MLInsight, LapSimilarityResponse, ClusteringResponse } from '@/../../packages/models/src/types'
-import { useMLInsightsQuery, useLapSimilarityQuery, useDriverClusteringQuery } from '@/lib/hooks'
+import { SectorComparison, AnalysisInsight, LapSimilarityResponse, ClusteringResponse } from '@/../../packages/models/src/types'
+import { useAnalysisInsightsQuery, useLapSimilarityQuery, useDriverClusteringQuery } from '@/lib/hooks'
 import { formatSimilarity, formatDelta } from '@/lib/formatters'
 import { getTeamColor, getDriverInfo } from '@/lib/drivers'
 import { useMemo } from 'react'
@@ -18,29 +18,29 @@ const INSIGHT_ICONS: Record<string, string> = {
   default: '💡',
 }
 
-interface AIInsightsProps {
-  /** Session ID for ML queries */
+interface AnalysisInsightsProps {
+  /** Session ID for analysis queries */
   sessionId: string
   /** Sector comparison data for rule-based fallback */
   sectorData: SectorComparison[]
   /** Reference driver for comparisons */
   referenceDriver: string
-  /** Selected drivers for ML analysis */
+  /** Selected drivers for analysis */
   selectedDrivers: string[]
 }
 
 /**
- * AI-powered insights panel using ML service endpoints.
- * Falls back to rule-based insights if ML service is unavailable.
+ * Data-driven insights panel using Analysis service endpoints.
+ * Falls back to rule-based insights if Analysis service is unavailable.
  */
-export function AIInsights({ 
+export function AnalysisInsights({ 
   sessionId,
   sectorData, 
   referenceDriver,
   selectedDrivers,
-}: AIInsightsProps) {
-  // ML Queries
-  const mlInsightsQuery = useMLInsightsQuery(sessionId, selectedDrivers)
+}: AnalysisInsightsProps) {
+  // Analysis Queries
+  const analysisInsightsQuery = useAnalysisInsightsQuery(sessionId, selectedDrivers)
   const clusteringQuery = useDriverClusteringQuery(sessionId, selectedDrivers)
   
   // Get pairwise similarities for first two non-reference drivers
@@ -57,16 +57,16 @@ export function AIInsights({
   )
 
   // Determine loading state
-  const isLoading = mlInsightsQuery.isLoading || clusteringQuery.isLoading
+  const isLoading = analysisInsightsQuery.isLoading || clusteringQuery.isLoading
 
   // Generate rule-based fallback insights
   const fallbackInsights = useMemo(() => {
     return generateRuleBasedInsights(sectorData, referenceDriver)
   }, [sectorData, referenceDriver])
 
-  // Combine ML insights with similarity data
-  const mlInsights = useMemo<MLInsight[]>(() => {
-    const insights: MLInsight[] = []
+  // Combine analysis insights with similarity data
+  const analysisInsights = useMemo<AnalysisInsight[]>(() => {
+    const insights: AnalysisInsight[] = []
 
     // Add similarity insights
     if (similarityQuery1.data) {
@@ -81,17 +81,17 @@ export function AIInsights({
       insights.push(...createClusteringInsights(clusteringQuery.data))
     }
 
-    // Add insights from ML endpoint
-    if (mlInsightsQuery.data?.insights) {
-      insights.push(...mlInsightsQuery.data.insights)
+    // Add insights from analysis endpoint
+    if (analysisInsightsQuery.data?.insights) {
+      insights.push(...analysisInsightsQuery.data.insights)
     }
 
     return insights.slice(0, 5)
-  }, [similarityQuery1.data, similarityQuery2.data, clusteringQuery.data, mlInsightsQuery.data])
+  }, [similarityQuery1.data, similarityQuery2.data, clusteringQuery.data, analysisInsightsQuery.data])
 
-  // Use ML insights if available, otherwise fallback
-  const displayInsights = mlInsights.length > 0 ? mlInsights : fallbackInsights
-  const isUsingFallback = mlInsights.length === 0
+  // Use analysis insights if available, otherwise fallback
+  const displayInsights = analysisInsights.length > 0 ? analysisInsights : fallbackInsights
+  const isUsingFallback = analysisInsights.length === 0
 
   return (
     <div className="card-panel border-f1red/30 bg-gradient-to-br from-f1red/5 to-transparent">
@@ -99,7 +99,7 @@ export function AIInsights({
       <div className="flex items-center justify-between mb-4">
         <h2 className="flex items-center gap-2 text-lg font-heading font-semibold uppercase tracking-wide">
           <span className="text-f1red">✨</span>
-          AI Insights
+          Performance Insights
         </h2>
         {isLoading && (
           <span className="text-xs text-gray-500 animate-pulse">
@@ -119,7 +119,7 @@ export function AIInsights({
 
       {/* Insights List */}
       {!isLoading && (
-        <div className="space-y-3" role="list" aria-label="AI analysis insights">
+        <div className="space-y-3" role="list" aria-label="performance analysis insights">
           {displayInsights.map((insight, index) => (
             <InsightCard 
               key={index} 
@@ -137,7 +137,7 @@ export function AIInsights({
         <p>
           {isUsingFallback 
             ? 'Insights generated from sector time analysis.' 
-            : 'ML-powered analysis using telemetry similarity and clustering.'
+            : 'Data-driven analysis using telemetry similarity and clustering.'
           }
         </p>
         {!isUsingFallback && (
@@ -145,7 +145,7 @@ export function AIInsights({
             <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            ML Enhanced
+            Advanced Analysis
           </span>
         )}
       </div>
@@ -154,7 +154,7 @@ export function AIInsights({
 }
 
 /** Individual insight card component */
-function InsightCard({ insight }: { insight: MLInsight }) {
+function InsightCard({ insight }: { insight: AnalysisInsight }) {
   const icon = INSIGHT_ICONS[insight.type] || INSIGHT_ICONS.default
   
   return (
@@ -201,7 +201,7 @@ function InsightCard({ insight }: { insight: MLInsight }) {
 }
 
 /** Create insight from similarity data */
-function createSimilarityInsight(data: LapSimilarityResponse): MLInsight {
+function createSimilarityInsight(data: LapSimilarityResponse): AnalysisInsight {
   const similarityPercent = data.similarity * 100
   const d1Info = getDriverInfo(data.driver1)
   const d2Info = getDriverInfo(data.driver2)
@@ -235,11 +235,11 @@ function createSimilarityInsight(data: LapSimilarityResponse): MLInsight {
 }
 
 /** Create insights from clustering data */
-function createClusteringInsights(data: ClusteringResponse): MLInsight[] {
+function createClusteringInsights(data: ClusteringResponse): AnalysisInsight[] {
   // Guard: Check if data and clusters exist
   if (!data || !data.clusters || !Array.isArray(data.clusters)) return []
   
-  const insights: MLInsight[] = []
+  const insights: AnalysisInsight[] = []
 
   // Group drivers by cluster
   const clusterGroups = new Map<number, string[]>()
@@ -268,13 +268,13 @@ function createClusteringInsights(data: ClusteringResponse): MLInsight[] {
 }
 
 /** Generate rule-based fallback insights */
-function generateRuleBasedInsights(sectorData: SectorComparison[], referenceDriver: string): MLInsight[] {
+function generateRuleBasedInsights(sectorData: SectorComparison[], referenceDriver: string): AnalysisInsight[] {
   // Guard: Check if sectorData is valid
   if (!sectorData || !Array.isArray(sectorData) || sectorData.length === 0) {
     return [{ type: 'default', message: 'No data available for analysis' }]
   }
 
-  const insights: MLInsight[] = []
+  const insights: AnalysisInsight[] = []
   const refData = sectorData.find((d) => d?.driver === referenceDriver)
   
   if (!refData) {

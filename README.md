@@ -1,6 +1,6 @@
-# F1 Engineering App
+# ApexView
 
-A comprehensive Formula 1 telemetry and engineering analysis platform built with Next.js and FastAPI, featuring ML-powered performance insights and detailed track intelligence.
+A comprehensive Formula 1 telemetry and engineering analysis platform built with Next.js and FastAPI, featuring data-driven performance insights and detailed track intelligence.
 
 **Season:** 2025
 
@@ -8,7 +8,7 @@ A comprehensive Formula 1 telemetry and engineering analysis platform built with
 
 - **Frontend**: Next.js 14+ with App Router, TypeScript, Tailwind CSS, and React Query
 - **Backend API**: FastAPI with FastF1 integration for telemetry and session data
-- **ML Service**: FastAPI microservice for performance analysis, corner breakdown, technique profiling, and natural language insights
+- **Analysis Service**: FastAPI microservice for performance analysis, corner breakdown, technique profiling, and natural language insights
 - **Packages**: Shared UI components and type definitions
 - **Monorepo**: Managed with pnpm workspaces
 
@@ -29,7 +29,7 @@ f1-engineering-app/
 │   ├── api/                    # FastAPI backend (main API)
 │   │   └── app/
 │   │       └── services/       # Telemetry services, FastF1 client
-│   └── ml_service/             # ML microservice
+│   └── analysis_service/        # Analysis microservice
 │       ├── core/               # Logging, circuit configs (24 circuits)
 │       ├── models/             # Pydantic schemas
 │       ├── services/           # Analysis modules (Phases 2-6)
@@ -46,7 +46,7 @@ f1-engineering-app/
 
 ### Track Intelligence (24/24 Circuits Complete)
 
-Comprehensive circuit analysis system covering all 24 circuits on the 2025 F1 calendar. Each circuit features an 11-section analytical framework providing engineering-grade insights verified against official Formula 1 sources.
+Comprehensive circuit analysis system covering all 24 circuits on the 2025 F1 calendar. Each circuit features an 11-section analytical framework providing engineering-grade insights verified against official Formula 1 sources. All 24 circuits include validated corner names in their track data files.
 
 #### 11-Section Analysis Framework
 
@@ -103,9 +103,9 @@ interface TrackIntelligence {
 
 ---
 
-### ML-Powered Performance Analysis (Refined AI Architecture)
+### Data-Driven Performance Analysis (Telemetry Analysis Pipeline)
 
-The ML service implements an 8-phase analysis pipeline for qualifying telemetry analysis, replacing the original cosine similarity system that produced meaningless 99.9% similarity scores.
+The Analysis service implements an 8-phase analysis pipeline for qualifying telemetry analysis, replacing the original cosine similarity system that produced meaningless 99.9% similarity scores.
 
 #### Phase Architecture
 
@@ -120,25 +120,25 @@ The ML service implements an 8-phase analysis pipeline for qualifying telemetry 
 | 7 | Frontend components | PerformanceInsightsPanel, CornerBreakdownPanel |
 | 8 | Testing & validation | 271 tests, multi-circuit validation |
 
-#### ML Service Endpoints
+#### Analysis Service Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/lap-similarity` | POST | Cosine similarity between laps |
 | `/driver-style-clustering` | POST | PCA + KMeans driver clustering |
-| `/ml/scaled-delta` | POST | Phase 2: Scaled delta analysis |
-| `/ml/corner-analysis` | POST | Phase 3: Corner breakdown |
-| `/ml/technique-profile` | POST | Phase 4: Technique profiling |
-| `/ml/generate-insight` | POST | Phase 5: Natural language insights |
-| `/ml/performance-insights` | POST | Phase 6: Unified orchestrator (BFF) |
+| `/analysis/scaled-delta` | POST | Phase 2: Scaled delta analysis |
+| `/analysis/corner-analysis` | POST | Phase 3: Corner breakdown |
+| `/analysis/technique-profile` | POST | Phase 4: Technique profiling |
+| `/analysis/generate-insight` | POST | Phase 5: Natural language insights |
+| `/analysis/performance-insights` | POST | Phase 6: Unified orchestrator (BFF) |
 
 #### Confidence Scoring System
 
-Corner analysis assigns confidence per corner:
-- **HIGH**: Deceleration + brake detected via telemetry
-- **MEDIUM**: Partial detection or fixed offset fallback
-- **LOW**: Detection failed, data unreliable
+Corner analysis assigns confidence per corner based on how closely the two brake detection methods (boolean brake signal and deceleration refinement) agreed:
+- **HIGH**: Boolean brake and deceleration refinement aligned within 20 metres
+- **MEDIUM**: Aligned within 40 metres
+- **LOW**: Diverged beyond 40 metres, zone boundaries approximate
 
 Confidence propagates through the pipeline:
 - Phase 4: Weights corner contributions (HIGH=1.0, MEDIUM=0.7, LOW=0.3)
@@ -147,7 +147,7 @@ Confidence propagates through the pipeline:
 
 #### Circuit-Specific Corner Analysis Tuning
 
-The ML service includes per-circuit configurations for all 24 circuits:
+The Analysis service includes per-circuit configurations for all 24 circuits:
 
 ```python
 CIRCUIT_CONFIGS = {
@@ -170,7 +170,7 @@ CIRCUIT_CONFIGS = {
 - Multi-driver lap comparison with interactive delta charts
 - Scaled delta analysis matching official F1 timing
 - Corner-by-corner time gain/loss breakdown with cause attribution
-- Technique profiling across four dimensions (braking, apex, exit, consistency)
+- Technique profiling across five dimensions (braking, apex, exit, consistency, straight-line)
 - Natural language performance insights in Engineer and Driver modes
 - Session part filtering (Q1/Q2/Q3)
 
@@ -192,6 +192,13 @@ CIRCUIT_CONFIGS = {
 - Cross-session progression showing gap-to-session-best across FP1/FP2/FP3
 - Fuel correction toggle with circuit-specific correction factors from Track Intelligence
 
+### Transparency & Attribution
+
+- Dedicated `/transparency` page covering project disclaimer, data sources, analysis methodology, privacy, attribution, and intellectual property
+- Analysis methodology section with verified thresholds and algorithm descriptions from production code
+- Linked from footer across all pages
+- Built as a Server Component — static text only, no client-side JavaScript
+
 ---
 
 ## Getting Started
@@ -199,7 +206,7 @@ CIRCUIT_CONFIGS = {
 ### Prerequisites
 
 - Node.js 18+
-- Python 3.10+ (3.11+ recommended for ML service)
+- Python 3.10+ (3.11+ recommended for Analysis service)
 - pnpm 8+
 - Docker (optional, for containerized deployment)
 
@@ -222,8 +229,8 @@ pnpm dev:web
 # Backend API only (http://localhost:8000)
 pnpm dev:api
 
-# ML service (http://localhost:8501)
-cd apps/ml_service && uvicorn main:app --reload --port 8501
+# Analysis service (http://localhost:8501)
+cd apps/analysis_service && uvicorn main:app --reload --port 8501
 ```
 
 ### Docker Deployment
@@ -246,8 +253,8 @@ docker-compose down
 cd apps/api
 python -m pytest tests/ -v
 
-# ML service tests (271 tests)
-cd apps/ml_service
+# Analysis service tests (271 tests)
+cd apps/analysis_service
 python -m pytest tests/ -v
 
 # Frontend tests
@@ -293,8 +300,7 @@ pnpm test
 | Hook | Purpose |
 |------|---------|
 | `usePerformanceInsightsQuery` | Fetches unified qualifying performance data |
-| `useCornerAnalysisQuery` | Fetches corner breakdown data |
-| `useScaledDeltaQuery` | Fetches scaled delta data |
+| `useAnalysisInsightsQuery` | Fetches combined analysis data (delta, corners, technique, insights) |
 | `useTelemetryQuery` | Fetches telemetry traces |
 | `useSectorsQuery` | Fetches sector times |
 | `useTrackIntelligence` | Fetches track intelligence data |
@@ -322,13 +328,6 @@ Corner analysis reliability varies by circuit due to telemetry-timing alignment:
 
 The Scaled Delta Analysis panel indicates reliability through confidence scores. Results with confidence below 50% should be interpreted with caution.
 
-### Active Investigation
-
-Lap selection logic is under investigation to ensure the fastest valid flying lap is used for analysis, excluding:
-- Deleted laps (track limits violations)
-- Out-laps and in-laps
-- Aborted or incomplete laps
-
 ---
 
 ## Documentation
@@ -338,7 +337,7 @@ See the `docs/` directory for detailed documentation:
 ### Architecture & Features
 - `ARCHITECTURE_OVERVIEW.md` - System architecture
 - `FEATURES.md` - Feature specifications
-- `ML_SERVICE_README.md` - ML service documentation
+- `ANALYSIS_SERVICE_README.md` - Analysis service documentation
 
 ### Phase Implementation
 - `corner-analysis-implementation.md` - Phase 3 implementation details
@@ -372,7 +371,7 @@ See the `docs/` directory for detailed documentation:
 - Pydantic (schema validation)
 - httpx (async HTTP client)
 
-### ML Service
+### Analysis Service
 - FastAPI
 - NumPy / SciPy
 - scikit-learn (clustering)

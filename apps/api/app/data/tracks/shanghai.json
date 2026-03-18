@@ -4,31 +4,134 @@
   "country": "China",
   "length": 5451,
   "sectors": [
-    { "sectorNumber": 1, "startDistance": 0, "endDistance": 1700 },
-    { "sectorNumber": 2, "startDistance": 1700, "endDistance": 3400 },
-    { "sectorNumber": 3, "startDistance": 3400, "endDistance": 5451 }
+    {
+      "sectorNumber": 1,
+      "startDistance": 0,
+      "endDistance": 1700
+    },
+    {
+      "sectorNumber": 2,
+      "startDistance": 1700,
+      "endDistance": 3400
+    },
+    {
+      "sectorNumber": 3,
+      "startDistance": 3400,
+      "endDistance": 5451
+    }
   ],
   "drsZones": [
-    { "zoneNumber": 1, "detectionPoint": 3100, "activationPoint": 3600, "endPoint": 4300 },
-    { "zoneNumber": 2, "detectionPoint": 4500, "activationPoint": 5300, "endPoint": 350, "wrapAround": true }
+    {
+      "zoneNumber": 1,
+      "detectionPoint": 3100,
+      "activationPoint": 3600,
+      "endPoint": 4300
+    },
+    {
+      "zoneNumber": 2,
+      "detectionPoint": 4500,
+      "activationPoint": 5300,
+      "endPoint": 350,
+      "wrapAround": true
+    }
   ],
   "corners": [
-    { "cornerNumber": 1, "distance": 350, "type": "right", "name": "Turn 1 (Snail Entry)" },
-    { "cornerNumber": 2, "distance": 650, "type": "right", "name": "Turn 2 (Snail Exit)" },
-    { "cornerNumber": 3, "distance": 900, "type": "left", "name": "Turn 3" },
-    { "cornerNumber": 4, "distance": 1100, "type": "right", "name": "Turn 4" },
-    { "cornerNumber": 5, "distance": 1350, "type": "left", "name": "Turn 5" },
-    { "cornerNumber": 6, "distance": 1700, "type": "right", "name": "Turn 6" },
-    { "cornerNumber": 7, "distance": 2000, "type": "left", "name": "Turn 7 (High Speed)" },
-    { "cornerNumber": 8, "distance": 2300, "type": "right", "name": "Turn 8" },
-    { "cornerNumber": 9, "distance": 2600, "type": "left", "name": "Turn 9" },
-    { "cornerNumber": 10, "distance": 2900, "type": "right", "name": "Turn 10" },
-    { "cornerNumber": 11, "distance": 3400, "type": "right", "name": "Turn 11 (Second Snail Entry)" },
-    { "cornerNumber": 12, "distance": 3650, "type": "right", "name": "Turn 12" },
-    { "cornerNumber": 13, "distance": 3900, "type": "right", "name": "Turn 13 (Second Snail Exit)" },
-    { "cornerNumber": 14, "distance": 5100, "type": "right", "name": "Turn 14 (Hairpin)" },
-    { "cornerNumber": 15, "distance": 5250, "type": "left", "name": "Turn 15" },
-    { "cornerNumber": 16, "distance": 5380, "type": "left", "name": "Turn 16 (Last Corner)" }
+    {
+      "cornerNumber": 1,
+      "distance": 350,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 2,
+      "distance": 650,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 3,
+      "distance": 900,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 4,
+      "distance": 1100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 5,
+      "distance": 1350,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 6,
+      "distance": 1700,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 7,
+      "distance": 2000,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 8,
+      "distance": 2300,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 9,
+      "distance": 2600,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 10,
+      "distance": 2900,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 11,
+      "distance": 3400,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 12,
+      "distance": 3650,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 13,
+      "distance": 3900,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 14,
+      "distance": 5100,
+      "type": "right",
+      "name": null
+    },
+    {
+      "cornerNumber": 15,
+      "distance": 5250,
+      "type": "left",
+      "name": null
+    },
+    {
+      "cornerNumber": 16,
+      "distance": 5380,
+      "type": "left",
+      "name": null
+    }
   ],
   "qualifying": {
     "year": 2025,
@@ -38,8 +141,14 @@
       "time": "1:30.641"
     },
     "topSpeeds": {
-      "fastest": { "driver": "Kimi Antonelli", "speed": 336 },
-      "range": [327, 336]
+      "fastest": {
+        "driver": "Kimi Antonelli",
+        "speed": 336
+      },
+      "range": [
+        327,
+        336
+      ]
     }
   },
   "sprint": {
@@ -54,9 +163,21 @@
       "team": "Ferrari"
     },
     "sprintPodium": [
-      { "position": 1, "driver": "Lewis Hamilton", "team": "Ferrari" },
-      { "position": 2, "driver": "Oscar Piastri", "team": "McLaren" },
-      { "position": 3, "driver": "Max Verstappen", "team": "Red Bull" }
+      {
+        "position": 1,
+        "driver": "Lewis Hamilton",
+        "team": "Ferrari"
+      },
+      {
+        "position": 2,
+        "driver": "Oscar Piastri",
+        "team": "McLaren"
+      },
+      {
+        "position": 3,
+        "driver": "Max Verstappen",
+        "team": "Red Bull"
+      }
     ]
   },
   "race": {
@@ -72,9 +193,21 @@
       "note": "Hamilton set 1:35.069 on L41 but was disqualified"
     },
     "podium": [
-      { "position": 1, "driver": "Oscar Piastri", "team": "McLaren" },
-      { "position": 2, "driver": "Lando Norris", "team": "McLaren" },
-      { "position": 3, "driver": "George Russell", "team": "Mercedes" }
+      {
+        "position": 1,
+        "driver": "Oscar Piastri",
+        "team": "McLaren"
+      },
+      {
+        "position": 2,
+        "driver": "Lando Norris",
+        "team": "McLaren"
+      },
+      {
+        "position": 3,
+        "driver": "George Russell",
+        "team": "Mercedes"
+      }
     ]
   },
   "pirelliRatings": {
@@ -88,4 +221,3 @@
     "downforce": 3
   }
 }
-

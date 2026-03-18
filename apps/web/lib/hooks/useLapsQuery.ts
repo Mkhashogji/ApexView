@@ -10,6 +10,7 @@ export function useLapsQuery(sessionId: string, drivers: string[]) {
     queryKey: queryKeys.laps.list(sessionId, drivers),
     queryFn: () => fetchLaps(sessionId, drivers),
     enabled: Boolean(sessionId && drivers.length > 0),
+    staleTime: Infinity,
     placeholderData: keepPreviousData,
   })
 }

@@ -1,5 +1,7 @@
 'use client'
 
+import { useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import type { SeasonStats } from '@/app/page'
 import HeroSection from '@/components/home/HeroSection'
 import FeatureCard from '@/components/home/FeatureCard'
@@ -11,7 +13,7 @@ const FEATURE_CARDS = [
     href: '/qualifying',
     title: 'Qualifying',
     question: 'Who was genuinely fastest over a single lap, and why?',
-    capabilities: ['Lap Deltas', 'Sector Breakdown', 'AI Technique Profiles'],
+    capabilities: ['Lap Deltas', 'Sector Breakdown', 'Technique Profiles'],
   },
   {
     href: '/race',
@@ -38,6 +40,22 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ seasonStats }: HomeContentProps) {
+  const searchParams = useSearchParams()
+
+  /**
+   * Build feature card href, carrying round/season so the user's
+   * active weekend selection persists when navigating from Home.
+   */
+  const buildCardHref = useCallback((href: string): string => {
+    const round = searchParams.get('round')
+    const season = searchParams.get('season')
+    if (!round && !season) return href
+    const params = new URLSearchParams()
+    if (season) params.set('season', season)
+    if (round) params.set('round', round)
+    return `${href}?${params.toString()}`
+  }, [searchParams])
+
   return (
     <div className="space-y-16">
       {/* Section 1: Hero — animates first, no delay */}
@@ -53,7 +71,7 @@ export default function HomeContent({ seasonStats }: HomeContentProps) {
             {FEATURE_CARDS.map((card) => (
               <FeatureCard
                 key={card.href}
-                href={card.href}
+                href={buildCardHref(card.href)}
                 title={card.title}
                 question={card.question}
                 capabilities={card.capabilities as unknown as string[]}

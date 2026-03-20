@@ -20,6 +20,7 @@ import { SectorCards } from '@/components/panels/SectorCards'
 import { ScalingMetadataPanel } from '@/components/panels/ScalingMetadataPanel'
 import { CornerBreakdownPanel } from '@/components/panels/CornerBreakdownPanel'
 import { PerformanceInsightsPanel } from '@/components/panels/PerformanceInsightsPanel'
+import { ErrorBoundary } from '@/components/race/ErrorBoundary'
 
 // Types
 import { Telemetry, QualifyingSessionPart, DeltaData, InsightMode } from '@/../../packages/models/src/types'
@@ -242,117 +243,129 @@ export function QualifyingContent() {
             {/* Telemetry Trace + Sector Breakdown Row */}
             <div className="flex flex-col xl:flex-row gap-6">
               {/* Telemetry Chart — loads when telemetry + track data ready */}
-              <div className="flex-1 card-panel min-w-0">
-                <h2 className="card-panel-header">Telemetry Trace</h2>
-                {(isTelemetryLoading || isTrackLoading) && !telemetryData ? (
+              <ErrorBoundary key={`telemetry-${sessionId}`} panelName="Telemetry Trace">
+                <div className="flex-1 card-panel min-w-0">
+                  <h2 className="card-panel-header">Telemetry Trace</h2>
+                  {(isTelemetryLoading || isTrackLoading) && !telemetryData ? (
+                    <div className="h-96 skeleton rounded-lg" />
+                  ) : isTelemetryError ? (
+                    <div className="h-96 flex items-center justify-center text-red-400 text-sm">
+                      Failed to load telemetry.{' '}
+                      <button onClick={() => refetchTelemetry()} className="underline ml-1">Retry</button>
+                    </div>
+                  ) : telemetryData && trackData ? (
+                    <div className={`transition-opacity duration-300 ${isTelemetryPlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
+                      <TelemetryLine
+                        telemetryData={telemetryMap}
+                        selectedDrivers={selectedDrivers}
+                        drsZones={trackData?.drsZones ?? []}
+                        corners={trackData?.corners ?? []}
+                        trackLength={trackData?.length ?? undefined}
+                        onRangeChange={handleChartRangeChange}
+                        xRange={chartXRange}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-96 flex items-center justify-center text-gray-500 text-sm">
+                      Waiting for data...
+                    </div>
+                  )}
+                </div>
+              </ErrorBoundary>
+
+              {/* Sector Breakdown — loads when sectors data ready */}
+              <ErrorBoundary key={`sectors-${sessionId}`} panelName="Sector Breakdown">
+                <div className="xl:w-80 xl:flex-shrink-0 card-panel">
+                  <h2 className="card-panel-header">Sector Breakdown</h2>
+                  {isSectorsLoading && !sectorsData ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-8 skeleton rounded" />
+                      ))}
+                    </div>
+                  ) : isSectorsError ? (
+                    <div className="text-red-400 text-sm py-4">
+                      Failed to load sectors.{' '}
+                      <button onClick={() => refetchSectors()} className="underline ml-1">Retry</button>
+                    </div>
+                  ) : (
+                    <div className={`transition-opacity duration-300 ${isSectorsPlaceholder ? 'opacity-50' : ''}`}>
+                      <SectorCards
+                        sectorData={sectorsData ?? []}
+                        referenceDriver={referenceDriver}
+                      />
+                    </div>
+                  )}
+                </div>
+              </ErrorBoundary>
+            </div>
+
+            {/* Delta to Reference */}
+            <ErrorBoundary key={`delta-${sessionId}`} panelName="Delta to Reference">
+              <div className="card-panel">
+                <h2 className="card-panel-header">
+                  Delta to Reference ({referenceDriver})
+                </h2>
+                {(isPerformanceLoading || isTrackLoading) && !performanceData ? (
                   <div className="h-96 skeleton rounded-lg" />
-                ) : isTelemetryError ? (
+                ) : isPerformanceError ? (
                   <div className="h-96 flex items-center justify-center text-red-400 text-sm">
-                    Failed to load telemetry.{' '}
-                    <button onClick={() => refetchTelemetry()} className="underline ml-1">Retry</button>
+                    Failed to load delta data: {(performanceError as Error)?.message}
                   </div>
-                ) : telemetryData && trackData ? (
-                  <div className={`transition-opacity duration-300 ${isTelemetryPlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
-                    <TelemetryLine
-                      telemetryData={telemetryMap}
-                      selectedDrivers={selectedDrivers}
-                      drsZones={trackData?.drsZones ?? []}
-                      corners={trackData?.corners ?? []}
+                ) : (
+                  <div className={`transition-opacity duration-300 ${isPerformancePlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
+                    <DeltaPlot
+                      deltaData={transformedDeltaData}
+                      referenceDriver={referenceDriver}
+                      sectors={trackData?.sectors ?? []}
                       trackLength={trackData?.length ?? undefined}
                       onRangeChange={handleChartRangeChange}
                       xRange={chartXRange}
                     />
                   </div>
-                ) : (
-                  <div className="h-96 flex items-center justify-center text-gray-500 text-sm">
-                    Waiting for data...
-                  </div>
                 )}
               </div>
+            </ErrorBoundary>
 
-              {/* Sector Breakdown — loads when sectors data ready */}
-              <div className="xl:w-80 xl:flex-shrink-0 card-panel">
-                <h2 className="card-panel-header">Sector Breakdown</h2>
-                {isSectorsLoading && !sectorsData ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="h-8 skeleton rounded" />
-                    ))}
-                  </div>
-                ) : isSectorsError ? (
-                  <div className="text-red-400 text-sm py-4">
-                    Failed to load sectors.{' '}
-                    <button onClick={() => refetchSectors()} className="underline ml-1">Retry</button>
-                  </div>
-                ) : (
-                  <div className={`transition-opacity duration-300 ${isSectorsPlaceholder ? 'opacity-50' : ''}`}>
-                    <SectorCards
-                      sectorData={sectorsData ?? []}
-                      referenceDriver={referenceDriver}
-                    />
-                  </div>
-                )}
+            {/* Phase 2: Scaled Delta Analysis Metadata — visibility trigger for analysis query */}
+            <ErrorBoundary key={`scaling-${sessionId}`} panelName="Scaled Delta Analysis">
+              <div ref={analysisPanelRef} className="content-defer">
+                <ScalingMetadataPanel
+                  results={performanceData?.results ?? []}
+                  referenceDriver={referenceDriver}
+                  isLoading={isPerformanceLoading}
+                  error={isPerformanceError ? (performanceError as Error)?.message : undefined}
+                />
               </div>
-            </div>
-
-            {/* Delta to Reference — visibility trigger for analysis query */}
-            <div ref={analysisPanelRef} className="card-panel">
-              <h2 className="card-panel-header">
-                Delta to Reference ({referenceDriver})
-              </h2>
-              {(isPerformanceLoading || isTrackLoading) && !performanceData ? (
-                <div className="h-96 skeleton rounded-lg" />
-              ) : isPerformanceError ? (
-                <div className="h-96 flex items-center justify-center text-red-400 text-sm">
-                  Failed to load delta data: {(performanceError as Error)?.message}
-                </div>
-              ) : (
-                <div className={`transition-opacity duration-300 ${isPerformancePlaceholder || isTrackPlaceholder ? 'opacity-50' : ''}`}>
-                  <DeltaPlot
-                    deltaData={transformedDeltaData}
-                    referenceDriver={referenceDriver}
-                    sectors={trackData?.sectors ?? []}
-                    trackLength={trackData?.length ?? undefined}
-                    onRangeChange={handleChartRangeChange}
-                    xRange={chartXRange}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Phase 2: Scaled Delta Analysis Metadata — fed from unified analysis response */}
-            <div className="content-defer">
-              <ScalingMetadataPanel
-                results={performanceData?.results ?? []}
-                referenceDriver={referenceDriver}
-                isLoading={isPerformanceLoading}
-                error={isPerformanceError ? (performanceError as Error)?.message : undefined}
-              />
-            </div>
+            </ErrorBoundary>
 
             {/* Phase 3: Corner Analysis Breakdown — fed from unified analysis response */}
-            <div className="content-defer">
-              <CornerBreakdownPanel
-                results={performanceData?.results ?? []}
-                referenceDriver={referenceDriver}
-                isLoading={isPerformanceLoading}
-                error={isPerformanceError ? (performanceError as Error)?.message : undefined}
-              />
-            </div>
+            <ErrorBoundary key={`corners-${sessionId}`} panelName="Corner Analysis">
+              <div className="content-defer">
+                <CornerBreakdownPanel
+                  results={performanceData?.results ?? []}
+                  referenceDriver={referenceDriver}
+                  isLoading={isPerformanceLoading}
+                  error={isPerformanceError ? (performanceError as Error)?.message : undefined}
+                />
+              </div>
+            </ErrorBoundary>
 
             {/* Performance Insights — Phase 7, fed from unified analysis response */}
-            <div className="content-defer">
-              <PerformanceInsightsPanel
-                data={performanceData}
-                referenceDriver={referenceDriver}
-                compareDrivers={compareDrivers}
-                isLoading={isPerformanceLoading}
-                isError={isPerformanceError}
-                error={performanceError}
-                mode={insightMode}
-                onModeChange={setInsightMode}
-              />
-            </div>
+            <ErrorBoundary key={`insights-${sessionId}`} panelName="Performance Insights">
+              <div className="content-defer">
+                <PerformanceInsightsPanel
+                  data={performanceData}
+                  referenceDriver={referenceDriver}
+                  compareDrivers={compareDrivers}
+                  isLoading={isPerformanceLoading}
+                  isError={isPerformanceError}
+                  error={performanceError}
+                  mode={insightMode}
+                  onModeChange={setInsightMode}
+                />
+              </div>
+            </ErrorBoundary>
           </>
         ) : (
           <div className="card-panel text-center py-12">

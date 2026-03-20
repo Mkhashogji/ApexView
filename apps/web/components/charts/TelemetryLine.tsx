@@ -7,7 +7,7 @@ import Plot from './PlotlyLazy'
 import { useState, useMemo, useCallback } from 'react'
 
 /** Available telemetry channels */
-type TelemetryChannel = 'speed' | 'throttle' | 'brake' | 'gear' | 'rpm' | 'drs'
+type TelemetryChannel = 'speed' | 'throttle' | 'brake' | 'gear' | 'rpm'
 
 /** Channel configuration */
 interface ChannelConfig {
@@ -41,11 +41,10 @@ const CHANNEL_CONFIG: Record<TelemetryChannel, ChannelConfig> = {
   brake: { label: 'Brake', unit: '%', range: [0, 100] },
   gear: { label: 'Gear', unit: '', range: [0, 9] },
   rpm: { label: 'RPM', unit: '', range: [0, 15000] },
-  drs: { label: 'DRS', unit: '', range: [-0.5, 1.5] },
 }
 
 /** All available channels */
-const ALL_CHANNELS: TelemetryChannel[] = ['speed', 'throttle', 'brake', 'gear', 'rpm', 'drs']
+const ALL_CHANNELS: TelemetryChannel[] = ['speed', 'throttle', 'brake', 'gear', 'rpm']
 
 /** Primary channels shown by default */
 const PRIMARY_CHANNELS: TelemetryChannel[] = ['speed', 'throttle', 'brake']
@@ -97,7 +96,6 @@ export function TelemetryLine({
     return ALL_CHANNELS.filter(channel => {
       switch (channel) {
         case 'rpm': return data.rpm && Array.isArray(data.rpm) && data.rpm.length > 0
-        case 'drs': return data.drs && Array.isArray(data.drs) && data.drs.length > 0
         case 'gear': return data.gear && Array.isArray(data.gear) && data.gear.length > 0
         default: return true
       }
@@ -128,7 +126,6 @@ export function TelemetryLine({
           case 'brake': yData = data.brake || []; break
           case 'gear': yData = data.gear || []; break
           case 'rpm': yData = data.rpm || []; break
-          case 'drs': yData = data.drs || []; break
         }
 
         // Get line style based on T-Cam (solid for black, dash for yellow when teammates selected)
@@ -296,7 +293,7 @@ export function TelemetryLine({
             yaxis: {
               title: { text: `${config.label}${config.unit ? ` (${config.unit})` : ''}`, standoff: 10 },
               gridcolor: '#374151',
-              zeroline: activeChannel === 'drs',
+              zeroline: false,
               zerolinecolor: '#4B5563',
               range: config.range,
             },
@@ -352,7 +349,7 @@ export function TelemetryLine({
           </div>
           <div>
             <span className="text-gray-400 font-medium">Channels: </span>
-            Speed (km/h) = velocity throughout the lap. Throttle/Brake (0-100%) = driver inputs. Gear (1-8). RPM = engine revolutions. DRS = 1 when open, 0 when closed.
+            Speed (km/h) = velocity throughout the lap. Throttle/Brake (0-100%) = driver inputs. Gear (1-8). RPM = engine revolutions.
           </div>
           <div>
             <span className="text-gray-400 font-medium">DRS zones: </span>

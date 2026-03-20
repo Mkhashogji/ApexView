@@ -6,7 +6,6 @@
 export { useSessionsQuery } from './useSessionsQuery'
 export { useLapsQuery } from './useLapsQuery'
 export { useTelemetryQuery } from './useTelemetryQuery'
-export { useDeltaQuery } from './useDeltaQuery'
 export { useSectorsQuery } from './useSectorsQuery'
 
 // Track data hooks

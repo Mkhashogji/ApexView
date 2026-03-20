@@ -1,85 +1,118 @@
-feat: corner names, qualifying stability, weekend persistence, interpretability guides, transparency page, analysis service rename
+fix(qualifying): resolve three post-implementation issues from
+performance diagnostic
 
---- Corner Names (24 circuit files) ---
+Following the main Qualifying page performance implementation
+(analysis consolidation, visibility deferral, staleTime Infinity),
+a post-implementation diagnostic identified three issues that
+needed to be addressed. This commit resolves all three.
 
-Added validated corner names to all 24 track JSON files. The Corner
-Analysis component displayed dashes because the data files had no name
-values — the rendering code was already built, the gap was in the data.
-Five circuits had unverified names removed, seven were populated from
-scratch, twelve were audited and corrected. Five circuits required
-physical feature mapping (matching corners by type and distance rather
-than turn number when sources use different numbering for the same
-physical location).
+---
 
---- Qualifying — Race Condition Fix ---
+Fix 1: Move the scroll-trigger to the correct position on the page
 
-Fixed a bug where Corner Analysis did not update when switching GPs.
-Two hooks ran concurrently: one fetching track corners, one using those
-corners to request analysis. Both used keepPreviousData (shows old data
-while loading to prevent blank screens), so the analysis hook received
-stale corners from the previous circuit and sent them to the backend.
-Fix: the analysis query now waits until track data is genuinely fresh
-via React Query's isPlaceholderData flag.
+Background:
+The previous performance implementation added a feature that
+defers the heavy analysis request until the user scrolls down
+to the analysis section. The idea is that most users come to
+the Qualifying page to look at the telemetry chart and sector
+breakdown at the top — if they never scroll to the analysis
+panels below, there is no reason to run a 6-7 second computation
+on their behalf. The analysis request should only start when the
+user is actually approaching that section.
 
---- Weekend Selector — Persistence Across All Pages ---
+The problem:
+The scroll detection point was attached to the wrong element.
+It was positioned at approximately 779 pixels from the top of
+the page — which happens to be within the visible area of most
+desktop screens (typically 900-1440 pixels tall). Because the
+detection point was already on screen when the page loaded, the
+deferred analysis request was firing immediately on every desktop
+load, making the deferral completely ineffective for the majority
+of users. The fix only worked as intended on small screens and
+mobile devices.
 
-The Race Weekend Selector allows users to choose which GP weekend to
-analyse. The selected round and season are stored as URL search
-parameters (e.g. ?round=1&season=2025), and a shared mechanism in the
-Navigation component forwards these parameters when the user clicks
-between pages, so the selection persists during navigation.
+What was changed:
+The scroll detection point was moved from the Delta chart panel
+(~779px from top) to the Scaled Delta Analysis panel (~1350px
+from top). This position is genuinely below the visible area on
+all standard desktop displays, meaning the analysis request now
+correctly waits until the user scrolls into the below-fold
+section before firing. A single attribute was moved from one
+HTML element to another — no logic, hooks, or conditions were
+changed, only the placement of the trigger point.
 
-This was implemented first for the Qualifying, Race, and Practice
-pages, which share the same pattern of reading round/season from the
-URL to load session-specific data. However, the Home page and Track
-Intelligence page were not included in this forwarding set, meaning
-the parameters were stripped when navigating to either page, causing
-the selector to reset to the default Abu Dhabi GP.
+Impact:
+Desktop users who load the Qualifying page to view the telemetry
+chart and sector breakdown no longer trigger the 6-7 second
+analysis request at all. The deferral now works as intended
+across all viewport sizes.
 
-Fix: expanded the ANALYSIS_PAGES set to include all five pages (Home,
-Qualifying, Race, Practice, Track Intelligence). Updated the logo
-link in the navigation bar to also forward parameters. On the Home
-page, the feature cards (which link to each analytical page) were
-updated to read the current URL parameters and append them to their
-destination links, ensuring the selection carries through even when
-navigating via the Home page rather than the navigation bar.
+---
 
---- Qualifying — Interpretability Guides ---
+Fix 2: Remove unused code left behind by the consolidation
 
-Added "How to read this chart" sections to all seven Qualifying
-components, matching the pattern already established on Race and
-Practice pages. Each guide explains purpose, interpretation, and
-limitations. All claims verified against production code — six
-corrections applied where descriptions did not match the actual
-algorithm (e.g. confidence labels, cause thresholds, delta semantics).
+Background:
+The main performance implementation consolidated three separate
+analysis service calls into one. Before that work, the page used
+a dedicated hook called useDeltaQuery to fetch delta analysis
+data on its own. When the consolidation was implemented, delta
+data was folded into the single unified analysis response, making
+the standalone useDeltaQuery hook redundant.
 
---- Transparency & Attribution Page ---
+The problem:
+The useDeltaQuery hook file and its export were not removed as
+part of the consolidation. The hook continued to exist in the
+codebase — with a cache setting of 30 seconds, inconsistent with
+the Infinity policy applied to all active qualifying hooks — even
+though no component in the application was using it. Unused code
+that is still exported and visible creates unnecessary confusion
+about what the codebase actually uses.
 
-New /transparency route linked from the footer. Six sections: project
-disclaimer, data sources and limitations, analysis methodology (with
-verified thresholds from production code), privacy (no data collection,
-no cookies, no tracking), attribution, and intellectual property. Built
-as a Server Component — static text only, no client-side JavaScript.
+What was changed:
+The useDeltaQuery.ts file was deleted and its corresponding
+export was removed from the hooks barrel file. A full search
+across the codebase confirmed zero remaining references before
+deletion. TypeScript compilation confirmed no component depended
+on it.
 
---- Analysis Service Rename ---
+Impact:
+The codebase accurately reflects what is actually in use. No
+component, page, or feature is affected — the hook was genuinely
+dead code.
 
-Renamed "ML Service" to "Analysis Service" across the entire codebase.
-The rename applies specifically to the telemetry analysis pipeline
-(the service responsible for qualifying analysis: delta computation,
-corner detection, technique profiling, and insight generation). That
-pipeline's implementation consists of physics-based computation,
-rule-based signal processing, descriptive statistics, and template-based
-text generation — methods that do not constitute machine learning by
-standard technical definition, despite being originally labelled as
-such.
+---
 
-The broader codebase does include statistical modelling: the Race
-page's tyre degradation component uses linear regression
-(scipy.stats.linregress) to fit a model of tyre age against lap time,
-producing a degradation rate and R² goodness-of-fit metric. That
-component resides in the API service and was not part of this rename
-— it was already accurately described.
+Fix 3: Protect each panel from isolated failures
 
-The rename covers folders, Docker service, API routes, env vars, hooks,
-types, UI badges, loggers, and ~35 documentation files. No logic or
-behaviour changes — naming corrections only.
+Background:
+When a software component encounters an unexpected error — such
+as a network failure, an unexpected data format, or a null value
+where a value was expected — it can crash not just itself but
+everything around it. Without a protective wrapper, a single
+failing panel on the Qualifying page would cause the entire page
+to go blank, showing nothing to the user even though the other
+five panels loaded successfully.
+
+The Race page already solved this problem using a pattern called
+an ErrorBoundary — a wrapper that catches failures in the
+component it contains and shows a controlled fallback message
+instead of crashing the whole page. The Qualifying page was
+missing this protection, which was identified as a pre-existing
+gap in the diagnostic.
+
+What was changed:
+All six qualifying panels (Telemetry, Sectors, Delta, Scaled
+Delta Analysis, Corner Analysis, and Performance Insights) were
+wrapped in ErrorBoundary components using the exact same pattern
+and import path used by the Race page. Each boundary also
+includes a session identifier key so that when the user switches
+to a different Grand Prix, any error state from the previous
+round is automatically cleared and the panel attempts to load
+fresh data for the new selection.
+
+Impact:
+A failure in any one panel now shows a contained amber warning
+message ("Something went wrong rendering this panel") without
+affecting the other five panels. The page remains functional and
+informative even in partial failure scenarios. This matches the
+resilience behaviour already in place on the Race page.

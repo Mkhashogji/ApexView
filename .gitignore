@@ -26,12 +26,16 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # FastF1 Cache
 data/cache/*
 !data/cache/.gitkeep
 fastf1_cache/
 **/fastf1_cache/
+*.parquet
+*.ff1pkl
 
 # Environment
 .env
@@ -41,9 +45,10 @@ fastf1_cache/
 .env.production.local
 !.env.example
 
-# IDE
+# IDE / Editor / AI agent settings
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -72,8 +77,8 @@ docker-compose.override.yml
 *.lock
 *.bak
 
-# Test files (temporary)
-test_*.json
+# Commit message scratchpad (local workflow)
+commit_message.txt
 
 # Windows reserved names (prevent accidental creation)
 nul

@@ -1,0 +1,37 @@
+G0: A/B harness, golden contract, known-deviations registry, gate evidence
+
+A substrate change of this kind needs a permanent oracle, not a one-off check.
+The A/B harness runs the fixed fixture set (Shanghai 2025 Q3 PIA/RUS, Monaco
+2025 Q3 NOR/LEC) through both acquisition heads and asserts every Phase 5
+expectation programmatically: schema identity against golden snapshots, legacy
+byte-identity (flag-isolation proof), exact delta-grid closure, brake-shift
+bounds against the LOCAL native sample spacing, registration medians, and the
+gap law. Acceptances are encoded in a machine-read registry the harness
+enforces: accepted deviations are always rendered (never silently green), hard
+failure if one grows beyond its recorded bound, hard failure on anything
+unregistered, and a dedicated exit code while owner-pending open findings
+exist. Tamper-proofing is verified: deregistering an entry flips the run to
+hard failure.
+
+STOP-3 (Shanghai 86ms lap-breakdown closure) was accepted under fork 1 of the
+conditional sign-off after a per-zone delta ledger attributed the full
+residual within 5ms to two pre-existing excluded-zone mechanisms (T15
+zone_too_small stale delta +51.7ms; uncovered head segment -34.1ms). STOP-4
+(Monaco brake shifts) was accepted for the three gap-overlapped corners
+(T9 Tunnel dropout, T11, T14); T10/T17 are real braking corners outside the
+acceptance and remain OPEN findings pending owner ruling.
+
+Technical content:
+- tools/ab_harness/: metrics.py (shared metric computation), run_ab.py
+  (runner + assertions + KNOWN-DEVIATION/OPEN-FINDING reporting + exit
+  semantics 0/1/3), known_deviations.json (STOP-3, STOP-4 corners 9/11/14
+  with bounds; OPEN-1/OPEN-2 carried as non-accepted), README.md
+- diagnostics/g0/: Phase 0 gate report, golden legacy snapshots + exact
+  request bodies, native-head captures, baseline metrics, A/B reports,
+  STOP-3 ledger (script + output), STOP-4 classification (script + output),
+  capture/extraction scripts, G0_REPORT.md and CONTINUATION_LOG.md
+- docs/architecture/g0-honest-acquisition.md: design note (gap-law-vs-closure
+  decision, provenance schema, legacy-flag removal plan)
+- diagnostics/granularity/: the read-only diagnostic that is G0's evidence base
+- warning headers on apps/analysis_service/scripts/{validate_v2,
+  diagnose_brake_detection}.py (they still run on the merged substrate)

@@ -117,6 +117,13 @@ class CornerResult:
     delta_change: float  # seconds, positive = compare driver slower
     cause: CauseType
     confidence: ConfidenceLevel
+    # G0 (Honest Acquisition): set by the performance orchestrator when this
+    # corner's analysis zone overlaps a native-acquisition gap (car-stream
+    # dt > 3x median, strict). INTERNAL ONLY at G0 — deliberately not
+    # serialized into API responses (_corner_result_to_dict does not emit it;
+    # the response schema is frozen against the golden contract). Detection
+    # and confidence logic do not consume it at G0.
+    gap_flag: bool = False
 
 
 @dataclass

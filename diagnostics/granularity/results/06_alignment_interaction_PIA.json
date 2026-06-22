@@ -1,0 +1,12 @@
+{
+  "session": "2025_China_Q3",
+  "driver": "PIA",
+  "real_samples": 686,
+  "grid_points": 1000,
+  "phantom_density_ratio": 1.4577259475218658,
+  "pct_interpolated": 31.399999999999995,
+  "track_len_m": 5397.475667286888,
+  "real_spacing_m": 7.879526521586698,
+  "grid_spacing_m": 5.402878545832721,
+  "real_samples_per_80m_phase": 10.152894311711819
+}

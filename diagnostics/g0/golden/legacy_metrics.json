@@ -1,0 +1,842 @@
+{
+  "source": "golden/legacy",
+  "fixtures": {
+    "shanghai": {
+      "session_id": "2025_2_Qualifying",
+      "reference_driver": "PIA",
+      "compare_driver": "RUS",
+      "circuit": "Shanghai International Circuit",
+      "track_length": 5451.0,
+      "telemetry": {
+        "PIA": {
+          "driver": "PIA",
+          "lap_number": 19,
+          "lap_time": 90.641,
+          "n_samples": 686,
+          "total_distance_m": 5396.846208091816,
+          "median_spacing_m": 6.530466365786651
+        },
+        "RUS": {
+          "driver": "RUS",
+          "lap_number": 21,
+          "lap_time": 90.723,
+          "n_samples": 694,
+          "total_distance_m": 5409.537338448035,
+          "median_spacing_m": 6.287896406643085
+        }
+      },
+      "closure": {
+        "official_gap": 0.08199999999999363,
+        "delta_grid_final": 0.08199999999999363,
+        "delta_grid_closure_error": 0.0,
+        "scaling_factor": 1.0,
+        "scaling_confidence": 1.0,
+        "lap_breakdown": {
+          "corner_total": 0.012761993602204647,
+          "straight_total": 0.06923800639778899,
+          "reconciliation_error": 0.0,
+          "reconciliation_valid": true,
+          "track_coverage": 0.6485949175313189
+        }
+      },
+      "corners": [
+        {
+          "corner_number": 1,
+          "name": null,
+          "apex_distance_nominal": 350.0,
+          "brake_distance": 24.935758963745855,
+          "zone_start": 0.0,
+          "zone_end": 313.26060671977274,
+          "delta_change": 0.055392790826691296,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.02674927359520284,
+            "apex": 0.028643517231488457,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 283.4570636156567,
+          "ref_min_speed_location_m": 0.62945919507225,
+          "local_sample_gap_m": 6.555555555555557,
+          "comp_min_speed_kmh": 281.6249984,
+          "comp_min_speed_location_m": 0.19429568367227956
+        },
+        {
+          "corner_number": 2,
+          "name": null,
+          "apex_distance_nominal": 650.0,
+          "brake_distance": 468.40083333333325,
+          "zone_start": 440.6266527013613,
+          "zone_end": 775.0,
+          "delta_change": 0.3367914814682168,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.018930696182340098,
+            "apex": 0.03255799572841303,
+            "exit": 0.2853027895574637
+          },
+          "ref_min_speed_kmh": 103.0,
+          "ref_min_speed_location_m": 769.1786111111112,
+          "local_sample_gap_m": 9.075103610059728,
+          "comp_min_speed_kmh": 96.0,
+          "comp_min_speed_location_m": 772.3969444444443
+        },
+        {
+          "corner_number": 3,
+          "name": null,
+          "apex_distance_nominal": 900.0,
+          "brake_distance": 595.1341666666666,
+          "zone_start": 775.0,
+          "zone_end": 906.2960475877758,
+          "delta_change": -0.1422175398495535,
+          "cause": "braking",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": -0.161407943810714,
+            "apex": 0.019190403961160507,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 97.0,
+          "ref_min_speed_location_m": 894.166388888889,
+          "local_sample_gap_m": 9.466666666666697,
+          "comp_min_speed_kmh": 95.0,
+          "comp_min_speed_location_m": 899.6113888888887
+        },
+        {
+          "corner_number": 4,
+          "name": null,
+          "apex_distance_nominal": 1100.0,
+          "brake_distance": 830.7330555555558,
+          "zone_start": 906.2960475877758,
+          "zone_end": 1056.1663888888888,
+          "delta_change": -0.07819736199629204,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.051903902963587656,
+            "apex": -0.026293459032704386,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 101.92499839999999,
+          "ref_min_speed_location_m": 906.2960475877758,
+          "local_sample_gap_m": 4.276251929509385,
+          "comp_min_speed_kmh": 99.0,
+          "comp_min_speed_location_m": 908.4113888888886
+        },
+        {
+          "corner_number": 5,
+          "name": null,
+          "apex_distance_nominal": 1350.0,
+          "brake_distance": 1015.2798980201945,
+          "zone_start": 1056.1663888888888,
+          "zone_end": 1312.169147980777,
+          "delta_change": 0.006984158548955871,
+          "cause": "braking",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.005658852914759843,
+            "apex": 0.0013253056341960279,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 218.0,
+          "ref_min_speed_location_m": 1056.1663888888888,
+          "local_sample_gap_m": 6.2180659267284,
+          "comp_min_speed_kmh": 220.0,
+          "comp_min_speed_location_m": 1065.2402777777777
+        },
+        {
+          "corner_number": 6,
+          "name": null,
+          "apex_distance_nominal": 1700.0,
+          "brake_distance": 1430.9761111111115,
+          "zone_start": 1410.9761111111115,
+          "zone_end": 1667.1266666666675,
+          "delta_change": 0.04693777903384172,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.07633268588303446,
+            "apex": -0.029394906849192742,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 82.0,
+          "ref_min_speed_location_m": 1568.7822222222228,
+          "local_sample_gap_m": 10.250793853874484,
+          "comp_min_speed_kmh": 80.0,
+          "comp_min_speed_location_m": 1577.0761111111108
+        },
+        {
+          "corner_number": 7,
+          "name": null,
+          "apex_distance_nominal": 2000.0,
+          "brake_distance": 1654.6600000000008,
+          "zone_start": 1667.1266666666675,
+          "zone_end": 1954.5399130071778,
+          "delta_change": -0.010772364250127564,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.020883127044524274,
+            "apex": 0.01011076279439671,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 187.0,
+          "ref_min_speed_location_m": 1667.1266666666675,
+          "local_sample_gap_m": 5.150528898419225,
+          "comp_min_speed_kmh": 178.74545454545455,
+          "comp_min_speed_location_m": 1668.184536690982
+        },
+        {
+          "corner_number": 8,
+          "name": null,
+          "apex_distance_nominal": 2300.0,
+          "brake_distance": 2198.9008333333345,
+          "zone_start": 2178.9008333333345,
+          "zone_end": 2371.6183333333342,
+          "delta_change": 0.15499658494472113,
+          "cause": "apex",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.0255107423105691,
+            "apex": 0.09798365890038852,
+            "exit": 0.03150218373376351
+          },
+          "ref_min_speed_kmh": 194.0,
+          "ref_min_speed_location_m": 2345.485000000001,
+          "local_sample_gap_m": 8.68458173351928,
+          "comp_min_speed_kmh": 190.0,
+          "comp_min_speed_location_m": 2366.6608333333334
+        },
+        {
+          "corner_number": 9,
+          "name": null,
+          "apex_distance_nominal": 2600.0,
+          "brake_distance": 2254.6409706224094,
+          "zone_start": 2371.6183333333342,
+          "zone_end": 2566.7090185266984,
+          "delta_change": 0.2170605566610061,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.12850269790494606,
+            "apex": 0.08855785875606004,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 122.0,
+          "ref_min_speed_location_m": 2515.7627777777793,
+          "local_sample_gap_m": 8.408481672112885,
+          "comp_min_speed_kmh": 115.0,
+          "comp_min_speed_location_m": 2530.9705555555543
+        },
+        {
+          "corner_number": 10,
+          "name": null,
+          "apex_distance_nominal": 2900.0,
+          "brake_distance": 2566.7090185266984,
+          "zone_start": 2566.7090185266984,
+          "zone_end": 2862.196209553521,
+          "delta_change": -0.1817137672552317,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.12231580316498591,
+            "apex": -0.05939796409024578,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 150.6888888888889,
+          "ref_min_speed_location_m": 2566.7090185266984,
+          "local_sample_gap_m": 4.747357655208816,
+          "comp_min_speed_kmh": 142.0,
+          "comp_min_speed_location_m": 2569.3594444444434
+        },
+        {
+          "corner_number": 11,
+          "name": null,
+          "apex_distance_nominal": 3400.0,
+          "brake_distance": 3062.636893171686,
+          "zone_start": 3041.733311306585,
+          "zone_end": 3355.5144444444445,
+          "delta_change": -0.22078020214495042,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.1547100599114284,
+            "apex": -0.3754902620563788,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 99.0,
+          "ref_min_speed_location_m": 3106.9513888888896,
+          "local_sample_gap_m": 5.549914741842258,
+          "comp_min_speed_kmh": 90.0,
+          "comp_min_speed_location_m": 3109.59361111111
+        },
+        {
+          "corner_number": 12,
+          "name": null,
+          "apex_distance_nominal": 3650.0,
+          "brake_distance": 3331.658032427734,
+          "zone_start": 3355.5144444444445,
+          "zone_end": 3604.4606259882535,
+          "delta_change": -0.05617243275759953,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.020252237677260587,
+            "apex": -0.035920195080338946,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 225.0,
+          "ref_min_speed_location_m": 3355.5144444444445,
+          "local_sample_gap_m": 8.088008263822303,
+          "comp_min_speed_kmh": 221.0,
+          "comp_min_speed_location_m": 3360.2072222222205
+        },
+        {
+          "corner_number": 13,
+          "name": null,
+          "apex_distance_nominal": 3900.0,
+          "brake_distance": 3557.2065667348106,
+          "zone_start": 3604.4606259882535,
+          "zone_end": 3851.2726564652135,
+          "delta_change": -0.014625624141353044,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.0063260697370158825,
+            "apex": -0.008299554404337162,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 275.7124992,
+          "ref_min_speed_location_m": 3604.4606259882535,
+          "local_sample_gap_m": 4.823538024208119,
+          "comp_min_speed_kmh": 274.92116260147054,
+          "comp_min_speed_location_m": 3604.5305978677843
+        },
+        {
+          "corner_number": 14,
+          "name": null,
+          "apex_distance_nominal": 5100.0,
+          "brake_distance": 5043.9650875803145,
+          "zone_start": 5019.517222222223,
+          "zone_end": 5157.485193968596,
+          "delta_change": 0.14333094825961212,
+          "cause": "braking",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": 0.22475015213590366,
+            "apex": 0.0036971958247447034,
+            "exit": -0.08511639970103624
+          },
+          "ref_min_speed_kmh": 183.0,
+          "ref_min_speed_location_m": 5128.6180555555575,
+          "local_sample_gap_m": 7.392537079785598,
+          "comp_min_speed_kmh": 180.0,
+          "comp_min_speed_location_m": 5141.111666666668
+        },
+        {
+          "corner_number": 15,
+          "name": null,
+          "apex_distance_nominal": 5250.0,
+          "brake_distance": 5043.9650875803145,
+          "zone_start": 5157.485193968596,
+          "zone_end": 5219.539166666667,
+          "delta_change": -0.12434318109844855,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.04599883924262249,
+            "apex": -0.07834434185582606,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 199.828128,
+          "ref_min_speed_location_m": 5157.485193968596,
+          "local_sample_gap_m": 7.392537079785598,
+          "comp_min_speed_kmh": 190.0,
+          "comp_min_speed_location_m": 5158.000555555556
+        },
+        {
+          "corner_number": 16,
+          "name": null,
+          "apex_distance_nominal": 5380.0,
+          "brake_distance": 5043.9650875803145,
+          "zone_start": 5219.539166666667,
+          "zone_end": 5333.806492411372,
+          "delta_change": -0.11990983264728405,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.04784418790357048,
+            "apex": -0.07206564474371357,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 224.0,
+          "ref_min_speed_location_m": 5219.539166666667,
+          "local_sample_gap_m": 7.392537079785598,
+          "comp_min_speed_kmh": 224.0,
+          "comp_min_speed_location_m": 5226.111666666668
+        }
+      ],
+      "totals": {
+        "total_corner_delta": 0.012761993602204647,
+        "corners_gaining": 9,
+        "corners_losing": 7
+      },
+      "delta_endpoint": {
+        "n_points": 1000,
+        "final_delta": -0.020239365010539245,
+        "note": "raw speed-integration endpoint; no frontend consumer (dead code path, in G0 scope)"
+      }
+    },
+    "monaco": {
+      "session_id": "2025_8_Qualifying",
+      "reference_driver": "NOR",
+      "compare_driver": "LEC",
+      "circuit": "Circuit de Monaco",
+      "track_length": 3337.0,
+      "telemetry": {
+        "NOR": {
+          "driver": "NOR",
+          "lap_number": 26,
+          "lap_time": 69.954,
+          "n_samples": 521,
+          "total_distance_m": 3292.1102145753543,
+          "median_spacing_m": 4.705889172309469
+        },
+        "LEC": {
+          "driver": "LEC",
+          "lap_number": 26,
+          "lap_time": 70.063,
+          "n_samples": 531,
+          "total_distance_m": 3294.137396007401,
+          "median_spacing_m": 4.999482981755136
+        }
+      },
+      "closure": {
+        "official_gap": 0.10900000000000887,
+        "delta_grid_final": 0.10900000000000887,
+        "delta_grid_closure_error": 0.0,
+        "scaling_factor": 1.0,
+        "scaling_confidence": 1.0,
+        "lap_breakdown": {
+          "corner_total": 0.9061144197764728,
+          "straight_total": -0.30472705570225384,
+          "reconciliation_error": 0.49238736407421,
+          "reconciliation_valid": false,
+          "track_coverage": 0.8132991455981307
+        }
+      },
+      "corners": [
+        {
+          "corner_number": 1,
+          "name": "Sainte-D\u00e9vote",
+          "apex_distance_nominal": 200.0,
+          "brake_distance": 65.03576546637646,
+          "zone_start": 45.03576546637646,
+          "zone_end": 204.4013888888889,
+          "delta_change": 0.05989430591564855,
+          "cause": "apex",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": -0.013651393230803943,
+            "apex": 0.0735456991464525,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 121.0,
+          "ref_min_speed_location_m": 183.93472222222223,
+          "local_sample_gap_m": 12.423674106884885,
+          "comp_min_speed_kmh": 115.0,
+          "comp_min_speed_location_m": 197.2183333333333
+        },
+        {
+          "corner_number": 2,
+          "name": "Beau Rivage",
+          "apex_distance_nominal": 450.0,
+          "brake_distance": 111.87123487708035,
+          "zone_start": 204.4013888888889,
+          "zone_end": 405.9303848992885,
+          "delta_change": 0.03920478161946238,
+          "cause": "braking",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.03532314028506997,
+            "apex": 0.0038816413343924078,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 124.0,
+          "ref_min_speed_location_m": 204.4013888888889,
+          "local_sample_gap_m": 7.346910677313787,
+          "comp_min_speed_kmh": 120.0,
+          "comp_min_speed_location_m": 207.88499999999996
+        },
+        {
+          "corner_number": 3,
+          "name": "Massenet",
+          "apex_distance_nominal": 650.0,
+          "brake_distance": 613.6500358972045,
+          "zone_start": 593.6500358972045,
+          "zone_end": 725.0,
+          "delta_change": 0.011852547397736252,
+          "cause": "multiple",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": -0.012083202153534839,
+            "apex": -0.0036047202682142065,
+            "exit": 0.027540469819485297
+          },
+          "ref_min_speed_kmh": 195.0,
+          "ref_min_speed_location_m": 719.6225000000001,
+          "local_sample_gap_m": 10.339130769462145,
+          "comp_min_speed_kmh": 190.0,
+          "comp_min_speed_location_m": 716.5136111111112
+        },
+        {
+          "corner_number": 4,
+          "name": "Casino Square",
+          "apex_distance_nominal": 800.0,
+          "brake_distance": 613.6500358972045,
+          "zone_start": 725.0,
+          "zone_end": 875.0,
+          "delta_change": -0.04115023415182262,
+          "cause": "multiple",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": -0.026117133769010037,
+            "apex": -0.019731605360750415,
+            "exit": 0.004698504977937834
+          },
+          "ref_min_speed_kmh": 159.391304905081,
+          "ref_min_speed_location_m": 854.7493052066276,
+          "local_sample_gap_m": 10.339130769462145,
+          "comp_min_speed_kmh": 154.2562512,
+          "comp_min_speed_location_m": 874.6036806684145
+        },
+        {
+          "corner_number": 5,
+          "name": "Mirabeau Haute",
+          "apex_distance_nominal": 950.0,
+          "brake_distance": 613.6500358972045,
+          "zone_start": 875.0,
+          "zone_end": 914.3048855365191,
+          "delta_change": -0.09674583536247612,
+          "cause": "apex",
+          "confidence": "low",
+          "phase_deltas_approx": {
+            "braking": -0.017930033516391705,
+            "apex": -0.04951811509199805,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 154.0,
+          "ref_min_speed_location_m": 883.8952777777779,
+          "local_sample_gap_m": 10.339130769462145,
+          "comp_min_speed_kmh": 153.0,
+          "comp_min_speed_location_m": 883.3025000000002
+        },
+        {
+          "corner_number": 6,
+          "name": "Grand H\u00f4tel Hairpin",
+          "apex_distance_nominal": 1100.0,
+          "brake_distance": 820.1380555555556,
+          "zone_start": 914.3048855365191,
+          "zone_end": 1116.9805555555556,
+          "delta_change": 0.10710989942512024,
+          "cause": "apex",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": 0.02319549450802933,
+            "apex": 0.0839144049170909,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 83.0,
+          "ref_min_speed_location_m": 1106.3583333333333,
+          "local_sample_gap_m": 5.693584583001666,
+          "comp_min_speed_kmh": 77.0,
+          "comp_min_speed_location_m": 1107.6475
+        },
+        {
+          "corner_number": 7,
+          "name": "Mirabeau Bas",
+          "apex_distance_nominal": 1200.0,
+          "brake_distance": 1007.455715905785,
+          "zone_start": 1116.9805555555556,
+          "zone_end": 1230.5533333333333,
+          "delta_change": -0.05042935386792484,
+          "cause": "multiple",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": -0.07300606074713031,
+            "apex": 0.03649352050195363,
+            "exit": -0.013916813622748159
+          },
+          "ref_min_speed_kmh": 46.0,
+          "ref_min_speed_location_m": 1228.4066666666668,
+          "local_sample_gap_m": 6.193987297112471,
+          "comp_min_speed_kmh": 44.0,
+          "comp_min_speed_location_m": 1228.7700000000002
+        },
+        {
+          "corner_number": 8,
+          "name": "Portier",
+          "apex_distance_nominal": 1350.0,
+          "brake_distance": 1007.455715905785,
+          "zone_start": 1230.5533333333333,
+          "zone_end": 1308.7806514632616,
+          "delta_change": -0.06427164785528595,
+          "cause": "braking",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.0740594551738917,
+            "apex": 0.009787807318605738,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 48.0,
+          "ref_min_speed_location_m": 1230.5533333333333,
+          "local_sample_gap_m": 6.193987297112471,
+          "comp_min_speed_kmh": 45.10971724444544,
+          "comp_min_speed_location_m": 1230.9962112758974
+        },
+        {
+          "corner_number": 9,
+          "name": "Tunnel",
+          "apex_distance_nominal": 1700.0,
+          "brake_distance": 1350.1629278161624,
+          "zone_start": 1330.1629278161624,
+          "zone_end": 1650.1283509790178,
+          "delta_change": 0.0172588421374247,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.061197929667021075,
+            "apex": -0.043939087529596375,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 88.0,
+          "ref_min_speed_location_m": 1383.8861111111112,
+          "local_sample_gap_m": 3.661896869802149,
+          "comp_min_speed_kmh": 84.0,
+          "comp_min_speed_location_m": 1383.3436111111112
+        },
+        {
+          "corner_number": 10,
+          "name": "Nouvelle Chicane",
+          "apex_distance_nominal": 2050.0,
+          "brake_distance": 1966.0794444444448,
+          "zone_start": 1942.1180658460703,
+          "zone_end": 2075.0,
+          "delta_change": 0.5216850508282966,
+          "cause": "apex",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": 0.060913841524244706,
+            "apex": 0.4884939022212613,
+            "exit": -0.027722692917209357
+          },
+          "ref_min_speed_kmh": 71.6343768,
+          "ref_min_speed_location_m": 2071.9011397906534,
+          "local_sample_gap_m": 7.657144488297831,
+          "comp_min_speed_kmh": 70.0,
+          "comp_min_speed_location_m": 2074.122777777778
+        },
+        {
+          "corner_number": 11,
+          "name": null,
+          "apex_distance_nominal": 2100.0,
+          "brake_distance": 1966.0794444444448,
+          "zone_start": 2075.0,
+          "zone_end": 2081.335833333333,
+          "delta_change": 0.4485372798805839,
+          "cause": "apex",
+          "confidence": "low",
+          "phase_deltas_approx": {
+            "braking": -0.017329800950728114,
+            "apex": -0.05581796999698463,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 69.0,
+          "ref_min_speed_location_m": 2077.2802777777774,
+          "local_sample_gap_m": 7.657144488297831,
+          "comp_min_speed_kmh": 70.0,
+          "comp_min_speed_location_m": 2077.2338888888894
+        },
+        {
+          "corner_number": 12,
+          "name": "Tabac",
+          "apex_distance_nominal": 2250.0,
+          "brake_distance": 1997.6282914200697,
+          "zone_start": 2081.335833333333,
+          "zone_end": 2350.0,
+          "delta_change": -0.2628798610240197,
+          "cause": "braking",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.2694369078063281,
+            "apex": -0.010995827327449054,
+            "exit": 0.01755287410975745
+          },
+          "ref_min_speed_kmh": 73.0,
+          "ref_min_speed_location_m": 2081.335833333333,
+          "local_sample_gap_m": 5.055555555555657,
+          "comp_min_speed_kmh": 71.3562496,
+          "comp_min_speed_location_m": 2081.5438829613513
+        },
+        {
+          "corner_number": 13,
+          "name": "Louis Chiron",
+          "apex_distance_nominal": 2450.0,
+          "brake_distance": 2278.1687092887173,
+          "zone_start": 2350.0,
+          "zone_end": 2401.77658233915,
+          "delta_change": -0.004277028306163139,
+          "cause": "apex",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.0004270216693527673,
+            "apex": -0.004704049975515906,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 200.0,
+          "ref_min_speed_location_m": 2365.2924999999987,
+          "local_sample_gap_m": 7.019889622830988,
+          "comp_min_speed_kmh": 189.76999936,
+          "comp_min_speed_location_m": 2350.104312673755
+        },
+        {
+          "corner_number": 14,
+          "name": null,
+          "apex_distance_nominal": 2550.0,
+          "brake_distance": 2295.946944444443,
+          "zone_start": 2401.77658233915,
+          "zone_end": 2594.8766924647,
+          "delta_change": 0.062012933876182674,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": 0.021766657257790784,
+            "apex": -6.797378895251338e-05,
+            "exit": 0.040314250407344404
+          },
+          "ref_min_speed_kmh": 216.0159109818182,
+          "ref_min_speed_location_m": 2401.77658233915,
+          "local_sample_gap_m": 4.312660043781307,
+          "comp_min_speed_kmh": 216.54166933333335,
+          "comp_min_speed_location_m": 2411.8943445071836
+        },
+        {
+          "corner_number": 15,
+          "name": "Piscine",
+          "apex_distance_nominal": 2700.0,
+          "brake_distance": 2574.9643014702683,
+          "zone_start": 2594.8766924647,
+          "zone_end": 2712.3105555555544,
+          "delta_change": 0.08828683955112421,
+          "cause": "braking",
+          "confidence": "high",
+          "phase_deltas_approx": {
+            "braking": 0.10891230471436253,
+            "apex": -0.02062546516323832,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 128.0,
+          "ref_min_speed_location_m": 2703.177222222221,
+          "local_sample_gap_m": 7.717512967906487,
+          "comp_min_speed_kmh": 133.0,
+          "comp_min_speed_location_m": 2687.8719444444437
+        },
+        {
+          "corner_number": 16,
+          "name": null,
+          "apex_distance_nominal": 2800.0,
+          "brake_distance": 2574.9643014702683,
+          "zone_start": 2712.3105555555544,
+          "zone_end": 2887.54361111111,
+          "delta_change": 0.34866350878236196,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.12657018868658731,
+            "apex": 0.3135932350032106,
+            "exit": 0.16164046246573865
+          },
+          "ref_min_speed_kmh": 65.0,
+          "ref_min_speed_location_m": 2876.899166666665,
+          "local_sample_gap_m": 7.717512967906487,
+          "comp_min_speed_kmh": 61.0,
+          "comp_min_speed_location_m": 2869.833888888889
+        },
+        {
+          "corner_number": 17,
+          "name": "La Rascasse",
+          "apex_distance_nominal": 3000.0,
+          "brake_distance": 2807.9131881219023,
+          "zone_start": 2887.54361111111,
+          "zone_end": 2964.9427777777764,
+          "delta_change": -0.0036724607734721637,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.08387145852570332,
+            "apex": 0.08019899775223116,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 71.0,
+          "ref_min_speed_location_m": 2887.54361111111,
+          "local_sample_gap_m": 3.4255585096952927,
+          "comp_min_speed_kmh": 75.15499136,
+          "comp_min_speed_location_m": 2888.370109863371
+        },
+        {
+          "corner_number": 18,
+          "name": "Antony Nogh\u00e8s",
+          "apex_distance_nominal": 3150.0,
+          "brake_distance": 2816.465833333332,
+          "zone_start": 2964.9427777777764,
+          "zone_end": 3108.799999999999,
+          "delta_change": -0.2604836648309997,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.17586300676759958,
+            "apex": -0.08462065806340013,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 90.0,
+          "ref_min_speed_location_m": 2964.9427777777764,
+          "local_sample_gap_m": 3.3596301067836976,
+          "comp_min_speed_kmh": 92.0,
+          "comp_min_speed_location_m": 2968.1422222222213
+        },
+        {
+          "corner_number": 19,
+          "name": null,
+          "apex_distance_nominal": 3300.0,
+          "brake_distance": 2963.3365457642217,
+          "zone_start": 3108.799999999999,
+          "zone_end": 3260.106656545208,
+          "delta_change": -0.014481483465304257,
+          "cause": "multiple",
+          "confidence": "medium",
+          "phase_deltas_approx": {
+            "braking": -0.007725165304972581,
+            "apex": -0.006756318160331676,
+            "exit": 0.0
+          },
+          "ref_min_speed_kmh": 225.0,
+          "ref_min_speed_location_m": 3108.799999999999,
+          "local_sample_gap_m": 3.7606607285556493,
+          "comp_min_speed_kmh": 234.53148302222223,
+          "comp_min_speed_location_m": 3143.2136325592355
+        }
+      ],
+      "totals": {
+        "total_corner_delta": 0.9061144197764728,
+        "corners_gaining": 7,
+        "corners_losing": 10
+      },
+      "delta_endpoint": {
+        "n_points": 1000,
+        "final_delta": 0.1565423789261473,
+        "note": "raw speed-integration endpoint; no frontend consumer (dead code path, in G0 scope)"
+      }
+    }
+  }
+}

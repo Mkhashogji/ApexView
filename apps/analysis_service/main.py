@@ -1504,6 +1504,7 @@ async def get_performance_insights(request: PerformanceInsightsRequest):
             circuit_name=request.circuit_name,
             include_telemetry=request.include_telemetry,
             track_length=request.track_length,
+            acquisition_mode=request.acquisition_mode,
         )
 
         # Run orchestration

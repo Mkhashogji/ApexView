@@ -1,0 +1,82 @@
+{
+  "schema": "g0_known_deviations_v1",
+  "comment": "Machine-read acceptance registry consumed by run_ab.py. Accepted != invisible: the harness renders every match as KNOWN-DEVIATION, hard-fails if a deviation grows beyond its bound, and hard-fails on any unregistered violation. open_findings are NOT acceptances - they are owner-pending items rendered loudly with a distinct non-zero exit code.",
+  "deviations": [
+    {
+      "id": "STOP-3",
+      "fixture": "shanghai",
+      "scope": "lap_breakdown_closure",
+      "metric": "reconciliation_error_s",
+      "bound": 0.10,
+      "measured_at_acceptance": 0.0858,
+      "root_cause": "Two pre-existing excluded-zone-logic mechanisms, fully attributed by the per-zone delta ledger (diagnostics/g0/stop3_ledger.py): (1) +51.7ms zone_too_small stale-delta tripwire on T15 (corner_analysis.py:1500-1507 keeps the pre-clamp delta_change when the clamped zone is <50m); (2) -34.1ms uncovered head segment [0.0,4.6m] (calculate_straight_segments emits no straight before the first corner zone; legacy T1 zone happened to start at 0.0). G0 authored or altered neither mechanism; the honest substrate moved zone boundaries by one sample onto both tripwires.",
+      "owner_gate": "zone-logic",
+      "accepted": "2026-06-12",
+      "acceptance_fork": "fork 1 via OR-clause (ledger attribution complete within 5ms; legacy closes at 0.0000s on the identical pair)",
+      "reference": "diagnostics/g0/G0_REPORT.md §7 / CONTINUATION_LOG.md"
+    },
+    {
+      "id": "STOP-4",
+      "fixture": "monaco",
+      "scope": "brake_shift",
+      "metric": "abs_brake_shift_m",
+      "corners": {
+        "9": {
+          "bound": 100.0,
+          "measured_at_acceptance": 81.96,
+          "classification": "gap-overlap: NOR car-stream dropout 1642-1721m (the Tunnel, dt=1.08s ratio=4.5) inside the T9 analysis zone 1406-1721m; detection over a measured acquisition hole is indeterminate by definition"
+        },
+        "11": {
+          "bound": 25.0,
+          "measured_at_acceptance": 19.15,
+          "classification": "gap-overlap: LEC car-stream dropout 2091-2116m intersects T11 zone 2075-2094m"
+        },
+        "14": {
+          "bound": 22.0,
+          "measured_at_acceptance": 16.5,
+          "classification": "gap-overlap: NOR car-stream dropout 2408-2466m intersects T14 zone 2408-2503m"
+        }
+      },
+      "exclude_but_preserve": "registered corners stay in the per-corner diff table with their shifts and classification; they are excluded only from the Phase-5 pass/fail aggregate",
+      "root_cause": "acquisition-gap overlap (car-stream dropouts measured by the G0 gap law)",
+      "owner_gate": "zone-logic",
+      "accepted": "2026-06-12",
+      "reference": "diagnostics/g0/G0_REPORT.md §7 / CONTINUATION_LOG.md (classification table from diagnostics/g0/stop4_classify.py)"
+    },
+    {
+      "id": "OPEN-1",
+      "fixture": "monaco",
+      "scope": "brake_shift",
+      "corners": {
+        "10": {
+          "bound": 25.0,
+          "measured_at_acceptance": 19.15,
+          "classification": "smoothing-driven: shift collapses to <0.2m at decel smoothing window=1; real braking corner, no gap overlap; registration delta -0.088m, apex identical, legacy bp on a real 'car' row"
+        }
+      },
+      "root_cause": "detector decel-smoothing (sample-count) x native spacing",
+      "owner_gate": "detector",
+      "accepted": "2026-06-16",
+      "accepted_by": "owner sign-off (explicit)",
+      "reference": "diagnostics/g0/OPEN_FINDINGS_FORENSICS.md"
+    },
+    {
+      "id": "OPEN-2",
+      "fixture": "monaco",
+      "scope": "brake_shift",
+      "corners": {
+        "17": {
+          "bound": 22.0,
+          "measured_at_acceptance": 13.3,
+          "classification": "smoothing-driven: shift collapses to <0.2m at window=1; legacy bp on an interpolated 'pos' row; 1.00x the actual straddling native gap (the 1.58x-median figure was a jitter artifact)"
+        }
+      },
+      "root_cause": "detector decel-smoothing (sample-count) x native spacing",
+      "owner_gate": "detector",
+      "accepted": "2026-06-16",
+      "accepted_by": "owner sign-off (explicit)",
+      "reference": "diagnostics/g0/OPEN_FINDINGS_FORENSICS.md"
+    }
+  ],
+  "open_findings": []
+}

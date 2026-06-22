@@ -90,6 +90,9 @@ class PerformanceInsightsConfig:
         circuit_name: Circuit name for context
         include_telemetry: Whether to include delta arrays in response
         track_length: Track length in meters (for lap breakdown calculation)
+        acquisition_mode: G0 — optional API acquisition override forwarded to
+            the /telemetry fetch ("native" | "legacy"). None uses the API
+            service's configured default. Set only by the A/B harness.
     """
     session_id: str
     reference_driver: str
@@ -100,6 +103,7 @@ class PerformanceInsightsConfig:
     circuit_name: Optional[str] = None
     include_telemetry: bool = True
     track_length: Optional[float] = None
+    acquisition_mode: Optional[str] = None
 
 
 @dataclass
@@ -380,7 +384,8 @@ async def fetch_driver_telemetry(
     client: httpx.AsyncClient,
     session_id: str,
     driver: str,
-    session_part: Optional[str] = None
+    session_part: Optional[str] = None,
+    acquisition_mode: Optional[str] = None
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """
     Fetch telemetry data for a driver from the API service.
@@ -390,6 +395,8 @@ async def fetch_driver_telemetry(
         session_id: Session identifier
         driver: Driver code
         session_part: Optional session part filter
+        acquisition_mode: G0 — optional per-request acquisition override
+            forwarded to the API ("native" | "legacy"); None = API default
 
     Returns:
         Tuple of (telemetry_dict, error_message)
@@ -403,6 +410,8 @@ async def fetch_driver_telemetry(
         }
         if session_part:
             params["session_part"] = session_part
+        if acquisition_mode:
+            params["acquisition"] = acquisition_mode
 
         url = f"{API_SERVICE_URL}/telemetry"
 
@@ -464,7 +473,8 @@ async def fetch_all_telemetry(
     session_id: str,
     reference_driver: str,
     compare_drivers: List[str],
-    session_part: Optional[str] = None
+    session_part: Optional[str] = None,
+    acquisition_mode: Optional[str] = None
 ) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
     """
     Fetch telemetry for reference and all comparison drivers.
@@ -475,6 +485,8 @@ async def fetch_all_telemetry(
         reference_driver: Reference driver code
         compare_drivers: List of comparison driver codes
         session_part: Optional session part filter
+        acquisition_mode: G0 — optional acquisition override (see
+            fetch_driver_telemetry)
 
     Returns:
         Tuple of (telemetry_by_driver, errors)
@@ -487,7 +499,7 @@ async def fetch_all_telemetry(
 
     # Fetch all telemetry concurrently
     tasks = [
-        fetch_driver_telemetry(client, session_id, driver, session_part)
+        fetch_driver_telemetry(client, session_id, driver, session_part, acquisition_mode)
         for driver in all_drivers
     ]
 
@@ -500,6 +512,107 @@ async def fetch_all_telemetry(
             telemetry_by_driver[driver] = telemetry
 
     return telemetry_by_driver, errors
+
+
+# =============================================================================
+# G0 — Native acquisition gap metadata (Honest Acquisition)
+# =============================================================================
+
+async def fetch_all_native_meta(
+    client: httpx.AsyncClient,
+    session_id: str,
+    drivers: List[str],
+    session_part: Optional[str] = None,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Fetch native-acquisition gap inventories from GET /telemetry/meta.
+
+    Returns {driver: [gap, ...]} where each gap dict carries camelCase keys
+    (dStart/dEnd in metres) from the API.
+
+    Graceful degradation — and why it does not violate the no-silent-fallback
+    rule: the telemetry arrays themselves are NEVER fallback-fetched; only
+    this gap METADATA degrades (corners simply keep gap_flag=False), it is
+    logged at WARNING, and the A/B harness computes the gap inventory
+    independently from /telemetry/meta, so a degraded fetch here cannot hide
+    gaps from the G0 evidence. Legacy-mode runs (A/B) skip this call entirely.
+    The response shape is validated before use because test harnesses mock
+    the HTTP client with a single canned payload for every URL.
+    """
+    try:
+        params: Dict[str, Any] = {"session": session_id, "drivers": drivers}
+        if session_part:
+            params["session_part"] = session_part
+
+        response = await client.get(
+            f"{API_SERVICE_URL}/telemetry/meta",
+            params=params,
+            timeout=TELEMETRY_TIMEOUT_SECONDS,
+        )
+        if response.status_code != 200:
+            logger.warning(
+                "native meta fetch returned %s — corners will carry gap_flag=False",
+                response.status_code)
+            return {}
+
+        data = response.json()
+        # Shape validation: a list of items each holding 'driver' and 'gaps'.
+        if not isinstance(data, list):
+            logger.warning("native meta response is not a list — ignoring")
+            return {}
+        gaps_by_driver: Dict[str, List[Dict[str, Any]]] = {}
+        for item in data:
+            if not isinstance(item, dict) or "driver" not in item or "gaps" not in item:
+                logger.warning("native meta item lacks driver/gaps keys — ignoring payload")
+                return {}
+            gaps_by_driver[item["driver"]] = item["gaps"] or []
+        return gaps_by_driver
+
+    except Exception as e:
+        logger.warning("native meta fetch failed (%s) — corners will carry gap_flag=False", e)
+        return {}
+
+
+def _gap_overlaps_zone(gap: Dict[str, Any], zone_start: float, zone_end: float) -> bool:
+    """True when a gap's distance interval intersects [zone_start, zone_end]."""
+    d_start = gap.get("dStart", gap.get("d_start"))
+    d_end = gap.get("dEnd", gap.get("d_end"))
+    if d_start is None or d_end is None:
+        return False
+    return float(d_start) <= zone_end and float(d_end) >= zone_start
+
+
+def apply_gap_flags(
+    corner_results,
+    ref_gaps: List[Dict[str, Any]],
+    comp_gaps: List[Dict[str, Any]],
+) -> int:
+    """
+    G0 gap law: FLAG (do not modify) corners whose analysis zone overlaps a
+    native-acquisition gap on either driver's car stream.
+
+    Design decision (documented per the G0 spec): the Phase-2 delta grid keeps
+    interpolating end-to-end across gaps. Severing or down-weighting the grid
+    inside gaps would break the closure invariant (delta[-1] == official gap);
+    modelling uncertainty growth through gaps belongs to the fusion track at a
+    later gate. At G0 the flag is internal bookkeeping only — it is NOT
+    serialized into the API response (the response schema is frozen against
+    the golden contract) and does not feed detection or confidence logic.
+
+    Returns the number of corners flagged.
+    """
+    all_gaps = list(ref_gaps or []) + list(comp_gaps or [])
+    if not all_gaps:
+        return 0
+    flagged = 0
+    for cr in corner_results.corner_results:
+        if any(_gap_overlaps_zone(g, cr.zone_start, cr.zone_end) for g in all_gaps):
+            cr.gap_flag = True
+            flagged += 1
+    if flagged:
+        logger.info("gap law: %d corner zone(s) overlap acquisition gaps "
+                    "(internal gap_flag set; analysis values unchanged)", flagged)
+    return flagged
 
 
 # =============================================================================
@@ -781,10 +894,23 @@ async def orchestrate_performance_insights(
             config.session_id,
             config.reference_driver,
             config.compare_drivers,
-            config.session_part
+            config.session_part,
+            config.acquisition_mode
         )
 
         result.errors.extend(fetch_errors)
+
+        # G0: native acquisition gap inventories (metadata only — see
+        # fetch_all_native_meta for the degradation rationale). Skipped for
+        # explicit legacy-mode runs, which have no native bundles.
+        gaps_by_driver: Dict[str, List[Dict[str, Any]]] = {}
+        if config.acquisition_mode != "legacy":
+            gaps_by_driver = await fetch_all_native_meta(
+                client,
+                config.session_id,
+                [config.reference_driver] + config.compare_drivers,
+                config.session_part,
+            )
 
         telemetry_duration = int((time.time() - telemetry_start) * 1000)
         result.phase_timing.append(PhaseTimingInfo(
@@ -861,6 +987,18 @@ async def orchestrate_performance_insights(
             if error:
                 phase3_errors.append(error)
             elif corner_result:
+                # G0: flag corners whose zones overlap acquisition gaps
+                # (internal bookkeeping; values and confidence unchanged).
+                # Cross-domain approximation (review L3-6): comparison-driver
+                # gap distances are integrated on that driver's car frame while
+                # zones live on the reference/delta-grid axis; measured
+                # inter-frame drift is a constant <1 m (diagnostics/g0), far
+                # below zone scale, so no tolerance padding is applied at G0.
+                apply_gap_flags(
+                    corner_result,
+                    gaps_by_driver.get(config.reference_driver, []),
+                    gaps_by_driver.get(driver, []),
+                )
                 corner_results[driver] = corner_result
 
         phase3_duration = int((time.time() - phase3_start) * 1000)

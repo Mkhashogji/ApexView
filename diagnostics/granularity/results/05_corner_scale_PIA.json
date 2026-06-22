@@ -1,0 +1,151 @@
+{
+  "session": "2025_China_Q3",
+  "driver": "PIA",
+  "circuit": "shanghai",
+  "decel_threshold": -5.5,
+  "corners": [
+    {
+      "apex": 650.0,
+      "search_zone": [
+        350.0,
+        620.0
+      ],
+      "merged_samples_in_zone": 24,
+      "car_samples_in_zone": 12,
+      "brake_point_m": 542.8452777777777,
+      "refined_point_m": 468.40083333333325,
+      "backward_walk_steps": 4,
+      "samples_brake_to_apex": 17,
+      "native_samples_brake_to_apex": 8,
+      "corner_number": 2,
+      "name": null
+    },
+    {
+      "apex": 2000.0,
+      "search_zone": [
+        1700.0,
+        1970.0
+      ],
+      "merged_samples_in_zone": 31,
+      "car_samples_in_zone": 14,
+      "brake_point": null,
+      "samples_brake_to_apex": null,
+      "corner_number": 7,
+      "name": null
+    },
+    {
+      "apex": 1100.0,
+      "search_zone": [
+        800.0,
+        1070.0
+      ],
+      "merged_samples_in_zone": 57,
+      "car_samples_in_zone": 27,
+      "brake_point_m": 830.7330555555558,
+      "refined_point_m": 830.7330555555558,
+      "backward_walk_steps": 0,
+      "samples_brake_to_apex": 54,
+      "native_samples_brake_to_apex": 24,
+      "corner_number": 4,
+      "name": null
+    }
+  ],
+  "full_table": [
+    {
+      "corner": 1,
+      "apex": 350.0,
+      "merged": 28,
+      "native": 13
+    },
+    {
+      "corner": 2,
+      "apex": 650.0,
+      "merged": 24,
+      "native": 12
+    },
+    {
+      "corner": 3,
+      "apex": 900.0,
+      "merged": 55,
+      "native": 28
+    },
+    {
+      "corner": 4,
+      "apex": 1100.0,
+      "merged": 57,
+      "native": 27
+    },
+    {
+      "corner": 5,
+      "apex": 1350.0,
+      "merged": 28,
+      "native": 14
+    },
+    {
+      "corner": 6,
+      "apex": 1700.0,
+      "merged": 47,
+      "native": 23
+    },
+    {
+      "corner": 7,
+      "apex": 2000.0,
+      "merged": 31,
+      "native": 14
+    },
+    {
+      "corner": 8,
+      "apex": 2300.0,
+      "merged": 27,
+      "native": 13
+    },
+    {
+      "corner": 9,
+      "apex": 2600.0,
+      "merged": 49,
+      "native": 23
+    },
+    {
+      "corner": 10,
+      "apex": 2900.0,
+      "merged": 31,
+      "native": 14
+    },
+    {
+      "corner": 11,
+      "apex": 3400.0,
+      "merged": 45,
+      "native": 20
+    },
+    {
+      "corner": 12,
+      "apex": 3650.0,
+      "merged": 28,
+      "native": 13
+    },
+    {
+      "corner": 13,
+      "apex": 3900.0,
+      "merged": 27,
+      "native": 13
+    },
+    {
+      "corner": 14,
+      "apex": 5100.0,
+      "merged": 33,
+      "native": 17
+    },
+    {
+      "corner": 15,
+      "apex": 5250.0,
+      "merged": 34,
+      "native": 18
+    },
+    {
+      "corner": 16,
+      "apex": 5380.0,
+      "merged": 33,
+      "native": 18
+    }
+  ]
+}

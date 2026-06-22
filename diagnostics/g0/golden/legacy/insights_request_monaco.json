@@ -1,0 +1,127 @@
+﻿{
+    "session_id":  "2025_8_Qualifying",
+    "reference_driver":  "NOR",
+    "compare_drivers":  [
+                            "LEC"
+                        ],
+    "corners":  [
+                    {
+                        "corner_number":  1,
+                        "name":  "Sainte-DÃ©vote",
+                        "apex_distance":  200.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  2,
+                        "name":  "Beau Rivage",
+                        "apex_distance":  450.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  3,
+                        "name":  "Massenet",
+                        "apex_distance":  650.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  4,
+                        "name":  "Casino Square",
+                        "apex_distance":  800.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  5,
+                        "name":  "Mirabeau Haute",
+                        "apex_distance":  950.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  6,
+                        "name":  "Grand HÃ´tel Hairpin",
+                        "apex_distance":  1100.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  7,
+                        "name":  "Mirabeau Bas",
+                        "apex_distance":  1200.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  8,
+                        "name":  "Portier",
+                        "apex_distance":  1350.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  9,
+                        "name":  "Tunnel",
+                        "apex_distance":  1700.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  10,
+                        "name":  "Nouvelle Chicane",
+                        "apex_distance":  2050.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  11,
+                        "name":  null,
+                        "apex_distance":  2100.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  12,
+                        "name":  "Tabac",
+                        "apex_distance":  2250.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  13,
+                        "name":  "Louis Chiron",
+                        "apex_distance":  2450.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  14,
+                        "name":  null,
+                        "apex_distance":  2550.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  15,
+                        "name":  "Piscine",
+                        "apex_distance":  2700.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  16,
+                        "name":  null,
+                        "apex_distance":  2800.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  17,
+                        "name":  "La Rascasse",
+                        "apex_distance":  3000.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  18,
+                        "name":  "Antony NoghÃ¨s",
+                        "apex_distance":  3150.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  19,
+                        "name":  null,
+                        "apex_distance":  3300.0,
+                        "corner_type":  "left"
+                    }
+                ],
+    "mode":  "engineer",
+    "session_part":  "Q3",
+    "include_telemetry":  true,
+    "track_length":  3337.0
+}

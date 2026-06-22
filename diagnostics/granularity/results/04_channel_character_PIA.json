@@ -1,0 +1,48 @@
+{
+  "session": "2025_China_Q3",
+  "driver": "PIA",
+  "channels": {
+    "Speed": {
+      "dtype": "float64",
+      "n_unique": 517,
+      "min": 65.0,
+      "max": 330.0,
+      "kind": "continuous"
+    },
+    "RPM": {
+      "dtype": "float64",
+      "n_unique": 656,
+      "min": 5497.0,
+      "max": 12303.0,
+      "kind": "continuous"
+    },
+    "Throttle": {
+      "dtype": "float64",
+      "n_unique": 164,
+      "min": 0.0,
+      "max": 99.0,
+      "kind": "continuous"
+    },
+    "Brake": {
+      "dtype": "bool",
+      "n_unique": 2,
+      "min": 0.0,
+      "max": 1.0,
+      "kind": "binary"
+    },
+    "nGear": {
+      "dtype": "int64",
+      "n_unique": 7,
+      "min": 2.0,
+      "max": 8.0,
+      "kind": "discrete (step)"
+    },
+    "DRS": {
+      "dtype": "int64",
+      "n_unique": 4,
+      "min": 8.0,
+      "max": 14.0,
+      "kind": "discrete (step)"
+    }
+  }
+}

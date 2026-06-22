@@ -808,6 +808,13 @@ class PerformanceInsightsRequest(BaseModel):
         None,
         description="Track length in meters (required for lap breakdown calculation)"
     )
+    acquisition_mode: Optional[str] = Field(
+        None,
+        pattern="^(native|legacy)$",
+        description="G0 A/B override for the API acquisition path: 'native' or "
+                    "'legacy'. Defaults to the API service's configured mode. "
+                    "Never sent by the frontend; used by the A/B harness only."
+    )
 
 
 class DriverPerformanceResult(BaseModel):

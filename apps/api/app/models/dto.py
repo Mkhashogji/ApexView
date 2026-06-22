@@ -76,6 +76,51 @@ class DeltaResponse(CamelCaseModel):
     delta: List[float]  # seconds, positive = compare driver is slower
 
 
+# =============================================================================
+# G0 — Honest Acquisition: native telemetry metadata (NEW endpoint /telemetry/meta;
+# existing response models above are frozen against the golden contract)
+# =============================================================================
+
+class GapInterval(CamelCaseModel):
+    """
+    One acquisition gap on the native car stream (dt > 3x median dt, strict).
+
+    Frame note (continuation review L1-5): t_start/t_end are on the car
+    frame's raw Time axis (first sample sits at Time[0] > 0 after lap start),
+    NOT the re-zeroed `time` array served by /telemetry — align with a
+    constant Time[0] offset if cross-referencing. The distance bounds
+    (d_start/d_end) are the consumption contract (corner-zone overlap).
+    """
+    t_start: float  # lap-relative seconds, car-frame Time axis (see note)
+    t_end: float
+    d_start: float  # metres (native car Distance)
+    d_end: float
+    dt: float       # interval length in seconds
+    ratio: float    # dt / median dt
+
+
+class NativeAcquisitionMeta(CamelCaseModel):
+    """Per-lap native acquisition statistics."""
+    schema_version: str
+    acquisition_mode: str
+    n_car: int
+    n_pos: int
+    median_dt_car: float
+    median_dt_pos: float
+    gap_dt_multiplier: float
+    gap_threshold_s: float
+    n_gaps: int
+    lib_versions: dict
+
+
+class TelemetryMetaResponse(CamelCaseModel):
+    """Native acquisition metadata for one driver's lap (GET /telemetry/meta)."""
+    driver: str
+    lap_number: int
+    gaps: List[GapInterval]
+    meta: NativeAcquisitionMeta
+
+
 class SectorTime(CamelCaseModel):
     """Sector times for a driver."""
     driver: str

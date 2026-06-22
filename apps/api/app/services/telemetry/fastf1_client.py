@@ -22,7 +22,21 @@ from app.models.dto import (
     CornerInfo,
 )
 from app.services.telemetry.transforms import calculate_delta, downsample_telemetry
+from app.services.telemetry.native_acquisition import (
+    NativeAcquisitionError,
+    acquire_native_bundle,
+)
+from app.models.dto import (
+    GapInterval,
+    NativeAcquisitionMeta,
+    TelemetryMetaResponse,
+)
 from app.services.cache.parquet_cache import parquet_cache
+
+# G0: Parquet data_type for native bundles. Versioned so the key-space is
+# disjoint from legacy "telemetry" entries by construction — legacy cached
+# frames can never be misread as native ones (see diagnostics/g0/00_phase0_report.md §5).
+NATIVE_TELEMETRY_DATA_TYPE = "telemetry_native_v1"
 
 # Enable cache on module import
 enable_cache()
@@ -577,20 +591,49 @@ class FastF1Client:
         return await self.get_laps(session, [])  # Empty list returns all drivers
     
     async def get_telemetry(
-        self, 
-        session: str, 
-        drivers: List[str], 
+        self,
+        session: str,
+        drivers: List[str],
         lap_type: str = "fastest",
-        session_part: Optional[str] = None
+        session_part: Optional[str] = None,
+        acquisition: Optional[str] = None,
     ) -> List[TelemetryResponse]:
         """
         Get telemetry data for specified drivers.
-        
+
+        G0 dispatcher. ``acquisition`` ("native" | "legacy") overrides
+        ``settings.ACQUISITION_MODE`` per request (used by the A/B harness).
+        - native: dual-stream native acquisition — every value served is a
+          real car-data measurement (no merged/interpolated rows). Failures
+          raise NativeAcquisitionError; there is NO silent fallback to legacy.
+        - legacy: the pre-G0 merged ``lap.get_telemetry()`` path, byte-for-byte
+          unchanged. Retained solely for the A/B harness; scheduled for
+          removal at a later cleanup gate.
+
         Args:
             session: Session identifier (e.g., "2025_24_Qualifying")
             drivers: List of driver codes
             lap_type: Type of lap to retrieve
             session_part: Optional qualifying session part ('Q1', 'Q2', or 'Q3')
+            acquisition: Optional per-request mode override
+        """
+        mode = acquisition or settings.ACQUISITION_MODE
+        if mode == "legacy":
+            return await self._get_telemetry_legacy(session, drivers, lap_type, session_part)
+        return await self._get_telemetry_native(session, drivers, lap_type, session_part)
+
+    async def _get_telemetry_legacy(
+        self,
+        session: str,
+        drivers: List[str],
+        lap_type: str = "fastest",
+        session_part: Optional[str] = None
+    ) -> List[TelemetryResponse]:
+        """
+        Pre-G0 merged-frame telemetry path — body unchanged (moved verbatim
+        from get_telemetry). Serves FastF1's lap.get_telemetry() merged frame,
+        in which ~half of all car-channel values are interpolated
+        (diagnostics/granularity/REPORT.md). Kept only for the A/B harness.
         """
         try:
             # Define drivers_str before cache check (needed for cache write later)
@@ -763,21 +806,45 @@ class FastF1Client:
             return []
     
     async def get_delta_analysis(
-        self, 
-        session: str, 
-        reference_driver: str, 
+        self,
+        session: str,
+        reference_driver: str,
         compare_drivers: List[str],
-        session_part: Optional[str] = None
+        session_part: Optional[str] = None,
+        acquisition: Optional[str] = None,
     ) -> List[DeltaResponse]:
         """
         Calculate delta time between drivers.
-        
+
+        G0 dispatcher — see get_telemetry. Native mode feeds the (unchanged)
+        1000-point alignment grid in transforms.calculate_delta from native
+        car frames (Distance integrated from real speed samples) instead of
+        the merged frame. NOTE: this endpoint has no live frontend consumer
+        (fetchDelta is dead code — Phase 0 consumer table); it is rewired
+        because it is part of the G0 scope and remains API-exposed.
+
         Args:
             session: Session identifier
             reference_driver: Driver code for reference lap
             compare_drivers: List of driver codes to compare against reference
             session_part: Optional qualifying session part ('Q1', 'Q2', or 'Q3')
+            acquisition: Optional per-request mode override
         """
+        mode = acquisition or settings.ACQUISITION_MODE
+        if mode == "legacy":
+            return await self._get_delta_analysis_legacy(
+                session, reference_driver, compare_drivers, session_part)
+        return await self._get_delta_analysis_native(
+            session, reference_driver, compare_drivers, session_part)
+
+    async def _get_delta_analysis_legacy(
+        self,
+        session: str,
+        reference_driver: str,
+        compare_drivers: List[str],
+        session_part: Optional[str] = None
+    ) -> List[DeltaResponse]:
+        """Pre-G0 merged-frame delta path — body unchanged (moved verbatim)."""
         try:
             season, round_num, session_name = self._parse_session_id(session)
             
@@ -844,7 +911,407 @@ class FastF1Client:
         except Exception as e:
             logger.error(f"Error calculating delta: {e}", exc_info=True)
             return []
-    
+
+    # =========================================================================
+    # G0 — Honest Acquisition: native path (real car samples only)
+    # =========================================================================
+
+    def _select_fastest_valid_lap(self, race_session, driver: str,
+                                  session_part: Optional[str], session_status):
+        """
+        Replicates the legacy lap-selection sequence (pick driver -> filter by
+        session part -> filter deleted/pit/invalid -> pick fastest) without
+        touching the legacy code path. Returns None when the driver simply has
+        no usable lap — that is data absence, not an acquisition failure, and
+        mirrors legacy behaviour (driver omitted from the response).
+        """
+        driver_laps = race_session.laps.pick_driver(driver)
+        if len(driver_laps) == 0:
+            return None
+        filtered_laps = self._filter_laps_by_session_part(driver_laps, session_part, session_status)
+        if len(filtered_laps) == 0:
+            return None
+        valid_laps = self._filter_valid_laps(filtered_laps)
+        if len(valid_laps) == 0:
+            logger.warning(f"No valid laps for driver {driver} after filtering")
+            return None
+        fastest_lap = valid_laps.pick_fastest()
+        if fastest_lap is None or fastest_lap.empty:
+            return None
+        return fastest_lap
+
+    def _native_bundle_to_response(self, driver: str, fastest_lap, bundle) -> TelemetryResponse:
+        """
+        Build the wire response from the native car frame. The response schema
+        (TelemetryResponse) is identical to legacy — only the substrate
+        changes: every array element is a real car-data measurement.
+
+        Brake: the bundle preserves the native bool dtype; pydantic coerces
+        bool -> 0.0/1.0 floats on the wire, exactly as the legacy merged frame
+        serialised (verified against the golden snapshots).
+        """
+        car = bundle.car_native
+
+        distance = car['Distance'].to_numpy(dtype=float)
+        speed = car['Speed'].to_numpy(dtype=float)
+        throttle = car['Throttle'].to_numpy(dtype=float)
+        brake = car['Brake'].to_numpy()  # bool dtype preserved end-to-end in the bundle
+        gear = car['nGear'].to_numpy().astype(int)
+        rpm = car['RPM'].to_numpy().astype(int) if 'RPM' in car.columns else None
+        drs = car['DRS'].to_numpy().astype(int) if 'DRS' in car.columns else None
+        relative_distance = car['RelativeDistance'].to_numpy(dtype=float)
+
+        # Lap-relative time starting at 0 — same normalisation as legacy.
+        time_seconds = car['Time'].dt.total_seconds().to_numpy()
+        time_seconds = time_seconds - time_seconds[0]
+
+        # Same downsample guard as legacy (index-based). A qualifying lap is
+        # ~330 native samples, far below the 5000 threshold — kept for
+        # symmetry, never expected to trigger.
+        if len(distance) > self.downsample_threshold:
+            indices = np.linspace(0, len(distance) - 1, self.downsample_threshold, dtype=int)
+            distance = distance[indices]
+            speed = speed[indices]
+            throttle = throttle[indices]
+            brake = brake[indices]
+            gear = gear[indices]
+            relative_distance = relative_distance[indices]
+            time_seconds = time_seconds[indices]
+            if rpm is not None:
+                rpm = rpm[indices]
+            if drs is not None:
+                drs = drs[indices]
+
+        lap_time_seconds = None
+        if pd.notna(fastest_lap['LapTime']):
+            lap_time_seconds = float(fastest_lap['LapTime'].total_seconds())
+
+        return TelemetryResponse(
+            driver=driver,
+            lap_number=int(fastest_lap['LapNumber']),
+            lap_time=lap_time_seconds,
+            distance=distance.tolist(),
+            speed=speed.tolist(),
+            throttle=throttle.tolist(),
+            brake=brake.tolist(),
+            gear=gear.tolist(),
+            relative_distance=relative_distance.tolist(),
+            time=time_seconds.tolist(),
+            rpm=rpm.tolist() if rpm is not None else None,
+            drs=drs.tolist() if drs is not None else None,
+        )
+
+    @staticmethod
+    def _native_cache_row(driver: str, telemetry_response: TelemetryResponse,
+                          bundle) -> dict:
+        """
+        Serialise one driver's native acquisition into a versioned Parquet
+        cache row. Bundle-fidelity guarantees (G0 continuation §2):
+        - 'brake' stores the BUNDLE's boolean values (JSON true/false), not
+          the wire floats — bool dtype survives the round-trip; the read path
+          feeds them back through TelemetryResponse where pydantic coerces to
+          0.0/1.0, so the wire stays identical.
+        - 'provenance_car'/'provenance_pos' record the bundle's provenance.
+        - 'gaps'/'meta' carry the gap inventory and stream statistics
+          (meta.schema_version is the read-guard discriminator).
+        """
+        from app.services.telemetry.native_acquisition import PROVENANCE_COLUMN
+        return {
+            'driver': driver,
+            'lap_number': telemetry_response.lap_number,
+            'lap_time': telemetry_response.lap_time,
+            'distance': json.dumps(telemetry_response.distance),
+            'speed': json.dumps(telemetry_response.speed),
+            'throttle': json.dumps(telemetry_response.throttle),
+            # bundle booleans, not wire floats (see docstring)
+            'brake': json.dumps([bool(b) for b in bundle.car_native['Brake'].tolist()]),
+            'gear': json.dumps(telemetry_response.gear),
+            'relative_distance': json.dumps(telemetry_response.relative_distance) if telemetry_response.relative_distance else None,
+            'time': json.dumps(telemetry_response.time) if telemetry_response.time else None,
+            'rpm': json.dumps(telemetry_response.rpm) if telemetry_response.rpm else None,
+            'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,
+            'provenance_car': json.dumps(sorted(bundle.car_native[PROVENANCE_COLUMN].unique().tolist())),
+            'provenance_pos': json.dumps(sorted(bundle.pos_native[PROVENANCE_COLUMN].unique().tolist())),
+            'gaps': json.dumps(bundle.gaps),
+            'meta': json.dumps(bundle.meta),
+        }
+
+    @staticmethod
+    def _native_row_to_response(driver: str, row) -> Optional[TelemetryResponse]:
+        """
+        Reconstruct a TelemetryResponse from a native cache row.
+
+        Schema guard (G0 continuation §2 negative case): the row MUST carry a
+        'meta' column whose JSON declares schema_version == "native_v1".
+        Anything else — a legacy-shaped frame, a corrupted row, a future
+        incompatible schema — returns None, which the caller treats as a
+        cache miss and re-materialises from FastF1 (logged, never silently
+        parsed as native).
+        """
+        try:
+            meta_raw = row.get('meta') if hasattr(row, 'get') else None
+            if meta_raw is None or (isinstance(meta_raw, float) and pd.isna(meta_raw)):
+                logger.info("native cache row for %s lacks meta column — "
+                            "refusing row, re-materialising", driver)
+                return None
+            meta = json.loads(meta_raw)
+            if meta.get('schema_version') != "native_v1":
+                logger.info("native cache row for %s has schema_version=%r != native_v1 — "
+                            "refusing row, re-materialising", driver, meta.get('schema_version'))
+                return None
+            return TelemetryResponse(
+                driver=driver,
+                lap_number=int(row['lap_number']),
+                lap_time=float(row['lap_time']) if pd.notna(row.get('lap_time')) else None,
+                distance=json.loads(row['distance']),
+                speed=json.loads(row['speed']),
+                throttle=json.loads(row['throttle']),
+                brake=json.loads(row['brake']),  # JSON booleans -> pydantic 0.0/1.0
+                gear=json.loads(row['gear']),
+                relative_distance=json.loads(row['relative_distance']) if pd.notna(row.get('relative_distance')) else None,
+                time=json.loads(row['time']) if pd.notna(row.get('time')) else None,
+                rpm=json.loads(row['rpm']) if pd.notna(row.get('rpm')) else None,
+                drs=json.loads(row['drs']) if pd.notna(row.get('drs')) else None,
+            )
+        except (KeyError, ValueError, TypeError) as e:
+            logger.warning("native cache row for %s unreadable (%s) — "
+                           "refusing row, re-materialising", driver, e)
+            return None
+
+    async def _get_telemetry_native(
+        self,
+        session: str,
+        drivers: List[str],
+        lap_type: str = "fastest",
+        session_part: Optional[str] = None
+    ) -> List[TelemetryResponse]:
+        """
+        Native telemetry path. Acquires the dual-stream bundle per lap and
+        serves arrays built exclusively from native car samples.
+
+        Errors: acquisition failures raise NativeAcquisitionError (no silent
+        fallback to the merged path — ground rule 4). Data absence (driver has
+        no valid lap) mirrors legacy: the driver is omitted from the response.
+        ANY other exception is wrapped into NativeAcquisitionError("unexpected")
+        so the route-level 502 translation is exhaustive (continuation review
+        finding L4-2: no raw 500s from the native path).
+        """
+        try:
+            return await self._get_telemetry_native_impl(session, drivers, lap_type, session_part)
+        except NativeAcquisitionError:
+            raise
+        except Exception as e:
+            raise NativeAcquisitionError(
+                "unexpected", f"{type(e).__name__}: {e}", session=session) from e
+
+    async def _get_telemetry_native_impl(
+        self,
+        session: str,
+        drivers: List[str],
+        lap_type: str = "fastest",
+        session_part: Optional[str] = None
+    ) -> List[TelemetryResponse]:
+        drivers_str = '_'.join(sorted(drivers))
+
+        # Parquet cache read — native-versioned key, same session_part gating
+        # as legacy (the cache stores only unfiltered fastest-lap telemetry).
+        # Rows failing the native schema guard are refused (-> full
+        # re-materialisation), never silently parsed.
+        if not session_part:
+            cached_df = self.cache.read(
+                session, NATIVE_TELEMETRY_DATA_TYPE, drivers=drivers_str, lap_type=lap_type)
+            if cached_df is not None:
+                telemetry_responses = []
+                all_rows_valid = True
+                for driver in drivers:
+                    driver_data = cached_df[cached_df['driver'] == driver]
+                    if len(driver_data) > 0:
+                        response = self._native_row_to_response(driver, driver_data.iloc[0])
+                        if response is None:
+                            all_rows_valid = False
+                            break
+                        telemetry_responses.append(response)
+                if all_rows_valid:
+                    logger.info(f"Loaded NATIVE telemetry from Parquet cache for {session}")
+                    return telemetry_responses
+                logger.info(f"NATIVE cache for {session} failed schema guard — re-materialising")
+
+        try:
+            season, round_num, session_name = self._parse_session_id(session)
+            race_session = fastf1.get_session(season, round_num, session_name)
+            race_session.load()
+        except Exception as e:
+            raise NativeAcquisitionError("load_session", str(e), session=session) from e
+
+        session_status = race_session.session_status if hasattr(race_session, 'session_status') else None
+
+        telemetry_responses = []
+        telemetry_data_for_cache = []
+
+        for driver in drivers:
+            fastest_lap = self._select_fastest_valid_lap(
+                race_session, driver, session_part, session_status)
+            if fastest_lap is None:
+                continue  # data absence — mirrors legacy (driver omitted)
+
+            # Raises NativeAcquisitionError on failure — deliberately not caught.
+            bundle = acquire_native_bundle(fastest_lap, driver=driver, session=session)
+
+            telemetry_response = self._native_bundle_to_response(driver, fastest_lap, bundle)
+            telemetry_responses.append(telemetry_response)
+
+            telemetry_data_for_cache.append({
+                'driver': driver,
+                'lap_number': telemetry_response.lap_number,
+                'lap_time': telemetry_response.lap_time,
+                'distance': json.dumps(telemetry_response.distance),
+                'speed': json.dumps(telemetry_response.speed),
+                'throttle': json.dumps(telemetry_response.throttle),
+                'brake': json.dumps(telemetry_response.brake),
+                'gear': json.dumps(telemetry_response.gear),
+                'relative_distance': json.dumps(telemetry_response.relative_distance) if telemetry_response.relative_distance else None,
+                'time': json.dumps(telemetry_response.time) if telemetry_response.time else None,
+                'rpm': json.dumps(telemetry_response.rpm) if telemetry_response.rpm else None,
+                'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,
+                'gaps': json.dumps(bundle.gaps),
+                'meta': json.dumps(bundle.meta),
+            })
+
+        # Cache write — gated on `not session_part`, unlike legacy which writes
+        # session_part-filtered data under the unfiltered key (latent legacy
+        # bug, left untouched per the byte-identical legacy requirement;
+        # documented in the G0 architecture note). First-run re-materialisation
+        # under the new versioned key is expected and logged, not an error.
+        if telemetry_data_for_cache and not session_part:
+            cache_df = pd.DataFrame(telemetry_data_for_cache)
+            self.cache.write(cache_df, session, NATIVE_TELEMETRY_DATA_TYPE,
+                             drivers=drivers_str, lap_type=lap_type)
+            logger.info(f"Cached NATIVE telemetry to Parquet for {session} "
+                        f"(schema {NATIVE_TELEMETRY_DATA_TYPE})")
+
+        return telemetry_responses
+
+    async def _get_delta_analysis_native(
+        self,
+        session: str,
+        reference_driver: str,
+        compare_drivers: List[str],
+        session_part: Optional[str] = None
+    ) -> List[DeltaResponse]:
+        """
+        Native delta path. The 1000-point alignment grid in
+        transforms.calculate_delta is unchanged (it is the spatial co-location
+        mechanism); its (Distance, Speed) inputs now come from native car
+        frames instead of the merged frame. Unexpected exceptions wrap into
+        NativeAcquisitionError("unexpected") — exhaustive 502 translation.
+        """
+        try:
+            return await self._get_delta_analysis_native_impl(
+                session, reference_driver, compare_drivers, session_part)
+        except NativeAcquisitionError:
+            raise
+        except Exception as e:
+            raise NativeAcquisitionError(
+                "unexpected", f"{type(e).__name__}: {e}", session=session) from e
+
+    async def _get_delta_analysis_native_impl(
+        self,
+        session: str,
+        reference_driver: str,
+        compare_drivers: List[str],
+        session_part: Optional[str] = None
+    ) -> List[DeltaResponse]:
+        try:
+            season, round_num, session_name = self._parse_session_id(session)
+            race_session = fastf1.get_session(season, round_num, session_name)
+            race_session.load()
+        except Exception as e:
+            raise NativeAcquisitionError("load_session", str(e), session=session) from e
+
+        session_status = race_session.session_status if hasattr(race_session, 'session_status') else None
+
+        ref_fastest = self._select_fastest_valid_lap(
+            race_session, reference_driver, session_part, session_status)
+        if ref_fastest is None:
+            return []
+        ref_bundle = acquire_native_bundle(ref_fastest, driver=reference_driver, session=session)
+
+        delta_responses = []
+        for compare_driver in compare_drivers:
+            comp_fastest = self._select_fastest_valid_lap(
+                race_session, compare_driver, session_part, session_status)
+            if comp_fastest is None:
+                continue
+            comp_bundle = acquire_native_bundle(comp_fastest, driver=compare_driver, session=session)
+
+            # calculate_delta consumes 'Distance' and 'Speed' columns — both
+            # present on the native car frame.
+            distance, delta = calculate_delta(ref_bundle.car_native, comp_bundle.car_native)
+
+            delta_responses.append(
+                DeltaResponse(
+                    reference_driver=reference_driver,
+                    compare_driver=compare_driver,
+                    distance=distance.tolist(),
+                    delta=delta.tolist(),
+                )
+            )
+        return delta_responses
+
+    async def get_telemetry_meta(
+        self,
+        session: str,
+        drivers: List[str],
+        session_part: Optional[str] = None
+    ) -> List[TelemetryMetaResponse]:
+        """
+        Native acquisition metadata (NEW endpoint, additive — existing
+        response schemas are frozen against the golden contract, so gap/meta
+        information is exposed via this separate route rather than new fields
+        on TelemetryResponse).
+
+        Consumed by the analysis-service orchestrator (gap_flag derivation)
+        and the A/B harness. Always computed from the native bundle.
+        Unexpected exceptions wrap into NativeAcquisitionError("unexpected").
+        """
+        try:
+            return await self._get_telemetry_meta_impl(session, drivers, session_part)
+        except NativeAcquisitionError:
+            raise
+        except Exception as e:
+            raise NativeAcquisitionError(
+                "unexpected", f"{type(e).__name__}: {e}", session=session) from e
+
+    async def _get_telemetry_meta_impl(
+        self,
+        session: str,
+        drivers: List[str],
+        session_part: Optional[str] = None
+    ) -> List[TelemetryMetaResponse]:
+        try:
+            season, round_num, session_name = self._parse_session_id(session)
+            race_session = fastf1.get_session(season, round_num, session_name)
+            race_session.load()
+        except Exception as e:
+            raise NativeAcquisitionError("load_session", str(e), session=session) from e
+
+        session_status = race_session.session_status if hasattr(race_session, 'session_status') else None
+
+        responses = []
+        for driver in drivers:
+            fastest_lap = self._select_fastest_valid_lap(
+                race_session, driver, session_part, session_status)
+            if fastest_lap is None:
+                continue
+            bundle = acquire_native_bundle(fastest_lap, driver=driver, session=session)
+            responses.append(TelemetryMetaResponse(
+                driver=driver,
+                lap_number=int(fastest_lap['LapNumber']),
+                gaps=[GapInterval(**g) for g in bundle.gaps],
+                meta=NativeAcquisitionMeta(**bundle.meta),
+            ))
+        return responses
+
     async def get_sectors(
         self, 
         session: str, 

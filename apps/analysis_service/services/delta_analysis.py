@@ -66,6 +66,16 @@ class DeltaResult:
     scaling_factor: float  # Factor applied to raw delta
     telemetry_gap: float  # Raw telemetry-derived gap
     confidence: float  # Confidence in the calculation (0-1)
+    # --- G0 grid metadata (Honest Acquisition) ---------------------------
+    # Bookkeeping for the alignment-vs-resolution distinction: the 1000-point
+    # grid provides spatial co-location, NOT added temporal resolution. These
+    # record how many real samples back the grid per driver. Consumed by
+    # later gates; never serialized into API responses (main.py response
+    # assembly is field-explicit and does not read them).
+    ref_sample_count: Optional[int] = None
+    comp_sample_count: Optional[int] = None
+    ref_median_spacing_m: Optional[float] = None
+    comp_median_spacing_m: Optional[float] = None
 
 
 # ============================================================================
@@ -105,6 +115,23 @@ def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
             result = np.full_like(result, default_value)
     
     return result
+
+
+def _median_sample_spacing(distance: np.ndarray) -> Optional[float]:
+    """
+    Median spacing (metres) between consecutive real samples.
+
+    G0 grid metadata: with the native acquisition path, `distance` contains
+    only real car-data measurements, so this is the true granularity floor
+    behind the 1000-point grid.
+    """
+    if distance is None or len(distance) < 2:
+        return None
+    diffs = np.diff(np.asarray(distance, dtype=float))
+    diffs = diffs[diffs > 0]
+    if len(diffs) == 0:
+        return None
+    return float(np.median(diffs))
 
 
 def align_telemetry_to_distance(
@@ -488,6 +515,15 @@ def calculate_scaled_delta(
 
     official_gap = comp_official_time - ref_official_time
 
+    # G0 grid metadata — real-sample counts and spacing behind the grid
+    # (see DeltaResult docstring; internal, not serialized).
+    _grid_meta = dict(
+        ref_sample_count=int(len(ref_distance)),
+        comp_sample_count=int(len(comp_distance)),
+        ref_median_spacing_m=_median_sample_spacing(ref_distance),
+        comp_median_spacing_m=_median_sample_spacing(comp_distance),
+    )
+
     # Determine which tier to use
     can_use_tier1 = (
         ref_relative_distance is not None and len(ref_relative_distance) > 0 and
@@ -522,7 +558,8 @@ def calculate_scaled_delta(
             official_gap=official_gap,
             scaling_factor=1.0,  # Always 1.0 with Tier 1
             telemetry_gap=delta[-1],  # Should match official_gap
-            confidence=confidence
+            confidence=confidence,
+            **_grid_meta
         )
 
     # =========================================================================
@@ -545,7 +582,8 @@ def calculate_scaled_delta(
             official_gap=official_gap,
             scaling_factor=1.0,
             telemetry_gap=delta[-1],
-            confidence=confidence
+            confidence=confidence,
+            **_grid_meta
         )
 
     # =========================================================================
@@ -620,7 +658,8 @@ def calculate_scaled_delta(
             official_gap=official_gap,
             scaling_factor=scaling_factor,
             telemetry_gap=telemetry_gap,
-            confidence=confidence
+            confidence=confidence,
+            **_grid_meta
         )
 
 

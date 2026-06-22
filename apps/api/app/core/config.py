@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from pathlib import Path
+from typing import Literal
 
 
 class Settings(BaseSettings):
@@ -17,6 +18,14 @@ class Settings(BaseSettings):
     PARQUET_DIR: Path = CACHE_DIR / "parquet"
     DEFAULT_SEASON: int = 2025
     DOWNSAMPLE_THRESHOLD: int = 5000  # Max telemetry points before downsampling
+
+    # G0 — Honest Acquisition. "native" serves telemetry from the dual-stream
+    # native acquisition layer (real car samples only, provenance-tagged);
+    # "legacy" keeps the pre-G0 merged get_telemetry() path, retained SOLELY
+    # for the A/B harness and marked for removal at a later cleanup gate.
+    # Literal-typed (continuation review L4-3): a typo'd env value fails at
+    # startup instead of silently dispatching native.
+    ACQUISITION_MODE: Literal["native", "legacy"] = "native"
     
     # Analysis Service Settings
     ANALYSIS_SERVICE_URL: str = "http://analysis:8501"

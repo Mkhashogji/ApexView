@@ -1,0 +1,1610 @@
+{
+  "summary": "G0 Phase 0 read-only recon: consumer enumeration, blast radius, handshake, cache/infra, frontend payloads, test conventions",
+  "agentCount": 6,
+  "logs": [
+    "6/6 recon agents completed"
+  ],
+  "result": [
+    {
+      "label": "api-consumers",
+      "result": {
+        "summary": "The FastF1Client class in apps/api/app/services/telemetry/fastf1_client.py is the central data service for F1 telemetry in ApexView. It has 12 public methods that handle session, lap, telemetry, and track data fetching with Parquet caching. The legacy duplicate at apps/api/app/services/fastf1_client.py is dead code—never imported by live code, only the new telemetry subdirectory version is used. The data_service factory returns FastF1Client under LIVE_DATA=true condition. get_telemetry and get_delta_analysis are called exclusively through the Qualifying page flow: frontend calls fetchTelemetry/fetchDelta → /telemetry and /telemetry/delta routes (GET) → data_service.get_data_service() returns FastF1Client → methods invoked. The analysis service (apps/analysis_service) fetches telemetry indirectly via HTTP to /telemetry and /laps/sectors endpoints during scaled-delta, corner-analysis, and performance-insights orchestration. No out-of-scope consumers detected; all are part of the Qualifying analysis flow.",
+        "findings": [
+          {
+            "claim": "FastF1Client has 12 public methods in apps/api/app/services/telemetry/fastf1_client.py",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 37,
+                "snippet": "__init__(self) at line 37"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 189,
+                "snippet": "async def get_sessions(self, season: int, round: int) -> List[SessionResponse]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 248,
+                "snippet": "async def get_session_by_id(self, session_id: str) -> SessionResponse:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 263,
+                "snippet": "async def get_laps(self, session: str, drivers: List[str]) -> List[LapResponse]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 357,
+                "snippet": "async def get_race_laps(self, session: str) -> dict:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 455,
+                "snippet": "async def get_practice_laps(self, session: str) -> dict:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 575,
+                "snippet": "async def get_fastest_laps(self, session: str):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 579,
+                "snippet": "async def get_telemetry(self, session: str, drivers: List[str], lap_type: str = \"fastest\", session_part: Optional[str] = None) -> List[TelemetryResponse]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 765,
+                "snippet": "async def get_delta_analysis(self, session: str, reference_driver: str, compare_drivers: List[str], session_part: Optional[str] = None) -> List[DeltaResponse]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 848,
+                "snippet": "async def get_sectors(self, session: str, drivers: List[str], session_part: Optional[str] = None) -> List[SectorTime]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 915,
+                "snippet": "async def get_track_info(self, season: int, round: int) -> TrackResponse:"
+              }
+            ]
+          },
+          {
+            "claim": "Legacy apps/api/app/services/fastf1_client.py is dead code—never imported by any live code",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\data_service.py",
+                "line": 8,
+                "snippet": "from app.services.telemetry.fastf1_client import FastF1Client (imports NEW location only)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\analysis.py",
+                "line": 6,
+                "snippet": "from app.services.telemetry.fastf1_client import FastF1Client (imports NEW location only)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\tests\\test_fastf1_client.py",
+                "line": 9,
+                "snippet": "from app.services.telemetry.fastf1_client import FastF1Client (test imports NEW location)"
+              }
+            ]
+          },
+          {
+            "claim": "get_data_service() factory at apps/api/app/services/data_service.py returns FastF1Client when LIVE_DATA=true, MockDataService otherwise",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\data_service.py",
+                "line": 12,
+                "snippet": "def get_data_service() -> Union[FastF1Client, MockDataService]: if settings.LIVE_DATA: return FastF1Client() else: return MockDataService()"
+              }
+            ]
+          },
+          {
+            "claim": "GET /telemetry route (apps/api/app/routes/telemetry.py:9-25) calls get_data_service().get_telemetry(session, drivers, lap_type, session_part)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 9,
+                "snippet": "@router.get(\"\", response_model=list[TelemetryResponse]) async def get_telemetry(...)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 23,
+                "snippet": "service = get_data_service(); telemetry = await service.get_telemetry(session, drivers, lap_type, session_part)"
+              }
+            ]
+          },
+          {
+            "claim": "GET /telemetry/delta route (apps/api/app/routes/telemetry.py:28-43) calls get_data_service().get_delta_analysis(session, reference_driver, compare_drivers, session_part)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 28,
+                "snippet": "@router.get(\"/delta\", response_model=list[DeltaResponse]) async def get_delta_analysis(...)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 41,
+                "snippet": "service = get_data_service(); delta_data = await service.get_delta_analysis(session, reference_driver, compare_drivers, session_part)"
+              }
+            ]
+          },
+          {
+            "claim": "apps/api/app/main.py includes 7 routers with prefixes: /sessions, /laps, /telemetry, /track, /analysis, /race, /practice",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 22,
+                "snippet": "app.include_router(sessions.router, prefix=\"/sessions\", tags=[\"sessions\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 23,
+                "snippet": "app.include_router(laps.router, prefix=\"/laps\", tags=[\"laps\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 24,
+                "snippet": "app.include_router(telemetry.router, prefix=\"/telemetry\", tags=[\"telemetry\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 25,
+                "snippet": "app.include_router(track.router, prefix=\"/track\", tags=[\"track\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 26,
+                "snippet": "app.include_router(analysis.router, prefix=\"/analysis\", tags=[\"analysis\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 27,
+                "snippet": "app.include_router(race.router, prefix=\"/race\", tags=[\"race\"])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\main.py",
+                "line": 28,
+                "snippet": "app.include_router(practice.router, prefix=\"/practice\", tags=[\"practice\"])"
+              }
+            ]
+          },
+          {
+            "claim": "get_telemetry route signature: GET /telemetry?session={session}&drivers={drivers}&lap_type={lap_type}&session_part={session_part}",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 10,
+                "snippet": "async def get_telemetry(session: str = Query(...), drivers: List[str] = Query(...), lap_type: str = Query(\"fastest\"), session_part: Optional[str] = Query(None))"
+              }
+            ]
+          },
+          {
+            "claim": "get_delta_analysis route signature: GET /telemetry/delta?session={session}&reference_driver={reference_driver}&compare_drivers={compare_drivers}&session_part={session_part}",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 29,
+                "snippet": "async def get_delta_analysis(session: str = Query(...), reference_driver: str = Query(...), compare_drivers: List[str] = Query(...), session_part: Optional[str] = Query(None))"
+              }
+            ]
+          },
+          {
+            "claim": "Frontend (apps/web/lib/api.ts) calls fetchTelemetry() and fetchDelta() which invoke GET /telemetry and GET /telemetry/delta",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 83,
+                "snippet": "export async function fetchTelemetry(sessionId: string, drivers: string[], sessionPart?: string): Promise<Telemetry[]>"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 90,
+                "snippet": "return fetchApi<Telemetry[]>(`${API_BASE_URL}/telemetry?session=${sessionId}&${driverParams}${sessionPartParam}`)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 93,
+                "snippet": "export async function fetchDelta(sessionId: string, referenceDriver: string, compareDrivers: string[], sessionPart?: string): Promise<DeltaData[]>"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 101,
+                "snippet": "return fetchApi<DeltaData[]>(`${API_BASE_URL}/telemetry/delta?session=${sessionId}&reference_driver=${referenceDriver}&${compareParams}${sessionPartParam}`)"
+              }
+            ]
+          },
+          {
+            "claim": "Qualifying page (apps/web/app/qualifying/QualifyingContent.tsx) calls useTelemetryQuery() hook which invokes fetchTelemetry()",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 8,
+                "snippet": "import { useTelemetryQuery } from '@/lib/hooks/useTelemetryQuery'"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 105,
+                "snippet": "const { data: telemetryData, ... } = useTelemetryQuery(sessionId, selectedDrivers, qualifyingPart)"
+              }
+            ]
+          },
+          {
+            "claim": "Qualifying page calls usePerformanceInsightsQuery() which indirectly triggers fetchTelemetry via analysis service orchestration",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 12,
+                "snippet": "import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 135,
+                "snippet": "const { data: performanceData, ... } = usePerformanceInsightsQuery({ sessionId, referenceDriver, compareDrivers, ... enabled: isAnalysisPanelVisible ... })"
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service (apps/analysis_service/main.py and services/performance_orchestrator.py) calls POST /analysis/performance-insights which fetches telemetry via HTTP GET /telemetry",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 94,
+                "snippet": "API_BASE_URL = os.getenv(\"API_BASE_URL\", \"http://api:8000\")"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 407,
+                "snippet": "url = f\"{API_SERVICE_URL}/telemetry\""
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 379,
+                "snippet": "async def fetch_driver_telemetry(client: httpx.AsyncClient, session_id: str, driver: str, session_part: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:"
+              }
+            ]
+          },
+          {
+            "claim": "POST /analysis/lap-similarity route (apps/api/app/routes/analysis.py:45-118) directly instantiates FastF1Client and calls get_telemetry()",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\analysis.py",
+                "line": 63,
+                "snippet": "client = FastF1Client(); telemetry_data = await client.get_telemetry(request.session_id, [request.driver1, request.driver2])"
+              }
+            ]
+          },
+          {
+            "claim": "POST /analysis/driver-style-clustering route (apps/api/app/routes/analysis.py:121-184) directly instantiates FastF1Client and calls get_telemetry()",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\analysis.py",
+                "line": 139,
+                "snippet": "client = FastF1Client(); telemetry_data = await client.get_telemetry(request.session_id, request.drivers)"
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service main.py scaled-delta endpoint (POST /analysis/scaled-delta, lines 301-420) fetches telemetry and sectors from API using HTTP client",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 343,
+                "snippet": "telemetry_url = f\"{API_BASE_URL}/telemetry?session={request.session_id}&{drivers_param}{session_part_param}\""
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 348,
+                "snippet": "telemetry_response = await client.get(telemetry_url)"
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": []
+      }
+    },
+    {
+      "label": "scope-blast-radius",
+      "result": {
+        "summary": "ApexView demonstrates HEAVY use of qualifying telemetry/delta machinery in the Qualifying page. This page exclusively consumes FastF1Client.get_telemetry, FastF1Client.get_delta_analysis, GET /telemetry, GET /telemetry/delta, and analysis-service endpoints (GET /analysis/performance-insights on port 8501) for its core visualizations (TelemetryLine, DeltaPlot, CornerBreakdownPanel, PerformanceInsightsPanel). The Race page uses ONLY pre-computed race-specific endpoints (GET /race/pace, GET /race/tyre-degradation, GET /race/pit-stops, GET /race/team-performance) and does NOT call telemetry or delta machinery. The Practice page uses ONLY pre-computed practice-specific endpoints (GET /practice/long-runs, GET /practice/short-runs, GET /practice/sector-analysis, GET /practice/progression) and does NOT call telemetry or delta machinery. The Home page is static and does NOT consume telemetry. Track Intelligence page is static with editorial content and does NOT call telemetry/delta endpoints. The Transparency page is purely static HTML with no data fetching. Telemetry/delta machinery is architecturally isolated to Qualifying and NOT consumed by other qualifying-adjacent pages (Race, Practice, Home, Track Intelligence, Transparency).\n\nOut-of-scope consumers identified: (None found. All telemetry/delta/performance-insights consumption is contained within the Qualifying page.)",
+        "findings": [
+          {
+            "claim": "Qualifying page uses FastF1Client.get_telemetry via GET /telemetry endpoint for multi-driver telemetry visualization",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 11,
+                "snippet": "import { useTelemetryQuery } from '@/lib/hooks/useTelemetryQuery'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 105,
+                "snippet": "const { data: telemetryData, ... } = useTelemetryQuery(sessionId, selectedDrivers, qualifyingPart)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 256,
+                "snippet": "<TelemetryLine telemetryData={telemetryMap} selectedDrivers={selectedDrivers} ... />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/hooks/useTelemetryQuery.ts",
+                "line": 2,
+                "snippet": "import { fetchTelemetry } from '@/lib/api'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 83,
+                "snippet": "export async function fetchTelemetry(sessionId: string, drivers: string[], sessionPart?: string): Promise<Telemetry[]> { return fetchApi<Telemetry[]>(`${API_BASE_URL}/telemetry?session=${sessionId}&${driverParams}${sessionPartParam}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/telemetry.py",
+                "line": 9,
+                "snippet": "@router.get(\"\") async def get_telemetry(session: str = Query(...), drivers: List[str] = Query(...), ...): service = get_data_service(); telemetry = await service.get_telemetry(session, drivers, lap_type, session_part); return telemetry"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/services/telemetry/fastf1_client.py",
+                "line": 579,
+                "snippet": "async def get_telemetry(self, session: str, drivers: List[str], lap_type: str = 'fastest', session_part: Optional[str] = None) -> List[TelemetryResponse]:"
+              }
+            ]
+          },
+          {
+            "claim": "Qualifying page uses FastF1Client.get_delta_analysis via GET /telemetry/delta endpoint and fetchPerformanceInsights via POST /analysis/performance-insights",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 12,
+                "snippet": "import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 135,
+                "snippet": "const { data: performanceData, ... } = usePerformanceInsightsQuery({ sessionId, referenceDriver, compareDrivers, corners, mode: insightMode, sessionPart: qualifyingPart, trackLength: trackData?.length, enabled: isAnalysisPanelVisible && !isTrackPlaceholder })"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 171,
+                "snippet": "const transformedDeltaData = useMemo((): DeltaData[] => { if (!performanceData?.results) return []; return performanceData.results.map(result => ({ referenceDriver, compareDriver: result.driver, distance: result.distance ?? [], delta: result.delta ?? [] })) })"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 317,
+                "snippet": "<DeltaPlot deltaData={transformedDeltaData} referenceDriver={referenceDriver} ... />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/hooks/usePerformanceInsightsQuery.ts",
+                "line": 12,
+                "snippet": "import { fetchPerformanceInsights } from '@/lib/api'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 443,
+                "snippet": "export async function fetchPerformanceInsights(...): Promise<PerformanceInsightsResponse> { const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/performance-insights`, { method: 'POST', ... body: JSON.stringify({ session_id: sessionId, reference_driver: referenceDriver, compare_drivers: compareDrivers, ... }) })"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/analysis.py",
+                "line": 64,
+                "snippet": "telemetry_data = await client.get_telemetry(request.session_id, [request.driver1, request.driver2])"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/services/telemetry/fastf1_client.py",
+                "line": 765,
+                "snippet": "async def get_delta_analysis(self, session: str, reference_driver: str, compare_drivers: List[str], session_part: Optional[str] = None) -> List[DeltaResponse]:"
+              }
+            ]
+          },
+          {
+            "claim": "Qualifying page renders CornerBreakdownPanel and PerformanceInsightsPanel fed directly from performanceData returned by unified analysis-service endpoint",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 343,
+                "snippet": "<CornerBreakdownPanel results={performanceData?.results ?? []} referenceDriver={referenceDriver} isLoading={isPerformanceLoading} error={...} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/qualifying/QualifyingContent.tsx",
+                "line": 357,
+                "snippet": "<PerformanceInsightsPanel data={performanceData} referenceDriver={referenceDriver} compareDrivers={compareDrivers} isLoading={isPerformanceLoading} ... />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 293,
+                "snippet": "const ANALYSIS_SERVICE_URL = process.env.NEXT_PUBLIC_ANALYSIS_SERVICE_URL || 'http://localhost:8501'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 452,
+                "snippet": "export async function fetchPerformanceInsights(sessionId: string, referenceDriver: string, compareDrivers: string[], corners: Corner[], mode: 'engineer' | 'driver' = 'engineer', sessionPart?: string, trackLength?: number): Promise<PerformanceInsightsResponse> { const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/performance-insights`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ... include_telemetry: true, ... }) })"
+              }
+            ]
+          },
+          {
+            "claim": "Race page consumes ONLY race-specific pre-computed endpoints; does NOT use telemetry or delta endpoints",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/race/RaceContent.tsx",
+                "line": 5,
+                "snippet": "import { useRacePaceQuery } from '@/lib/hooks/useRacePaceQuery'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/race/RaceContent.tsx",
+                "line": 46,
+                "snippet": "const { data: racePaceData, isLoading, isError, error, isPlaceholderData } = useRacePaceQuery(sessionId, fuelEffect)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/race/RaceContent.tsx",
+                "line": 104,
+                "snippet": "<TyreDegradationPanel sessionId={sessionId} fuelEffect={fuelEffect} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/race/RaceContent.tsx",
+                "line": 108,
+                "snippet": "<PitStopPanel sessionId={sessionId} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/race/RaceContent.tsx",
+                "line": 112,
+                "snippet": "<TeamPerformancePanel sessionId={sessionId} fuelEffect={fuelEffect} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 128,
+                "snippet": "export async function fetchRacePace(sessionId: string, fuelEffect?: number): Promise<RacePaceResponse> { const params = new URLSearchParams({ session: sessionId }); return fetchApi<RacePaceResponse>(`${API_BASE_URL}/race/pace?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 139,
+                "snippet": "export async function fetchTyreDegradation(sessionId: string, fuelEffect?: number, mode: string = 'driver'): Promise<TyreDegradationResponse> { return fetchApi<TyreDegradationResponse>(`${API_BASE_URL}/race/tyre-degradation?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 153,
+                "snippet": "export async function fetchPitStops(sessionId: string): Promise<PitStopAnalysisResponse> { return fetchApi<PitStopAnalysisResponse>(`${API_BASE_URL}/race/pit-stops?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 162,
+                "snippet": "export async function fetchTeamPerformance(sessionId: string, fuelEffect?: number): Promise<TeamPerformanceResponse> { return fetchApi<TeamPerformanceResponse>(`${API_BASE_URL}/race/team-performance?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/race.py",
+                "line": 25,
+                "snippet": "@router.get(\"/pace\", response_model=RacePaceResponse) async def get_race_pace(session: str = Query(...), fuel_effect: float = Query(0.032)) -> RacePaceResponse"
+              }
+            ]
+          },
+          {
+            "claim": "Practice page consumes ONLY practice-specific pre-computed endpoints; does NOT use telemetry or delta endpoints",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/practice/PracticeContent.tsx",
+                "line": 5,
+                "snippet": "import { usePracticeSessionsQuery } from '@/lib/hooks/usePracticeSessionsQuery'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/practice/PracticeContent.tsx",
+                "line": 105,
+                "snippet": "<LongRunPacePanel sessionId={sessionId} fuelEffect={fuelEffect} fuelCorrected={fuelCorrected} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/practice/PracticeContent.tsx",
+                "line": 114,
+                "snippet": "<ShortRunPanel sessionId={sessionId} fuelEffect={fuelEffect} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/practice/PracticeContent.tsx",
+                "line": 127,
+                "snippet": "<SectorAnalysisPanel sessionId={sessionId} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/practice/PracticeContent.tsx",
+                "line": 132,
+                "snippet": "<SessionProgressionPanel year={season} round={round} />"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 192,
+                "snippet": "export async function fetchLongRuns(sessionId: string, fuelEffect?: number): Promise<PracticeLongRunResponse> { return fetchApi<PracticeLongRunResponse>(`${API_BASE_URL}/practice/long-runs?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 205,
+                "snippet": "export async function fetchShortRuns(sessionId: string, fuelEffect?: number): Promise<PracticeShortRunResponse> { return fetchApi<PracticeShortRunResponse>(`${API_BASE_URL}/practice/short-runs?${params}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 218,
+                "snippet": "export async function fetchSectorAnalysis(sessionId: string): Promise<PracticeSectorAnalysisResponse> { return fetchApi<PracticeSectorAnalysisResponse>(`${API_BASE_URL}/practice/sector-analysis?session=${sessionId}`) }"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 226,
+                "snippet": "export async function fetchProgression(year: number, roundNum: number): Promise<PracticeProgressionResponse> { return fetchApi<PracticeProgressionResponse>(`${API_BASE_URL}/practice/progression?${params}`) }"
+              }
+            ]
+          },
+          {
+            "claim": "Home page is static and does not fetch any telemetry or delta data",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/HomeContent.tsx",
+                "line": 1,
+                "snippet": "'use client' - no data fetching hooks imported"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/HomeContent.tsx",
+                "line": 59,
+                "snippet": "<HeroSection seasonStats={seasonStats} /> <FeatureCard ... /> <PlatformCapabilities />"
+              }
+            ]
+          },
+          {
+            "claim": "Track Intelligence page uses only useTrackIntelligence hook which fetches static editorial content and basic track metadata; no telemetry or delta",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/track/TrackIntelligenceContent.tsx",
+                "line": 3,
+                "snippet": "import { useTrackIntelligence } from '@/lib/hooks'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/track/TrackIntelligenceContent.tsx",
+                "line": 20,
+                "snippet": "const { editorial, apiData, isLoading, isError, hasEditorial } = useTrackIntelligence(round, season)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/hooks/useTrackIntelligence.ts",
+                "line": 15,
+                "snippet": "const apiQuery = useTrackQuery(round, season); const editorialData = getTrackIntelligence(round); const hasEditorial = hasTrackIntelligence(round)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/hooks/useTrackQuery.ts",
+                "line": 1,
+                "snippet": "import { useQuery } from '@tanstack/react-query'; import { fetchTrack } from '@/lib/api'"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 120,
+                "snippet": "export async function fetchTrack(round: number, season: number = 2025): Promise<Track> { return fetchApi<Track>(`${API_BASE_URL}/track/${round}?season=${season}`) }"
+              }
+            ]
+          },
+          {
+            "claim": "Transparency page is purely static server-rendered HTML with no client-side hooks or data fetching",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/transparency/TransparencyContent.tsx",
+                "line": 1,
+                "snippet": "/** Transparency & Attribution page content. Server Component — purely static HTML with anchor links. No client-side interactivity, no hooks, no state. */"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/app/transparency/TransparencyContent.tsx",
+                "line": 17,
+                "snippet": "export default function TransparencyContent() { return ( <div className=\"space-y-6\"> ... <nav aria-label=\"Page sections\"> ... )"
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service endpoints (GET /analysis/insights, POST /analysis/lap-similarity, POST /analysis/driver-style-clustering) exist in API but are ONLY called from Qualifying page via useAnalysisInsightsQuery",
+            "evidence": [
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/analysis.py",
+                "line": 187,
+                "snippet": "@router.get(\"/insights/{session_id}\") async def get_session_insights(session_id: str, drivers: List[str] = Query(...))"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/analysis.py",
+                "line": 45,
+                "snippet": "@router.post(\"/lap-similarity\") async def calculate_lap_similarity(request: LapSimilarityRequest)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/api/app/routes/analysis.py",
+                "line": 121,
+                "snippet": "@router.post(\"/driver-style-clustering\") async def cluster_driver_styles(request: ClusteringRequest)"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/hooks/useAnalysisInsightsQuery.ts",
+                "line": 15,
+                "snippet": "export function useAnalysisInsightsQuery(sessionId: string, drivers: string[]) { return useQuery({ queryKey: queryKeys.analysis.insights(sessionId, drivers), queryFn: () => fetchAnalysisInsights(sessionId, drivers), ... })"
+              },
+              {
+                "file": "C:/Users/khash/OneDrive/Desktop/ApexView/apps/web/lib/api.ts",
+                "line": 247,
+                "snippet": "export async function fetchAnalysisInsights(sessionId: string, drivers: string[]): Promise<AnalysisInsightsResponse> { return fetchApi<AnalysisInsightsResponse>(`${API_BASE_URL}/analysis/insights/${sessionId}?${driverParams}`) }"
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": []
+      }
+    },
+    {
+      "label": "frontend-payloads",
+      "result": {
+        "summary": "The Qualifying page (apps/web/app/qualifying/) obtains telemetry traces from the API /telemetry endpoint, delta/gap data from the unified performance-insights endpoint (which calls analysis service), and performance insights from the analysis service /analysis/performance-insights endpoint. The qualifying page does NOT call the API /telemetry/delta endpoint directly—delta data is embedded exclusively in the performance-insights response. All track data (corners, sectors) comes from the API /track/{round} endpoint. The API base URL is http://localhost:8000 (configurable via NEXT_PUBLIC_API_URL env var) and the analysis service is http://localhost:8501 (configurable via NEXT_PUBLIC_ANALYSIS_SERVICE_URL).",
+        "findings": [
+          {
+            "claim": "Telemetry traces obtained via fetchTelemetry hook calling GET /telemetry endpoint",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 83,
+                "snippet": "export async function fetchTelemetry(\n  sessionId: string, \n  drivers: string[],\n  sessionPart?: string\n): Promise<Telemetry[]> {\n  const driverParams = drivers.map(d => `drivers=${d}`).join('&')\n  const sessionPartParam = sessionPart ? `&session_part=${sessionPart}` : ''\n  return fetchApi<Telemetry[]>(`${API_BASE_URL}/telemetry?session=${sessionId}&${driverParams}${sessionPartParam}`)\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\hooks\\useTelemetryQuery.ts",
+                "line": 8,
+                "snippet": "export function useTelemetryQuery(\n  sessionId: string,\n  drivers: string[],\n  sessionPart?: string\n) {\n  return useQuery({\n    queryKey: queryKeys.telemetry.list(sessionId, drivers, sessionPart),\n    queryFn: () => fetchTelemetry(sessionId, drivers, sessionPart),\n    enabled: Boolean(sessionId && drivers.length > 0),\n    staleTime: Infinity,\n    placeholderData: keepPreviousData,\n  })\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 105,
+                "snippet": "const {\n    data: telemetryData,\n    isLoading: isTelemetryLoading,\n    isError: isTelemetryError,\n    isPlaceholderData: isTelemetryPlaceholder,\n    refetch: refetchTelemetry\n  } = useTelemetryQuery(sessionId, selectedDrivers, qualifyingPart)"
+              }
+            ]
+          },
+          {
+            "claim": "Telemetry endpoint URL parameters: session (sessionId), drivers (array), session_part (optional qualifying part Q1/Q2/Q3)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 88,
+                "snippet": "const driverParams = drivers.map(d => `drivers=${d}`).join('&')\n  const sessionPartParam = sessionPart ? `&session_part=${sessionPart}` : ''\n  return fetchApi<Telemetry[]>(`${API_BASE_URL}/telemetry?session=${sessionId}&${driverParams}${sessionPartParam}`)"
+              }
+            ]
+          },
+          {
+            "claim": "Delta/gap data NOT obtained from direct API /telemetry/delta endpoint; instead sourced exclusively from unified performance-insights analysis service endpoint",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 135,
+                "snippet": "// Unified analysis query — replaces separate scaled-delta, corner-analysis, and performance-insights calls\n  // Visibility-gated: only fires when user scrolls near the Delta panel\n  const {\n    data: performanceData,\n    isLoading: isPerformanceLoading,\n    isError: isPerformanceError,\n    error: performanceError,\n    isPlaceholderData: isPerformancePlaceholder,\n  } = usePerformanceInsightsQuery({\n    sessionId,\n    referenceDriver,\n    compareDrivers,\n    corners: trackData?.corners,\n    mode: insightMode,\n    sessionPart: qualifyingPart,\n    trackLength: trackData?.length,\n    enabled: isAnalysisPanelVisible && !isTrackPlaceholder,\n  })"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 171,
+                "snippet": "// Transform performanceData results to DeltaData format for DeltaPlot\n  // Sources delta from the unified analysis endpoint (Phase 2 data embedded in results)\n  const transformedDeltaData = useMemo((): DeltaData[] => {\n    if (!performanceData?.results) return []\n\n    return performanceData.results.map(result => ({\n      referenceDriver,\n      compareDriver: result.driver,\n      distance: result.distance ?? [],\n      delta: result.delta ?? [],\n    }))\n  }, [performanceData, referenceDriver])"
+              }
+            ]
+          },
+          {
+            "claim": "Performance insights obtained via usePerformanceInsightsQuery hook calling POST /analysis/performance-insights on analysis service (port 8501)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 443,
+                "snippet": "export async function fetchPerformanceInsights(\n  sessionId: string,\n  referenceDriver: string,\n  compareDrivers: string[],\n  corners: Corner[],\n  mode: 'engineer' | 'driver' = 'engineer',\n  sessionPart?: string,\n  trackLength?: number\n): Promise<PerformanceInsightsResponse> {\n  const response = await fetch(`${ANALYSIS_SERVICE_URL}/analysis/performance-insights`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n    },\n    body: JSON.stringify({\n      session_id: sessionId,\n      reference_driver: referenceDriver,\n      compare_drivers: compareDrivers,\n      corners: corners.map(c => ({\n        corner_number: c.cornerNumber,\n        name: c.name,\n        apex_distance: c.distance,\n        corner_type: c.type,\n      })),\n      mode,\n      session_part: sessionPart ?? null,\n      include_telemetry: true, // Required for DeltaPlot delta/distance arrays\n      track_length: trackLength ?? null,\n    }),\n  })"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 293,
+                "snippet": "const ANALYSIS_SERVICE_URL = process.env.NEXT_PUBLIC_ANALYSIS_SERVICE_URL || 'http://localhost:8501'"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\hooks\\usePerformanceInsightsQuery.ts",
+                "line": 39,
+                "snippet": "export function usePerformanceInsightsQuery({\n  sessionId,\n  referenceDriver,\n  compareDrivers,\n  corners,\n  mode = 'engineer',\n  sessionPart,\n  trackLength,\n  enabled: externalEnabled,\n}: UsePerformanceInsightsOptions) {\n  return useQuery<PerformanceInsightsResponse, Error>({\n    queryKey: queryKeys.analysis.performanceInsights(\n      sessionId,\n      referenceDriver,\n      compareDrivers,\n      mode,\n      sessionPart\n    ),\n    queryFn: () =>\n      fetchPerformanceInsights(\n        sessionId,\n        referenceDriver,\n        compareDrivers,\n        corners!,\n        mode,\n        sessionPart,\n        trackLength\n      ),"
+              }
+            ]
+          },
+          {
+            "claim": "Performance insights request payload structure: session_id, reference_driver, compare_drivers (array), corners (with corner_number, name, apex_distance, corner_type), mode ('engineer' or 'driver'), session_part (Q1/Q2/Q3 or null), include_telemetry (true), track_length (optional)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 457,
+                "snippet": "body: JSON.stringify({\n      session_id: sessionId,\n      reference_driver: referenceDriver,\n      compare_drivers: compareDrivers,\n      corners: corners.map(c => ({\n        corner_number: c.cornerNumber,\n        name: c.name,\n        apex_distance: c.distance,\n        corner_type: c.type,\n      })),\n      mode,\n      session_part: sessionPart ?? null,\n      include_telemetry: true, // Required for DeltaPlot delta/distance arrays\n      track_length: trackLength ?? null,\n    })"
+              }
+            ]
+          },
+          {
+            "claim": "Corners data sourced from API /track/{round} endpoint response corners array; field mapping: cornerNumber → corner_number, distance → apex_distance, name → name, type → corner_type",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 121,
+                "snippet": "const {\n    data: trackData,\n    isLoading: isTrackLoading,\n    isPlaceholderData: isTrackPlaceholder,\n  } = useTrackQuery(round, season)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 141,
+                "snippet": "corners: trackData?.corners,"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 461,
+                "snippet": "corners: corners.map(c => ({\n        corner_number: c.cornerNumber,\n        name: c.name,\n        apex_distance: c.distance,\n        corner_type: c.type,\n      }))"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\packages\\models\\src\\types.ts",
+                "line": 83,
+                "snippet": "export interface Corner {\n  cornerNumber: number\n  name?: string\n  distance: number\n  type: 'left' | 'right'\n  angle?: number  // degrees\n}"
+              }
+            ]
+          },
+          {
+            "claim": "Track data (corners, sectors, track_length) obtained via useTrackQuery hook calling GET /track/{round}?season={season} API endpoint",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 120,
+                "snippet": "export async function fetchTrack(round: number, season: number = 2025): Promise<Track> {\n  return fetchApi<Track>(`${API_BASE_URL}/track/${round}?season=${season}`)\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\hooks\\useTrackQuery.ts",
+                "line": 10,
+                "snippet": "export function useTrackQuery(round: number, season: number = 2025) {\n  return useQuery<Track>({\n    queryKey: queryKeys.track.detail(round),\n    queryFn: () => fetchTrack(round, season),\n    enabled: Boolean(round > 0),\n    staleTime: Infinity,\n    placeholderData: keepPreviousData,\n  })\n}"
+              }
+            ]
+          },
+          {
+            "claim": "Session ID format: '{season}_{round}_{sessionPrefix}' where sessionPrefix is 'Qualifying' or 'Sprint_Qualifying' (qualifying part Q1/Q2/Q3 passed separately as session_part parameter)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 75,
+                "snippet": "const sessionId = useMemo(() => {\n    // For sprint weekends, use SQ format\n    const sessionPrefix = sessionPart.startsWith('S') ? 'Sprint_Qualifying' : 'Qualifying'\n    return `${season}_${round}_${sessionPrefix}`\n  }, [season, round, sessionPart])"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 82,
+                "snippet": "const qualifyingPart = useMemo(() => {\n    // Map session part to API filter value\n    // SQ1/SQ2/SQ3 -> Q1/Q2/Q3 (FastF1 uses Q1/Q2/Q3 columns even for sprint qualifying)\n    if (sessionPart.startsWith('S')) {\n      return sessionPart.slice(1) // SQ1 -> Q1\n    }\n    return sessionPart // Q1, Q2, Q3\n  }, [sessionPart])"
+              }
+            ]
+          },
+          {
+            "claim": "Base API URL configurable via NEXT_PUBLIC_API_URL environment variable, defaults to http://localhost:8000",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 26,
+                "snippet": "const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\next.config.js",
+                "line": 10,
+                "snippet": "env: {\n    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',\n  },"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 55,
+                "snippet": "environment:\n      - NEXT_PUBLIC_API_URL=http://localhost:8000\n      - NEXT_PUBLIC_ANALYSIS_SERVICE_URL=http://localhost:8501"
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service URL configurable via NEXT_PUBLIC_ANALYSIS_SERVICE_URL environment variable, defaults to http://localhost:8501",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 293,
+                "snippet": "const ANALYSIS_SERVICE_URL = process.env.NEXT_PUBLIC_ANALYSIS_SERVICE_URL || 'http://localhost:8501'"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 55,
+                "snippet": "environment:\n      - NEXT_PUBLIC_API_URL=http://localhost:8000\n      - NEXT_PUBLIC_ANALYSIS_SERVICE_URL=http://localhost:8501"
+              }
+            ]
+          },
+          {
+            "claim": "Performance insights query enabled by visibility gate (useVisibility hook): query defers until user scrolls near Delta/analysis panels",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 70,
+                "snippet": "// Visibility gate — defers analysis query until user scrolls near the Delta panel\n  const { containerRef: analysisPanelRef, isVisible: isAnalysisPanelVisible } = useVisibility()"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 149,
+                "snippet": "enabled: isAnalysisPanelVisible && !isTrackPlaceholder,"
+              }
+            ]
+          },
+          {
+            "claim": "Insight mode parameter accepts 'engineer' (default, metrics-heavy) or 'driver' (actionable) modes; mode selection lifted from PerformanceInsightsPanel state",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 68,
+                "snippet": "const [insightMode, setInsightMode] = useState<InsightMode>('engineer')"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 146,
+                "snippet": "mode: insightMode,"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 365,
+                "snippet": "onModeChange={setInsightMode},"
+              }
+            ]
+          },
+          {
+            "claim": "Sectors data obtained via useSectorsQuery hook calling GET /laps/sectors endpoint with session, drivers (array), and optional session_part parameter",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 106,
+                "snippet": "export async function fetchSectors(\n  sessionId: string, \n  drivers: string[],\n  sessionPart?: string\n): Promise<SectorComparison[]> {\n  const driverParams = drivers.map(d => `drivers=${d}`).join('&')\n  const sessionPartParam = sessionPart ? `&session_part=${sessionPart}` : ''\n  return fetchApi<SectorComparison[]>(`${API_BASE_URL}/laps/sectors?session=${sessionId}&${driverParams}${sessionPartParam}`)\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 113,
+                "snippet": "const {\n    data: sectorsData,\n    isLoading: isSectorsLoading,\n    isError: isSectorsError,\n    isPlaceholderData: isSectorsPlaceholder,\n    refetch: refetchSectors\n  } = useSectorsQuery(sessionId, selectedDrivers, qualifyingPart)"
+              }
+            ]
+          },
+          {
+            "claim": "Laps data obtained via useLapsQuery hook calling GET /laps endpoint with session and drivers (array) parameters",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 74,
+                "snippet": "export async function fetchLaps(sessionId: string, drivers: string[]): Promise<Lap[]> {\n  const driverParams = drivers.map(d => `drivers=${d}`).join('&')\n  return fetchApi<Lap[]>(`${API_BASE_URL}/laps?session=${sessionId}&${driverParams}`)\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 121,
+                "snippet": "const {\n    data: lapsData,\n    isLoading: isLapsLoading,\n    isPlaceholderData: isLapsPlaceholder,\n  } = useLapsQuery(sessionId, selectedDrivers)"
+              }
+            ]
+          },
+          {
+            "claim": "Sessions data obtained via useSessionsQuery hook calling GET /sessions endpoint with season and round parameters",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\lib\\api.ts",
+                "line": 70,
+                "snippet": "export async function fetchSessions(season: number, round: number): Promise<Session[]> {\n  return fetchApi<Session[]>(`${API_BASE_URL}/sessions?season=${season}&round=${round}`)\n}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 98,
+                "snippet": "const {\n    data: sessionsData,\n    isLoading: isSessionsLoading,\n    isError: isSessionsError,\n    isPlaceholderData: isSessionsPlaceholder,\n  } = useSessionsQuery(season, round)"
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": [
+          "fetchDelta (defined in apps/web/lib/api.ts line 93 but never imported or called anywhere; queryKeys.delta exists in queryKeys.ts but no useDeltaQuery hook exists; effectively dead code)"
+        ]
+      }
+    },
+    {
+      "label": "analysis-handshake",
+      "result": {
+        "summary": "The ApexView analysis service maintains a frozen API handshake contract with the API service across five primary endpoints (/analysis/scaled-delta, /analysis/corner-analysis, /analysis/technique-profile, /analysis/generate-insight, /analysis/performance-insights). All HTTP communication occurs through two code paths: direct fetches in main.py (lines 343, 359, 546, 562, 882, 898, 1196, 1212) and the performance_orchestrator.py module (lines 379-460). The analysis service exclusively consumes two API endpoints: GET /telemetry (with query params session, drivers, session_part) and GET /laps/sectors (same params). Response fields consumed include: distance, speed, brake, throttle, lapTime, relativeDistance, time (from /telemetry) and totalTime, sector1/2/3 (from /laps/sectors). All request/response models are fully defined in models/schemas.py with precise field names, types, and defaults.",
+        "findings": [
+          {
+            "claim": "All five analysis service endpoints share identical telemetry fetching contracts: /analysis/scaled-delta (lines 342-371), /analysis/corner-analysis (lines 545-574), /analysis/technique-profile (lines 881-910), /analysis/generate-insight (lines 1195-1224), and /analysis/performance-insights (orchestrated internally) all call the same two API endpoints.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 343,
+                "snippet": "telemetry_url = (f\"{API_BASE_URL}/telemetry\" f\"?session={request.session_id}&{drivers_param}{session_part_param}\")"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 359,
+                "snippet": "sectors_url = (f\"{API_BASE_URL}/laps/sectors\" f\"?session={request.session_id}&{drivers_param}{session_part_param}\")"
+              }
+            ]
+          },
+          {
+            "claim": "Performance orchestrator fetches telemetry via fetch_driver_telemetry() which constructs URL with specific query parameters: session, drivers, and optional session_part (lines 400-413).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 400,
+                "snippet": "params = {\"session\": session_id, \"drivers\": driver} / if session_part: params[\"session_part\"] = session_part"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 407,
+                "snippet": "url = f\"{API_SERVICE_URL}/telemetry\""
+              }
+            ]
+          },
+          {
+            "claim": "Performance orchestrator consumes exactly these fields from /telemetry response: distance, speed, brake, throttle (required), plus optional lapTime, relativeDistance, time (lines 440-448).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 440,
+                "snippet": "telemetry = {\"distance\": data[\"distance\"], \"speed\": data[\"speed\"], \"brake\": data.get(\"brake\", [0] * len(data[\"distance\"])), \"throttle\": data.get(\"throttle\", [100] * len(data[\"distance\"])), \"lap_time\": data.get(\"lapTime\"), \"relative_distance\": data.get(\"relativeDistance\"), \"time\": data.get(\"time\")}"
+              }
+            ]
+          },
+          {
+            "claim": "/analysis/scaled-delta request model (ScaledDeltaRequest, lines 109-126) requires: session_id (str), reference_driver (str), compare_drivers (List[str]), optional session_part (str). Response model (lines 166-177) returns: session_id, reference_driver, results (List of ScaledDeltaDriverResult), metadata (dict).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 109,
+                "snippet": "class ScaledDeltaRequest(BaseModel): session_id: str = Field(..., description=\"Session identifier (e.g., '2025_24_Qualifying')\") reference_driver: str = Field(..., description=\"Reference driver code (3 letters, e.g., 'NOR')\") compare_drivers: List[str] = Field(..., description=\"List of driver codes to compare against reference\") session_part: Optional[str] = Field(None, description=\"Qualifying session part filter (Q1, Q2, or Q3)\")"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 166,
+                "snippet": "class ScaledDeltaResponse(BaseModel): session_id: str = Field(..., description=\"Session that was analyzed\") reference_driver: str = Field(..., description=\"Reference driver used\") results: List[ScaledDeltaDriverResult] = Field(..., description=\"Scaled delta results for each comparison driver\") metadata: Dict[str, Any] = Field(default_factory=dict, description=\"Additional metadata (session_part, errors, etc.)\")"
+              }
+            ]
+          },
+          {
+            "claim": "ScaledDeltaDriverResult (lines 129-163) contains: reference_driver, compare_driver (str), distance, delta, raw_delta (List[float]), official_gap, telemetry_gap, scaling_factor (float), confidence (0-1 float).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 129,
+                "snippet": "class ScaledDeltaDriverResult(BaseModel): reference_driver: str = Field(..., description=\"Reference driver code\") compare_driver: str = Field(..., description=\"Comparison driver code\") distance: List[float] = Field(..., description=\"Distance array in meters\") delta: List[float] = Field(..., description=\"Scaled delta in seconds (positive = compare driver slower)\") raw_delta: List[float] = Field(..., description=\"Original telemetry-derived delta before scaling\") official_gap: float = Field(..., description=\"Official timing gap in seconds (ground truth from FIA)\") telemetry_gap: float = Field(..., description=\"Raw telemetry-calculated gap in seconds\") scaling_factor: float = Field(..., description=\"Multiplier applied: official_gap / telemetry_gap\") confidence: float = Field(..., ge=0.0, le=1.0, description=\"Confidence score (0-1) based on scaling factor deviation\")"
+              }
+            ]
+          },
+          {
+            "claim": "/analysis/corner-analysis request model (CornerAnalysisRequest, lines 337-366) requires: session_id, reference_driver, compare_drivers (List[str]), corners (List[CornerInput]), optional session_part, circuit_id, sector_boundaries (List[float]). CornerInput (lines 184-193) contains: corner_number (int), name (optional str), apex_distance (float >= 0), corner_type (str).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 337,
+                "snippet": "class CornerAnalysisRequest(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) compare_drivers: List[str] = Field(...) corners: List[CornerInput] = Field(...) session_part: Optional[str] = Field(None) circuit_id: Optional[str] = Field(None) sector_boundaries: Optional[List[float]] = Field(None)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 184,
+                "snippet": "class CornerInput(BaseModel): corner_number: int = Field(..., ge=1, description=\"Sequential corner number (1-indexed)\") name: Optional[str] = Field(None) apex_distance: float = Field(..., ge=0) corner_type: str = Field(...)"
+              }
+            ]
+          },
+          {
+            "claim": "CornerAnalysisResponse (lines 406-417) returns: session_id, reference_driver, results (List[CornerAnalysisDriverResult]), metadata. Each CornerAnalysisDriverResult (lines 369-403) contains: compare_driver, corner_results (List[CornerResultSchema]), total_delta_change, corners_gaining, corners_losing, optional validation (ValidationReportSchema), analysis_version (v1/v2), optional lap_breakdown (LapBreakdownSchema).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 369,
+                "snippet": "class CornerAnalysisDriverResult(BaseModel): compare_driver: str = Field(...) corner_results: List[CornerResultSchema] = Field(...) total_delta_change: float = Field(...) corners_gaining: int = Field(...) corners_losing: int = Field(...) validation: Optional[ValidationReportSchema] = Field(None) analysis_version: str = Field(default=\"v1\") lap_breakdown: Optional[LapBreakdownSchema] = Field(None)"
+              }
+            ]
+          },
+          {
+            "claim": "CornerResultSchema (lines 196-218) contains exactly: corner_number, name (optional), apex_distance, brake_distance, zone_start, zone_end (all float), delta_change (float), cause (str: braking/apex/exit/multiple/unknown), confidence (str: high/medium/low).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 196,
+                "snippet": "class CornerResultSchema(BaseModel): corner_number: int = Field(...) name: Optional[str] = Field(None) apex_distance: float = Field(...) brake_distance: float = Field(...) zone_start: float = Field(...) zone_end: float = Field(...) delta_change: float = Field(...) cause: str = Field(...) confidence: str = Field(...)"
+              }
+            ]
+          },
+          {
+            "claim": "LapBreakdownSchema (lines 242-278) contains: corner_total, straight_total, official_gap (float), track_coverage (0-1 float), straight_segments (List[StraightSegmentSchema]), reconciliation_valid (bool), reconciliation_error (float >= 0), insight_text (str).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 242,
+                "snippet": "class LapBreakdownSchema(BaseModel): corner_total: float = Field(...) straight_total: float = Field(...) official_gap: float = Field(...) track_coverage: float = Field(..., ge=0, le=1) straight_segments: List[StraightSegmentSchema] = Field(default_factory=list) reconciliation_valid: bool = Field(...) reconciliation_error: float = Field(..., ge=0) insight_text: str = Field(default=\"\")"
+              }
+            ]
+          },
+          {
+            "claim": "/analysis/technique-profile request model (TechniqueProfilingRequest, lines 592-621) requires: session_id, reference_driver, compare_drivers (List[str]), corners (List[CornerInput]), optional session_part, weight_by_confidence (bool, default True), circuit_id.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 592,
+                "snippet": "class TechniqueProfilingRequest(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) compare_drivers: List[str] = Field(...) corners: List[CornerInput] = Field(...) session_part: Optional[str] = Field(None) weight_by_confidence: bool = Field(True) circuit_id: Optional[str] = Field(None)"
+              }
+            ]
+          },
+          {
+            "claim": "TechniqueProfilingResponse (lines 624-639) returns: session_id, reference_driver, profiles (List[TechniqueProfileSchema]), session_percentiles (SessionPercentilesSchema), metadata.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 624,
+                "snippet": "class TechniqueProfilingResponse(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) profiles: List[TechniqueProfileSchema] = Field(...) session_percentiles: SessionPercentilesSchema = Field(...) metadata: Dict[str, Any] = Field(default_factory=dict)"
+              }
+            ]
+          },
+          {
+            "claim": "TechniqueProfileSchema (lines 502-551) contains: driver, reference_driver (str), braking/apex/exit/consistency (TechniqueDimensionSchema), optional straight_line (StraightLineDimensionSchema), top_gaining_corners, top_losing_corners (List[str]), style_summary, overall_confidence (0-1 float), total_corners_analyzed (int).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 502,
+                "snippet": "class TechniqueProfileSchema(BaseModel): driver: str = Field(...) reference_driver: str = Field(...) braking: TechniqueDimensionSchema = Field(...) apex: TechniqueDimensionSchema = Field(...) exit: TechniqueDimensionSchema = Field(...) consistency: TechniqueDimensionSchema = Field(...) straight_line: Optional[StraightLineDimensionSchema] = Field(None) top_gaining_corners: List[str] = Field(default_factory=list) top_losing_corners: List[str] = Field(default_factory=list) style_summary: str = Field(...) overall_confidence: float = Field(...) total_corners_analyzed: int = Field(...)"
+              }
+            ]
+          },
+          {
+            "claim": "TechniqueDimensionSchema (lines 424-454) contains: level (str: strong/neutral/weak), descriptor (str), percentile (0-100 float), raw_value (float), corner_count (int >= 0), avg_confidence (0-1 float).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 424,
+                "snippet": "class TechniqueDimensionSchema(BaseModel): level: str = Field(..., description=\"Classification level: 'strong', 'neutral', or 'weak'\") descriptor: str = Field(...) percentile: float = Field(..., ge=0, le=100) raw_value: float = Field(...) corner_count: int = Field(..., ge=0) avg_confidence: float = Field(..., ge=0, le=1)"
+              }
+            ]
+          },
+          {
+            "claim": "SessionPercentilesSchema (lines 554-589) contains: braking_p30, braking_p70, apex_p30, apex_p70, exit_p30, exit_p70, consistency_p30, consistency_p70 (all float), optional straight_line_p30, straight_line_p70 (float), driver_count (int >= 1).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 554,
+                "snippet": "class SessionPercentilesSchema(BaseModel): braking_p30: float = Field(...) braking_p70: float = Field(...) apex_p30: float = Field(...) apex_p70: float = Field(...) exit_p30: float = Field(...) exit_p70: float = Field(...) consistency_p30: float = Field(...) consistency_p70: float = Field(...) straight_line_p30: Optional[float] = Field(None) straight_line_p70: Optional[float] = Field(None) driver_count: int = Field(..., ge=1)"
+              }
+            ]
+          },
+          {
+            "claim": "/analysis/generate-insight request model (InsightGenerationRequest, lines 718-747) requires: session_id, reference_driver, compare_drivers (List[str]), corners (List[CornerInput]); optional mode (str, default 'engineer'), session_part, circuit_name.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 718,
+                "snippet": "class InsightGenerationRequest(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) compare_drivers: List[str] = Field(...) corners: List[CornerInput] = Field(...) mode: str = Field(default=\"engineer\") session_part: Optional[str] = Field(None) circuit_name: Optional[str] = Field(None)"
+              }
+            ]
+          },
+          {
+            "claim": "InsightGenerationResponse (lines 750-761) returns: session_id, reference_driver, insights (List[NaturalLanguageInsightSchema]), metadata.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 750,
+                "snippet": "class InsightGenerationResponse(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) insights: List[NaturalLanguageInsightSchema] = Field(...) metadata: Dict[str, Any] = Field(default_factory=dict)"
+              }
+            ]
+          },
+          {
+            "claim": "NaturalLanguageInsightSchema (lines 681-715) contains: driver, reference_driver, mode (str), confidence_level (str), summary (str), dimension_insights (List[DimensionInsightSchema]), corner_insights (List[CornerInsightSchema]), opportunity_text, hedging_prefix (str), total_corners (int), session_context (Dict), style_summary (str).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 681,
+                "snippet": "class NaturalLanguageInsightSchema(BaseModel): driver: str = Field(...) reference_driver: str = Field(...) mode: str = Field(...) confidence_level: str = Field(...) summary: str = Field(...) dimension_insights: List[DimensionInsightSchema] = Field(default_factory=list) corner_insights: List[CornerInsightSchema] = Field(default_factory=list) opportunity_text: str = Field(default=\"\") hedging_prefix: str = Field(default=\"\") total_corners: int = Field(..., ge=0) session_context: Dict[str, str] = Field(default_factory=dict) style_summary: str = Field(default=\"\")"
+              }
+            ]
+          },
+          {
+            "claim": "/analysis/performance-insights request model (PerformanceInsightsRequest, lines 768-810) requires: session_id, reference_driver, compare_drivers (List[str]), corners (List[CornerInput]); optional mode (str, default 'engineer'), session_part, circuit_name, include_telemetry (bool, default True), track_length (float).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 768,
+                "snippet": "class PerformanceInsightsRequest(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) compare_drivers: List[str] = Field(...) corners: List[CornerInput] = Field(...) mode: str = Field(default=\"engineer\") session_part: Optional[str] = Field(None) circuit_name: Optional[str] = Field(None) include_telemetry: bool = Field(default=True) track_length: Optional[float] = Field(None)"
+              }
+            ]
+          },
+          {
+            "claim": "PerformanceInsightsResponse (lines 900-963) returns: session_id, reference_driver, circuit_name (optional), mode, results (List[DriverPerformanceResult]), session_percentiles (optional SessionPercentilesSchema), total_drivers_requested, total_drivers_processed, total_corners (all int), phase_timing (List[PhaseTimingInfo]), total_duration_ms (int), errors, warnings (List[str]).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 900,
+                "snippet": "class PerformanceInsightsResponse(BaseModel): session_id: str = Field(...) reference_driver: str = Field(...) circuit_name: Optional[str] = Field(None) mode: str = Field(...) results: List[DriverPerformanceResult] = Field(...) session_percentiles: Optional[SessionPercentilesSchema] = Field(None) total_drivers_requested: int = Field(..., ge=0) total_drivers_processed: int = Field(..., ge=0) total_corners: int = Field(..., ge=0) phase_timing: List[PhaseTimingInfo] = Field(default_factory=list) total_duration_ms: int = Field(..., ge=0) errors: List[str] = Field(default_factory=list) warnings: List[str] = Field(default_factory=list)"
+              }
+            ]
+          },
+          {
+            "claim": "DriverPerformanceResult (lines 813-889) assembles all phases into single driver object: driver (str), official_gap, scaling_confidence, optional delta/distance/telemetry_gap/scaling_factor/raw_delta (from Phase 2), corners_gaining/losing, total_corner_delta (int/float from Phase 3), optional corner_results (List[CornerResultSchema]), lap_breakdown (LapBreakdownSchema), technique_profile (TechniqueProfileSchema), insight (NaturalLanguageInsightSchema).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\models\\schemas.py",
+                "line": 813,
+                "snippet": "class DriverPerformanceResult(BaseModel): driver: str = Field(...) official_gap: float = Field(...) scaling_confidence: float = Field(..., ge=0.0, le=1.0) delta: Optional[List[float]] = Field(None) distance: Optional[List[float]] = Field(None) telemetry_gap: Optional[float] = Field(None) scaling_factor: Optional[float] = Field(None) raw_delta: Optional[List[float]] = Field(None) corners_gaining: int = Field(..., ge=0) corners_losing: int = Field(..., ge=0) total_corner_delta: float = Field(...) corner_results: List[CornerResultSchema] = Field(default_factory=list) lap_breakdown: Optional[LapBreakdownSchema] = Field(None) technique_profile: Optional[TechniqueProfileSchema] = Field(None) insight: Optional[NaturalLanguageInsightSchema] = Field(None)"
+              }
+            ]
+          },
+          {
+            "claim": "Performance insights handler in main.py (lines 1470-1636) orchestrates all phases internally via orchestrate_performance_insights() (line 1511), then serializes orchestrator DriverPerformanceResult into response schema DriverPerformanceResult by extracting: official_gap, scaling_confidence, delta/distance/telemetry_gap/scaling_factor/raw_delta from Phase 2; corners_gaining/losing, total_corner_delta, corner_results, lap_breakdown from Phase 3; technique_profile from Phase 4; insight from Phase 5 (lines 1516-1588).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 1470,
+                "snippet": "async def get_performance_insights(request: PerformanceInsightsRequest):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 1511,
+                "snippet": "result = await orchestrate_performance_insights(config, client)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 1516,
+                "snippet": "driver_results.append(DriverPerformanceResult(driver=dr.driver, official_gap=dr.official_gap, scaling_confidence=dr.scaling_confidence, delta=dr.delta, distance=dr.distance, telemetry_gap=dr.telemetry_gap, scaling_factor=dr.scaling_factor, raw_delta=dr.raw_delta, corners_gaining=dr.corners_gaining, corners_losing=dr.corners_losing, total_corner_delta=dr.total_corner_delta, corner_results=[CornerResultSchema(...) for cr in dr.corner_results] if dr.corner_results else [], lap_breakdown=LapBreakdownSchema(...) if dr.lap_breakdown else None, technique_profile=TechniqueProfileSchema(...) if dr.technique_profile else None, insight=NaturalLanguageInsightSchema(...) if dr.insight else None))"
+              }
+            ]
+          },
+          {
+            "claim": "Only two locations in analysis service consume API service: (1) main.py endpoints call API directly via httpx.AsyncClient (lines 335-356, 538-574, 874-910, 1188-1224, 1510-1511), and (2) performance_orchestrator.py's fetch_driver_telemetry() (line 379-459) and fetch_all_telemetry() (lines 462-502) fetch telemetry from /telemetry endpoint. No other modules perform HTTP calls.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 335,
+                "snippet": "async with httpx.AsyncClient(timeout=30.0) as client:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 379,
+                "snippet": "async def fetch_driver_telemetry(client: httpx.AsyncClient, session_id: str, driver: str, session_part: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:"
+              }
+            ]
+          },
+          {
+            "claim": "Orchestrator's fetch_driver_telemetry() (lines 379-459) builds telemetry dict with exact keys: distance, speed, brake, throttle (required arrays), lap_time (optional float from 'lapTime'), relative_distance (optional from 'relativeDistance'), time (optional array). API response is assumed to be either dict or list[dict]; if list, first element extracted (line 428).",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 440,
+                "snippet": "telemetry = {\"distance\": data[\"distance\"], \"speed\": data[\"speed\"], \"brake\": data.get(\"brake\", [0] * len(data[\"distance\"])), \"throttle\": data.get(\"throttle\", [100] * len(data[\"distance\"])), \"lap_time\": data.get(\"lapTime\"), \"relative_distance\": data.get(\"relativeDistance\"), \"time\": data.get(\"time\")}"
+              }
+            ]
+          },
+          {
+            "claim": "All main.py endpoints process telemetry identically after fetch (lines 373-375): build telemetry_map from list of dicts via driver key lookup, similar for sectors_map from /laps/sectors response. Query parameters always formatted as: 'session={session_id}&drivers={driver1}&drivers={driver2}...&session_part={part}'.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 373,
+                "snippet": "telemetry_map = {t[\"driver\"]: t for t in telemetry_data}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 374,
+                "snippet": "sectors_map = {s[\"driver\"]: s for s in sectors_data}"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\main.py",
+                "line": 337,
+                "snippet": "drivers_param = \"&\".join([f\"drivers={d}\" for d in all_drivers])"
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": []
+      }
+    },
+    {
+      "label": "cache-infra",
+      "result": {
+        "summary": "ApexView is a F1 engineering telemetry platform with a Next.js frontend, FastAPI backend, and analysis microservice. The telemetry system uses a Parquet-based caching layer for performance. Source code is BAKED INTO THE DOCKER IMAGES (not volume-mounted), meaning container restarts alone won't pick up changes—images must be rebuilt. Cache data is the ONLY volume-mounted directory (/app/data/cache maps to ./data/cache on host). Uvicorn runs without --reload in both services.",
+        "findings": [
+          {
+            "claim": "Parquet cache class and implementation file location",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 10,
+                "snippet": "class ParquetCache:\n    \"\"\"Read-through/write-through Parquet cache for F1 data.\"\"\""
+              }
+            ]
+          },
+          {
+            "claim": "Parquet cache is instantiated as global singleton named 'parquet_cache'",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 161,
+                "snippet": "# Global cache instance\nparquet_cache = ParquetCache()"
+              }
+            ]
+          },
+          {
+            "claim": "FastF1Client assigns parquet_cache to self.cache in __init__",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 39,
+                "snippet": "self.cache = parquet_cache"
+              }
+            ]
+          },
+          {
+            "claim": "Parquet cache file naming/keying scheme: key generated from session_id, data_type, and kwargs (drivers, lap_type, etc.); MD5 hash used for long keys; files stored with .parquet extension",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 23,
+                "snippet": "def _generate_key(self, session_id: str, data_type: str, **kwargs) -> str:\n        \"\"\"Generate cache key from parameters.\n        Args:\n            session_id: Session identifier (e.g., \"2024_1_Qualifying\")\n            data_type: Type of data (\"laps\", \"telemetry\", \"delta\")\n            **kwargs: Additional parameters for key generation\"\"\""
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 36,
+                "snippet": "key_parts = [session_id, data_type]\n        for k, v in sorted(kwargs.items()):\n            if isinstance(v, list):\n                key_parts.append(f\"{k}={'_'.join(sorted(v))}\")\n            else:\n                key_parts.append(f\"{k}={v}\")\n        \n        key_string = \"_\".join(key_parts)\n        # Use hash for long keys\n        if len(key_string) > 200:\n            key_hash = hashlib.md5(key_string.encode()).hexdigest()\n            return f\"{data_type}_{key_hash}\""
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 53,
+                "snippet": "def _get_cache_path(self, key: str) -> Path:\n        \"\"\"Get file path for cache key.\"\"\"\n        return self.cache_dir / f\"{key}.parquet\""
+              }
+            ]
+          },
+          {
+            "claim": "Parquet cache uses snappy compression; stored frames are pandas DataFrames",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 109,
+                "snippet": "data.to_parquet(\n                cache_path,\n                engine='pyarrow',\n                compression='snappy',\n                index=False\n            )"
+              }
+            ]
+          },
+          {
+            "claim": "Schema of stored telemetry frames: driver, lap_number, lap_time, distance (JSON), speed (JSON), throttle (JSON), brake (JSON), gear (JSON), relative_distance (JSON), time (JSON), rpm (JSON), drs (JSON)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 738,
+                "snippet": "telemetry_data_for_cache.append({\n                            'driver': driver,\n                            'lap_number': telemetry_response.lap_number,\n                            'lap_time': telemetry_response.lap_time,\n                            'distance': json.dumps(telemetry_response.distance),\n                            'speed': json.dumps(telemetry_response.speed),\n                            'throttle': json.dumps(telemetry_response.throttle),\n                            'brake': json.dumps(telemetry_response.brake),\n                            'gear': json.dumps(telemetry_response.gear),\n                            'relative_distance': json.dumps(telemetry_response.relative_distance) if telemetry_response.relative_distance else None,\n                            'time': json.dumps(telemetry_response.time) if telemetry_response.time else None,\n                            'rpm': json.dumps(telemetry_response.rpm) if telemetry_response.rpm else None,\n                            'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,\n                        })"
+              }
+            ]
+          },
+          {
+            "claim": "Schema of stored race laps frames: driver, team, lap_number, lap_time, sector1_time, sector2_time, sector3_time, compound, tyre_life, stint, position, pit_in_time, pit_out_time, track_status, is_personal_best, cumulative_time, speed_trap, speed_i1, speed_i2, speed_fl",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\telemetry\\fastf1_client.py",
+                "line": 420,
+                "snippet": "result.append({\n                    'driver': str(lap['Driver']),\n                    'team': str(lap['Team']) if pd.notna(lap.get('Team')) else None,\n                    'lap_number': int(lap['LapNumber']),\n                    'lap_time': lap_time,\n                    'sector1_time': float(lap['Sector1Time'].total_seconds()) if pd.notna(lap.get('Sector1Time')) else None,\n                    'sector2_time': float(lap['Sector2Time'].total_seconds()) if pd.notna(lap.get('Sector2Time')) else None,\n                    'sector3_time': float(lap['Sector3Time'].total_seconds()) if pd.notna(lap.get('Sector3Time')) else None,\n                    'compound': str(lap['Compound']) if pd.notna(lap.get('Compound')) else None,\n                    'tyre_life': int(lap['TyreLife']) if pd.notna(lap.get('TyreLife')) else None,\n                    'stint': int(lap['Stint']) if 'Stint' in lap.index and pd.notna(lap.get('Stint')) else None,\n                    'position': int(lap['Position']) if pd.notna(lap.get('Position')) else None,\n                    'pit_in_time': pit_in,\n                    'pit_out_time': pit_out,\n                    'track_status': str(lap['TrackStatus']) if pd.notna(lap.get('TrackStatus')) else '1',\n                    'is_personal_best': bool(lap.get('IsPersonalBest', False)) if pd.notna(lap.get('IsPersonalBest')) else False,\n                    'cumulative_time': float(lap['Time'].total_seconds()) if pd.notna(lap.get('Time')) else None,\n                    'speed_trap': float(lap['SpeedST']) if pd.notna(lap.get('SpeedST')) else None,\n                    'speed_i1': float(lap['SpeedI1']) if pd.notna(lap.get('SpeedI1')) else None,\n                    'speed_i2': float(lap['SpeedI2']) if pd.notna(lap.get('SpeedI2')) else None,\n                    'speed_fl': float(lap['SpeedFL']) if pd.notna(lap.get('SpeedFL')) else None,\n                })"
+              }
+            ]
+          },
+          {
+            "claim": "PARQUET_DIR path in container: /app/data/cache/parquet (set in docker-compose environment variable and docker-compose.yml line 11)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 11,
+                "snippet": "- PARQUET_DIR=/app/data/cache/parquet"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\core\\config.py",
+                "line": 16,
+                "snippet": "CACHE_DIR: Path = Path(\"/app/data/cache\")  # Docker-friendly path\n    PARQUET_DIR: Path = CACHE_DIR / \"parquet\""
+              }
+            ]
+          },
+          {
+            "claim": "ParquetCache initializes cache_dir from settings.PARQUET_DIR or passed parameter",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\cache\\parquet_cache.py",
+                "line": 18,
+                "snippet": "def __init__(self, cache_dir: Optional[Path] = None):\n        \"\"\"Initialize ParquetCache with cache directory.\"\"\"\n        self.cache_dir = cache_dir or settings.PARQUET_DIR"
+              }
+            ]
+          },
+          {
+            "claim": "docker-compose.yml service details: api service builds from apps/api/Dockerfile, container_name=f1-api, analysis service builds from apps/analysis_service/Dockerfile, container_name=f1-analysis, web service builds from apps/web/Dockerfile, container_name=f1-web",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 1,
+                "snippet": "services:\n  # FastAPI backend service\n  api:\n    build:\n      context: .\n      dockerfile: apps/api/Dockerfile\n    container_name: f1-api"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 29,
+                "snippet": "# Analysis microservice\n  analysis:\n    build:\n      context: .\n      dockerfile: apps/analysis_service/Dockerfile\n    container_name: f1-analysis"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 49,
+                "snippet": "# Next.js frontend service\n  web:\n    build:\n      context: .\n      dockerfile: apps/web/Dockerfile\n    container_name: f1-web"
+              }
+            ]
+          },
+          {
+            "claim": "Only volume mounted in docker-compose is cache data: ./data/cache:/app/data/cache in api service; NO source code volume mounts",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 14,
+                "snippet": "volumes:\n      - ./data/cache:/app/data/cache"
+              }
+            ]
+          },
+          {
+            "claim": "Source code (apps/api and apps/analysis_service) is COPIED into images at build time, not volume-mounted",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\Dockerfile",
+                "line": 20,
+                "snippet": "# Copy application code\nCOPY apps/api/app /app/app"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\Dockerfile",
+                "line": 24,
+                "snippet": "# Copy application code\nCOPY apps/analysis_service /app"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\Dockerfile",
+                "line": 33,
+                "snippet": "# Copy source code\nCOPY . ."
+              }
+            ]
+          },
+          {
+            "claim": "APIs runuvicorn without --reload flag in both services (no hot reload)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\Dockerfile",
+                "line": 45,
+                "snippet": "CMD [\"uvicorn\", \"app.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\Dockerfile",
+                "line": 46,
+                "snippet": "CMD [\"uvicorn\", \"main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8501\"]"
+              }
+            ]
+          },
+          {
+            "claim": "Environment variables in config.py: LIVE_DATA (bool, default true), DEFAULT_SEASON (int, default 2025), DOWNSAMPLE_THRESHOLD (int, default 5000), PARQUET_DIR (Path), CACHE_DIR (Path), ANALYSIS_SERVICE_URL (str), CORS_ORIGINS (list)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\core\\config.py",
+                "line": 5,
+                "snippet": "class Settings(BaseSettings):\n    \"\"\"Application settings.\"\"\"\n    \n    # API Settings\n    API_TITLE: str = \"F1 Engineering API\"\n    API_VERSION: str = \"0.1.0\"\n    \n    # Feature Flags\n    LIVE_DATA: bool = True  # Toggle between mock data and FastF1 (enabled for 2025 data)\n    \n    # FastF1 Settings\n    CACHE_DIR: Path = Path(\"/app/data/cache\")  # Docker-friendly path\n    PARQUET_DIR: Path = CACHE_DIR / \"parquet\"\n    DEFAULT_SEASON: int = 2025\n    DOWNSAMPLE_THRESHOLD: int = 5000  # Max telemetry points before downsampling\n    \n    # Analysis Service Settings\n    ANALYSIS_SERVICE_URL: str = \"http://analysis:8501\"\n    \n    # CORS\n    CORS_ORIGINS: list[str] = [\"http://localhost:3000\"]"
+              }
+            ]
+          },
+          {
+            "claim": "Settings loads from root .env file via pydantic BaseSettings with case_sensitive=True",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\core\\config.py",
+                "line": 30,
+                "snippet": "class Config:\n        env_file = \".env\"\n        case_sensitive = True"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\.env",
+                "line": 1,
+                "snippet": "# F1 Engineering Application Environment Configuration\n# =====================================================\n# Copy this file to .env and adjust values as needed\n\n# Data Source: true = FastF1 (real data), false = Mock fixtures\nLIVE_DATA=true\n\n# Default season for data queries  \nDEFAULT_SEASON=2025"
+              }
+            ]
+          },
+          {
+            "claim": "docker-compose environment variables passed to api container: LIVE_DATA (from host .env with fallback true), DEFAULT_SEASON (from host .env with fallback 2025), PARQUET_DIR, FASTF1_CACHE, ANALYSIS_SERVICE_URL",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 8,
+                "snippet": "environment:\n      - LIVE_DATA=${LIVE_DATA:-true}\n      - DEFAULT_SEASON=${DEFAULT_SEASON:-2025}\n      - PARQUET_DIR=/app/data/cache/parquet\n      - FASTF1_CACHE=/app/data/cache/sqlite\n      - ANALYSIS_SERVICE_URL=http://analysis:8501"
+              }
+            ]
+          },
+          {
+            "claim": "Telemetry endpoints exposed by API: GET /telemetry (returns list[TelemetryResponse]), GET /telemetry/delta (returns list[DeltaResponse]); called from qualifying page via useTelemetryQuery and usePerformanceInsightsQuery hooks",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 9,
+                "snippet": "@router.get(\"\", response_model=list[TelemetryResponse])\nasync def get_telemetry(\n    session: str = Query(..., description=\"Session ID or identifier\"),\n    drivers: List[str] = Query(..., description=\"Driver abbreviations\"),\n    lap_type: str = Query(\"fastest\", description=\"Lap type: fastest, average, specific\"),\n    downsample: bool = Query(True, description=\"Downsample telemetry if too many points\"),\n    session_part: Optional[str] = Query(None, description=\"Qualifying session part: Q1, Q2, or Q3\"),\n):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\telemetry.py",
+                "line": 28,
+                "snippet": "@router.get(\"/delta\", response_model=list[DeltaResponse])\nasync def get_delta_analysis(\n    session: str = Query(..., description=\"Session ID\"),\n    reference_driver: str = Query(..., description=\"Reference driver\"),\n    compare_drivers: List[str] = Query(..., description=\"Drivers to compare\"),\n    session_part: Optional[str] = Query(None, description=\"Qualifying session part: Q1, Q2, or Q3\"),\n):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 8,
+                "snippet": "import { useTelemetryQuery } from '@/lib/hooks/useTelemetryQuery'"
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service is called via analysis_client (proxy) from FastAPI endpoint POST /analysis/lap-similarity and POST /analysis/driver-style-clustering; also called internally by qualifying page for performance insights",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\analysis.py",
+                "line": 45,
+                "snippet": "@router.post(\"/lap-similarity\")\nasync def calculate_lap_similarity(request: LapSimilarityRequest):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\routes\\analysis.py",
+                "line": 121,
+                "snippet": "@router.post(\"/driver-style-clustering\")\nasync def cluster_driver_styles(request: ClusteringRequest):"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\web\\app\\qualifying\\QualifyingContent.tsx",
+                "line": 12,
+                "snippet": "import { usePerformanceInsightsQuery } from '@/lib/hooks/usePerformanceInsightsQuery'"
+              }
+            ]
+          },
+          {
+            "claim": "Conclusion: After editing apps/api or apps/analysis_service source on host, IMAGE REBUILD IS REQUIRED—containers must be rebuilt, not just restarted. No hot reload (--reload not used), and source code is BAKED INTO IMAGES, not volume-mounted.",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 14,
+                "snippet": "volumes:\n      - ./data/cache:/app/data/cache"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\Dockerfile",
+                "line": 45,
+                "snippet": "CMD [\"uvicorn\", \"app.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]"
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": []
+      }
+    },
+    {
+      "label": "mock-and-tests",
+      "result": {
+        "summary": "ApexView monorepo audit complete. MockDataService.get_telemetry returns synthetic telemetry (distance, speed, throttle, brake, gear, rpm, drs arrays) when LIVE_DATA env is False; factory function get_data_service selects between FastF1Client and MockDataService. API tests use direct helper functions (pytest fixtures with mock lap dicts) rather than instantiating FastF1Client/httpx directly, isolating from network. Analysis service tests mock httpx.AsyncClient as AsyncMock with status/json methods; mocks accept arbitrary URLs (tolerant of unknown endpoints), using `.get.return_value` pattern. DeltaResult constructed via keyword arguments in test fixtures (line 92-102). No standalone tools/ directory exists; scripts/ contains validation PowerShell/bash. CI via GitLab (pytest -q invocation); docker-compose defines standard service setup (LIVE_DATA env toggles mock vs live).",
+        "findings": [
+          {
+            "claim": "MockDataService.get_telemetry returns synthetic response shape with distance/speed/throttle/brake/gear/rpm/drs as lists, approximately 1000 points per driver",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\mock_data.py",
+                "line": 75,
+                "snippet": "async def get_telemetry(self, session: str, drivers: List[str], lap_type: str = \"fastest\", session_part: Optional[str] = None) -> List[TelemetryResponse]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\mock_data.py",
+                "line": 89,
+                "snippet": "distance = np.linspace(0, 5000, 1000).tolist()"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\mock_data.py",
+                "line": 119,
+                "snippet": "telemetry_responses.append(TelemetryResponse(driver=driver, lap_number=1, distance=distance, speed=speed, throttle=throttle, brake=brake, gear=gear, rpm=rpm, drs=drs))"
+              }
+            ]
+          },
+          {
+            "claim": "get_data_service factory function selects MockDataService when settings.LIVE_DATA is False, else FastF1Client",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\data_service.py",
+                "line": 12,
+                "snippet": "def get_data_service() -> Union[FastF1Client, MockDataService]:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\services\\data_service.py",
+                "line": 19,
+                "snippet": "if settings.LIVE_DATA: return FastF1Client() else: return MockDataService()"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\app\\core\\config.py",
+                "line": 13,
+                "snippet": "LIVE_DATA: bool = True  # Toggle between mock data and FastF1"
+              }
+            ]
+          },
+          {
+            "claim": "API tests isolate from FastF1/network using helper functions that build mock lap dicts in memory; no instantiation of FastF1Client or direct httpx calls in test files",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\tests\\test_practice_data_service.py",
+                "line": 25,
+                "snippet": "def _make_valid_lap(driver=\"VER\", stint=1, lap_time=90.0, ...) -> dict with classification/is_warm_up/in_traffic/fuel_corrected_time etc"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\tests\\test_race_data_service.py",
+                "line": 18,
+                "snippet": "def _make_lap(driver=\"VER\", team=\"Red Bull Racing\", lap_number=10, lap_time=90.0, ...) -> dict with pit_in_time/pit_out_time/track_status"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\pyproject.toml",
+                "line": 40,
+                "snippet": "[tool.pytest.ini_options] testpaths = [\"tests\"] asyncio_mode = \"auto\""
+              }
+            ]
+          },
+          {
+            "claim": "Analysis service tests mock httpx.AsyncClient via AsyncMock with MagicMock response objects; mocks are tolerant of unknown URLs (no strict endpoint matching)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\tests\\test_performance_orchestrator.py",
+                "line": 549,
+                "snippet": "mock_client = AsyncMock(); mock_response = MagicMock(); mock_response.status_code = 404; mock_response.json.return_value = []; mock_client.get.return_value = mock_response"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\tests\\test_performance_orchestrator.py",
+                "line": 568,
+                "snippet": "mock_client = AsyncMock(); mock_client.get.side_effect = httpx.TimeoutException(\"Connection timeout\")"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 379,
+                "snippet": "async def fetch_driver_telemetry(client: httpx.AsyncClient, session_id: str, driver: str, session_part: Optional[str] = None)"
+              }
+            ]
+          },
+          {
+            "claim": "fetch_driver_telemetry makes single URL call to /telemetry endpoint via client.get(); extra HTTP GET to unknown URL (e.g., /telemetry/meta) would NOT break existing mocks because they use .return_value pattern (tolerates any URL)",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 407,
+                "snippet": "url = f\"{API_SERVICE_URL}/telemetry\"; response = await client.get(url, params=params, timeout=TELEMETRY_TIMEOUT_SECONDS)"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\performance_orchestrator.py",
+                "line": 379,
+                "snippet": "async def fetch_driver_telemetry(client: httpx.AsyncClient, session_id: str, driver: str, session_part: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:"
+              }
+            ]
+          },
+          {
+            "claim": "DeltaResult dataclass constructed via keyword arguments (positional not supported); all fields required in constructor per @dataclass decorator at line 44-68",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\delta_analysis.py",
+                "line": 44,
+                "snippet": "@dataclass class DeltaResult:"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\services\\delta_analysis.py",
+                "line": 60,
+                "snippet": "reference_driver: str; compare_driver: str; distance: List[float]; delta: List[float]; raw_delta: List[float]; official_gap: float; scaling_factor: float; telemetry_gap: float; confidence: float"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\tests\\test_performance_orchestrator.py",
+                "line": 92,
+                "snippet": "return DeltaResult(reference_driver=\"NOR\", compare_driver=\"PIA\", distance=distance, delta=delta, raw_delta=delta, official_gap=0.2, scaling_factor=1.0, telemetry_gap=0.2, confidence=0.9)"
+              }
+            ]
+          },
+          {
+            "claim": "No standalone tools/ directory exists; scripts/ contains validation PowerShell/bash harnesses (validate-phase1/2); developer tooling not segregated",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\scripts",
+                "line": 0,
+                "snippet": "Directory listing: validate-phase1.ps1, validate-phase1.sh, validate-phase2.ps1, validate-phase2.sh"
+              }
+            ]
+          },
+          {
+            "claim": "CI config via .gitlab-ci.yml (no .github/workflows); test invocation: cd apps/api && pytest -q (pytest -q for analysis_service as well); Docker services via docker-compose.yml with LIVE_DATA env toggle",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\.gitlab-ci.yml",
+                "line": 83,
+                "snippet": "test:api stage: cd apps/api && pip install -e \".[dev]\" && pytest -q"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\.gitlab-ci.yml",
+                "line": 95,
+                "snippet": "test:analysis stage: cd apps/analysis_service && pip install -e \".[dev]\" && pytest -q"
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\docker-compose.yml",
+                "line": 9,
+                "snippet": "api service environment: LIVE_DATA=${LIVE_DATA:-true}"
+              }
+            ]
+          },
+          {
+            "claim": "Pytest config: [tool.pytest.ini_options] testpaths = [\"tests\"] asyncio_mode = \"auto\" in both apps/api and apps/analysis_service pyproject.toml",
+            "evidence": [
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\api\\pyproject.toml",
+                "line": 40,
+                "snippet": "[tool.pytest.ini_options] testpaths = [\"tests\"] asyncio_mode = \"auto\""
+              },
+              {
+                "file": "C:\\Users\\khash\\OneDrive\\Desktop\\ApexView\\apps\\analysis_service\\pyproject.toml",
+                "line": 36,
+                "snippet": "[tool.pytest.ini_options] testpaths = [\"tests\"] asyncio_mode = \"auto\""
+              }
+            ]
+          }
+        ],
+        "out_of_scope_consumers": []
+      }
+    }
+  ]
+}

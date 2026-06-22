@@ -1,0 +1,35 @@
+{
+  "session": "2025_China_Q3",
+  "driver": "PIA",
+  "circuit": "shanghai",
+  "corner": "T2",
+  "apex": 650.0,
+  "zone_samples": 15,
+  "raw": {
+    "n": 14,
+    "min": -18.552848399246766,
+    "max": 1.7333813766596773,
+    "std": 6.9713845827997725,
+    "mean_abs_point_to_point": 6.034359457752791,
+    "max_abs_point_to_point": 12.707708580713398,
+    "sign_flips": 2
+  },
+  "spline": {
+    "n": 149,
+    "min": -21.072878247461087,
+    "max": 3.2795468237854193,
+    "std": 7.4305189985431355,
+    "mean_abs_point_to_point": 0.7954109658924541,
+    "max_abs_point_to_point": 2.672583093759636,
+    "sign_flips": 3
+  },
+  "savgol": {
+    "n": 149,
+    "min": -21.0029867233,
+    "max": 3.2795468237861893,
+    "std": 7.400306580828606,
+    "mean_abs_point_to_point": 0.7779838148255022,
+    "max_abs_point_to_point": 2.625782260142473,
+    "sign_flips": 3
+  }
+}

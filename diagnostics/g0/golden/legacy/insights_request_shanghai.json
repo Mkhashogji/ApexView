@@ -1,0 +1,109 @@
+﻿{
+    "session_id":  "2025_2_Qualifying",
+    "reference_driver":  "PIA",
+    "compare_drivers":  [
+                            "RUS"
+                        ],
+    "corners":  [
+                    {
+                        "corner_number":  1,
+                        "name":  null,
+                        "apex_distance":  350.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  2,
+                        "name":  null,
+                        "apex_distance":  650.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  3,
+                        "name":  null,
+                        "apex_distance":  900.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  4,
+                        "name":  null,
+                        "apex_distance":  1100.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  5,
+                        "name":  null,
+                        "apex_distance":  1350.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  6,
+                        "name":  null,
+                        "apex_distance":  1700.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  7,
+                        "name":  null,
+                        "apex_distance":  2000.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  8,
+                        "name":  null,
+                        "apex_distance":  2300.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  9,
+                        "name":  null,
+                        "apex_distance":  2600.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  10,
+                        "name":  null,
+                        "apex_distance":  2900.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  11,
+                        "name":  null,
+                        "apex_distance":  3400.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  12,
+                        "name":  null,
+                        "apex_distance":  3650.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  13,
+                        "name":  null,
+                        "apex_distance":  3900.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  14,
+                        "name":  null,
+                        "apex_distance":  5100.0,
+                        "corner_type":  "right"
+                    },
+                    {
+                        "corner_number":  15,
+                        "name":  null,
+                        "apex_distance":  5250.0,
+                        "corner_type":  "left"
+                    },
+                    {
+                        "corner_number":  16,
+                        "name":  null,
+                        "apex_distance":  5380.0,
+                        "corner_type":  "left"
+                    }
+                ],
+    "mode":  "engineer",
+    "session_part":  "Q3",
+    "include_telemetry":  true,
+    "track_length":  5451.0
+}

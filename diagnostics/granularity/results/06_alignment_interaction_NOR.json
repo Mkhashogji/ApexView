@@ -1,0 +1,12 @@
+{
+  "session": "2025_Monaco_Q3",
+  "driver": "NOR",
+  "real_samples": 521,
+  "grid_points": 1000,
+  "phantom_density_ratio": 1.9193857965451055,
+  "pct_interpolated": 47.9,
+  "track_len_m": 3292.176873505138,
+  "real_spacing_m": 6.331109372125265,
+  "grid_spacing_m": 3.295472345850989,
+  "real_samples_per_80m_phase": 12.636016106786213
+}

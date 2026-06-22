@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# WARNING (G0 - Honest Acquisition): this script runs detection on the MERGED-FRAME
+# SUBSTRATE (lap.get_telemetry(), ~51% interpolated car values). Production detection
+# now consumes NATIVE car frames (app.services.telemetry.native_acquisition). Do NOT
+# tune thresholds or validate detection with this script until it is ported to
+# acquire_native_bundle (G0 continuation review L2-5).
 """
 Validate Corner Analysis V2 with real FastF1 data.
 

@@ -1,0 +1,44 @@
+G0: honest acquisition - native dual-stream telemetry replaces merged frame
+
+The qualifying analysis pipeline consumed FastF1's lap.get_telemetry(), which
+merges two interleaved ~4Hz streams (car data and position data) that share
+zero timestamps - roughly half of every car channel in the merged frame is
+linear interpolation presented as measurement. Brake/apex detection and the
+kinematic deceleration walk were consuming those phantom rows as real samples
+(evidence: diagnostics/granularity/REPORT.md).
+
+This change retires get_telemetry() from the analysis path. A new acquisition
+layer fetches the two streams separately, tags every row with provenance,
+detects acquisition gaps (dt strictly greater than 3x the lap median), and
+raises structured errors instead of ever falling back silently. The wire
+schemas are frozen against golden snapshots: the only change consumers see is
+that every served value is now a real measurement.
+
+Technical content:
+- apps/api/app/services/telemetry/native_acquisition.py: Provenance enum
+  (REAL_CAR/REAL_POS active; DERIVED_RPM/FUSED/GAP reserved), TelemetryBundle,
+  detect_gaps (strict 3x-median law, exclusive boundary), acquire_native_bundle
+  with input validation (NaN/NaT, monotonicity, duplicate-timestamp bias) and
+  NativeAcquisitionError
+- fastf1_client.py: get_telemetry/get_delta_analysis become dispatchers;
+  legacy bodies moved verbatim (A/B-verified byte-identical); native paths
+  build the same wire schema from car_native; new get_telemetry_meta; native
+  Parquet cache under the versioned telemetry_native_v1 keyspace with
+  bundle-fidelity rows (boolean brake, provenance columns) and a
+  schema-version read guard that refuses foreign frames
+- routes/telemetry.py: acquisition override param, /telemetry/meta endpoint
+  (501 in mock mode AND under env-legacy - rollback isolation), exhaustive
+  NativeAcquisitionError -> structured 502 translation
+- routes/analysis.py: same structured 502 arms on the proxy routes
+- core/config.py: ACQUISITION_MODE Literal["native","legacy"] (default native)
+- models/dto.py: additive DTOs only (GapInterval, NativeAcquisitionMeta,
+  TelemetryMetaResponse)
+- analysis service (plumbing only, no algorithm/threshold/template changes):
+  acquisition_mode passthrough, DeltaResult internal grid metadata,
+  CornerResult.gap_flag (internal, never serialized), fetch_all_native_meta
+  (graceful degradation) + apply_gap_flags in the orchestrator
+
+Tests: 361 API + 319 analysis passing, including gap-law boundary, provenance
+completeness, 1e-6 distance-integration parity, brake dtype preservation,
+dispatcher matrix, error propagation, and a cold-subprocess Parquet
+round-trip suite.

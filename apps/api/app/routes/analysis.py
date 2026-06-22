@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 from app.services.analysis_proxy.client import analysis_client
 from app.services.telemetry.fastf1_client import FastF1Client
+from app.services.telemetry.native_acquisition import NativeAcquisitionError
 
 
 router = APIRouter()
@@ -111,6 +112,10 @@ async def calculate_lap_similarity(request: LapSimilarityRequest):
     
     except HTTPException:
         raise
+    except NativeAcquisitionError as e:
+        # G0: native acquisition failures surface structured, never as a
+        # stringified 500 (continuation review L2-2/L4-1).
+        raise HTTPException(status_code=502, detail=e.to_detail())
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -177,6 +182,9 @@ async def cluster_driver_styles(request: ClusteringRequest):
     
     except HTTPException:
         raise
+    except NativeAcquisitionError as e:
+        # G0: structured 502 for native acquisition failures (review L2-2/L4-1).
+        raise HTTPException(status_code=502, detail=e.to_detail())
     except Exception as e:
         raise HTTPException(
             status_code=500,

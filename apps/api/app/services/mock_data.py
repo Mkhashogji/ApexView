@@ -73,11 +73,12 @@ class MockDataService:
         return lap_data["laps"]
 
     async def get_telemetry(
-        self, 
-        session: str, 
-        drivers: List[str], 
+        self,
+        session: str,
+        drivers: List[str],
         lap_type: str = "fastest",
-        session_part: Optional[str] = None  # Accept but ignore for mock data
+        session_part: Optional[str] = None,  # Accept but ignore for mock data
+        acquisition: Optional[str] = None  # G0: accept but ignore (mock has no native path)
     ) -> List[TelemetryResponse]:
         """
         Generate synthetic telemetry data for specified drivers.
@@ -133,11 +134,12 @@ class MockDataService:
         return telemetry_responses
 
     async def get_delta_analysis(
-        self, 
-        session: str, 
-        reference_driver: str, 
+        self,
+        session: str,
+        reference_driver: str,
         compare_drivers: List[str],
-        session_part: Optional[str] = None  # Accept but ignore for mock data
+        session_part: Optional[str] = None,  # Accept but ignore for mock data
+        acquisition: Optional[str] = None  # G0: accept but ignore (mock has no native path)
     ) -> List[DeltaResponse]:
         """
         Calculate delta between reference and comparison drivers.

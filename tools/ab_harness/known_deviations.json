@@ -29,12 +29,12 @@
         "11": {
           "bound": 25.0,
           "measured_at_acceptance": 19.15,
-          "classification": "gap-overlap: LEC car-stream dropout 2091-2116m intersects T11 zone 2075-2094m"
+          "classification": "smoothing-driven (detector gate): forensics window-sweep shows the shift collapses to <0.2m at decel smoothing window=1, so the detector sample-count smoothing window is the cause; the LEC dropout 2091-2116m overlap is incidental, not causal"
         },
         "14": {
           "bound": 22.0,
           "measured_at_acceptance": 16.5,
-          "classification": "gap-overlap: NOR car-stream dropout 2408-2466m intersects T14 zone 2408-2503m"
+          "classification": "mixed/structural (detector gate): forensics window-sweep shows the shift persists at decel smoothing window=1, so it is not a pure smoothing artifact (partially structural); the NOR dropout 2408-2466m overlap is also present"
         }
       },
       "exclude_but_preserve": "registered corners stay in the per-corner diff table with their shifts and classification; they are excluded only from the Phase-5 pass/fail aggregate",

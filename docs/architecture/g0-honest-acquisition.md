@@ -102,3 +102,5 @@ track signs off on G0+1: delete `_get_telemetry_legacy`,
 `_get_delta_analysis_legacy`, the query-param `legacy` value, and the
 `acquisition_mode` passthrough; re-capture goldens from the native head at that
 point.
+
+**Deferred to G4 (owned trade-off):** the `/telemetry/meta` schema consolidation — folding the gap/meta payload into the `/telemetry` response to eliminate the separate ~3–4 s round-trip on the insights path — is intentionally deferred to the G4 schema revision (when `/telemetry` is reshaped anyway), not an unrecorded bottleneck.

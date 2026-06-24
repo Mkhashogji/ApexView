@@ -1160,22 +1160,13 @@ class FastF1Client:
             telemetry_response = self._native_bundle_to_response(driver, fastest_lap, bundle)
             telemetry_responses.append(telemetry_response)
 
-            telemetry_data_for_cache.append({
-                'driver': driver,
-                'lap_number': telemetry_response.lap_number,
-                'lap_time': telemetry_response.lap_time,
-                'distance': json.dumps(telemetry_response.distance),
-                'speed': json.dumps(telemetry_response.speed),
-                'throttle': json.dumps(telemetry_response.throttle),
-                'brake': json.dumps(telemetry_response.brake),
-                'gear': json.dumps(telemetry_response.gear),
-                'relative_distance': json.dumps(telemetry_response.relative_distance) if telemetry_response.relative_distance else None,
-                'time': json.dumps(telemetry_response.time) if telemetry_response.time else None,
-                'rpm': json.dumps(telemetry_response.rpm) if telemetry_response.rpm else None,
-                'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,
-                'gaps': json.dumps(bundle.gaps),
-                'meta': json.dumps(bundle.meta),
-            })
+            # Serialize via the single source of truth (_native_cache_row): the
+            # production write MUST store exactly what the read path/round-trip
+            # test expect — boolean Brake (bundle dtype fidelity) and the
+            # provenance_car/provenance_pos columns. Reimplementing the row
+            # inline previously dropped both (Post-G0 hardening Prompt A).
+            telemetry_data_for_cache.append(
+                self._native_cache_row(driver, telemetry_response, bundle))
 
         # Cache write — gated on `not session_part`, unlike legacy which writes
         # session_part-filtered data under the unfiltered key (latent legacy

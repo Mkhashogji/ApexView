@@ -793,8 +793,14 @@ class FastF1Client:
                             'drs': json.dumps(telemetry_response.drs) if telemetry_response.drs else None,
                         })
             
-            # Write to Parquet cache
-            if telemetry_data_for_cache:
+            # Write to Parquet cache — gated by `not session_part` to MATCH the
+            # read gate above (line ~643). The cache key carries no session_part
+            # component, so writing a session_part-filtered frame here would
+            # poison the unfiltered key: a later unfiltered request would be
+            # served the narrow fragment. Legacy is harness-only and scheduled
+            # for removal; this gating keeps the env-legacy rollback path from
+            # silently serving incomplete data until then.
+            if telemetry_data_for_cache and not session_part:
                 cache_df = pd.DataFrame(telemetry_data_for_cache)
                 self.cache.write(cache_df, session, "telemetry", drivers=drivers_str, lap_type=lap_type)
                 logger.info(f"Cached telemetry to Parquet for {session}")

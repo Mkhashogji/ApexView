@@ -279,31 +279,3 @@ def get_all_circuit_ids() -> list:
 def get_circuit_count() -> int:
     """Get count of configured circuits."""
     return len(CIRCUIT_CONFIGS)
-
-
-def _safe_array(arr, default_value: float = 0.0):
-    """
-    Safely convert input to numpy array, handling None/empty/NaN cases.
-
-    This is included per CLAUDE.md standard for all new modules.
-    """
-    import numpy as np
-
-    if arr is None or (hasattr(arr, "__len__") and len(arr) == 0):
-        logger.warning(f"Empty/None array received, using default [{default_value}]")
-        return np.array([default_value])
-
-    result = np.array(arr, dtype=float)
-
-    if np.any(np.isnan(result)):
-        nan_count = np.sum(np.isnan(result))
-        logger.warning(f"Array contains {nan_count} NaN values, interpolating")
-        mask = np.isnan(result)
-        if np.any(~mask):
-            result[mask] = np.interp(
-                np.flatnonzero(mask), np.flatnonzero(~mask), result[~mask]
-            )
-        else:
-            result = np.full_like(result, default_value)
-
-    return result

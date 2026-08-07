@@ -96,43 +96,6 @@ MAX_OPPORTUNITY_INSIGHTS = 3
 
 
 # =============================================================================
-# SAFE ARRAY UTILITY (from CLAUDE.md)
-# =============================================================================
-
-def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
-    """
-    Safely convert input to numpy array, handling None/empty/NaN cases.
-
-    Args:
-        arr: Input (list, np.ndarray, None, or empty)
-        default_value: Fallback for empty/invalid arrays
-
-    Returns:
-        np.ndarray with at least one valid element
-    """
-    if arr is None or (hasattr(arr, '__len__') and len(arr) == 0):
-        logger.warning(f"Empty/None array received, using default [{default_value}]")
-        return np.array([default_value])
-
-    result = np.array(arr, dtype=float)
-
-    if np.any(np.isnan(result)):
-        nan_count = np.sum(np.isnan(result))
-        logger.warning(f"Array contains {nan_count} NaN values, interpolating")
-        mask = np.isnan(result)
-        if np.any(~mask):
-            result[mask] = np.interp(
-                np.flatnonzero(mask),
-                np.flatnonzero(~mask),
-                result[~mask]
-            )
-        else:
-            result = np.full_like(result, default_value)
-
-    return result
-
-
-# =============================================================================
 # OUTPUT DATA CLASSES
 # =============================================================================
 

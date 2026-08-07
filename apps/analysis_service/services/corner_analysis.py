@@ -208,7 +208,9 @@ def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
     """
     Safely convert input to numpy array, handling None/empty/NaN cases.
 
-    This utility is defined in CLAUDE.md as a standard for all new modules.
+    Module-local helper — not a service-wide standard (an earlier claim here
+    that CLAUDE.md defines it as one was incorrect). Its NaN-interpolation
+    behaviour is under review.
 
     Args:
         arr: Input (list, np.ndarray, None, or empty)

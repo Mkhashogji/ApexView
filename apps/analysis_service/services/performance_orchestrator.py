@@ -182,34 +182,6 @@ class PerformanceInsightsResult:
 # Utility Functions
 # =============================================================================
 
-def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
-    """
-    Safely convert input to numpy array, handling None/empty/NaN cases.
-
-    This utility is defined in CLAUDE.md as a standard for all new modules.
-    """
-    if arr is None or (hasattr(arr, '__len__') and len(arr) == 0):
-        logger.warning(f"Empty/None array received, using default [{default_value}]")
-        return np.array([default_value])
-
-    result = np.array(arr, dtype=float)
-
-    if np.any(np.isnan(result)):
-        nan_count = np.sum(np.isnan(result))
-        logger.warning(f"Array contains {nan_count} NaN values, interpolating")
-        mask = np.isnan(result)
-        if np.any(~mask):
-            result[mask] = np.interp(
-                np.flatnonzero(mask),
-                np.flatnonzero(~mask),
-                result[~mask]
-            )
-        else:
-            result = np.full_like(result, default_value)
-
-    return result
-
-
 def _technique_profile_to_dict(profile: TechniqueProfile) -> Dict[str, Any]:
     """Convert TechniqueProfile dataclass to serializable dict."""
     result = {

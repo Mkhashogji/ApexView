@@ -77,8 +77,12 @@ docker-compose.override.yml
 *.lock
 *.bak
 
-# Commit message scratchpad (local workflow)
-commit_message.txt
+# Commit message scratchpad family (local workflow): commit_message.txt and
+# per-unit commit_msg_*.txt drafts. Anchored to the repo root so the tracked
+# diagnostics/g0/commit_msgs/ directory can never be silently ignored.
+# (Two rules: "commit_msg*" does not match "commit_message" — m-e-s vs m-s-g.)
+/commit_message.txt
+/commit_msg*.txt
 
 # Windows reserved names (prevent accidental creation)
 nul

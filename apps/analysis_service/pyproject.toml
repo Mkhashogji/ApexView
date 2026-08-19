@@ -26,6 +26,18 @@ dev = [
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
+# Flat layout with three top-level packages. Without this section setuptools'
+# automatic discovery refuses to build ("Multiple top-level packages discovered
+# in a flat-layout"), which broke `pip install -e ".[dev]"` — the CI recipe —
+# for this service. `find` with include patterns (not an explicit `packages`
+# list) is deliberate: the Dockerfile runs `pip install .` from a directory
+# that contains only this file, where an explicit list would fail on missing
+# package directories while `find` simply yields nothing.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "models*", "services*"]
+exclude = ["tests*", "scripts*"]
+
 [tool.black]
 line-length = 100
 

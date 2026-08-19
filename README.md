@@ -380,4 +380,3 @@ See the `docs/` directory for detailed documentation:
 ### Infrastructure
 - Docker / Docker Compose
 - pnpm workspaces (monorepo)
-- GitLab

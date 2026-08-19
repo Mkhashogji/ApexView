@@ -167,3 +167,28 @@ startup-validated flag.
   (Savitzky-Golay/upsampling deliberately out of scope);
 - **OPEN-1/OPEN-2** — brake-point quantisation shifts at Monaco T10/T17 (1.4–1.6
   native samples, real braking corners) await the owner's ruling.
+
+## 8. Carried observations — post-WU-4 housekeeping batch (2026-08-19)
+
+Recorded, not acted on. Surfaced while validating WU-4 and the four housekeeping items
+(analysis-service `packages.find`, `capture_golden.ps1 -Acquisition`, untracking
+`f1_api.egg-info`, fast-forwarding `main`).
+
+1. **Dependency drift is unpinned.** Neither service pins versions; both declare only
+   lower bounds (`numpy>=1.26.0`, `pandas>=2.1.0`, …). Measured consequence: the running
+   `f1-analysis` image carried pandas 2.3.3, while a fresh `docker compose build analysis`
+   on 2026-08-19 resolved pandas 3.0.5 and scikit-learn 1.9.0; the API's `-e ".[dev]"`
+   install pins pandas back to 2.3.x only incidentally (fastf1's own constraint). The
+   analysis suite was validated under both pandas 2.3.3 and 3.0.5 (327 passed each) and
+   the A/B harness certified the committed tree from the fresh image (exit 0, ledger
+   identical to WU-4 gate 4) — so "365 passing" / "327 passing" are claims about a
+   particular day's dependency resolution, not stable facts. This matters more once G1's
+   harvests produce numerical results, where a silent numpy/scipy change would be hard to
+   attribute. Eventual fix: a lockfile or constraints file per service. Not this batch's work.
+
+2. **Ten stale local `claude/*` branches** all sit at `c367cea` (`feat(practice): Complete
+   Practice Page`) — `git branch -vv` lists them (`claude/admiring-murdock`,
+   `claude/amazing-villani`, `claude/elegant-chebyshev`, `claude/infallible-proskuriakova`,
+   `claude/intelligent-swanson`, `claude/intelligent-yonath`, `claude/reverent-hawking`,
+   `claude/serene-cori`, `claude/trusting-proskuriakova`, `claude/upbeat-rubin`). They
+   carry nothing `main` lacks. Cleanup candidates, no urgency; owner-initiated only.

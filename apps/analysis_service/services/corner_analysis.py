@@ -57,6 +57,20 @@ APPROACH_MARGIN_METERS = 20       # Distance before earliest braking point for z
 # Zone overlap prevention
 MIN_ZONE_LENGTH = 50              # Minimum zone length after clamping (meters)
 
+# Near-zero Δd guard floor for compute_deceleration (WU-4). This is a
+# numerical-degeneracy floor, NOT a physics-plausibility clamp — output
+# plausibility bounds belong to the detector gate. The value is set against
+# two constraints (measured on four native driver-laps, Shanghai/Monaco
+# 2025 Q): the native minimum |Δd| is 2.15 m with zero samples below 2 m, so
+# 0.5 m sits more than 4× below anything the current substrate produces and
+# the guard cannot fire on today's data (behaviour-neutral); and at 0.5 m the
+# amplification factor 1/(2·Δd) is bounded at 1.0 per unit of v² difference,
+# so an interval that passes the guard cannot blow a speed step up into a
+# numerical artefact. Deliberately NOT a CornerConfig field: per the
+# registered circuit_id debt no per-circuit config reaches the live path, and
+# a config knob would fake a tunable that cannot actually be tuned.
+MIN_VALID_DELTA_DISTANCE_M = 0.5
+
 # Braking detection thresholds
 BRAKE_THRESHOLD_PERCENT = 20.0    # Minimum brake % to consider "braking"
 BRAKE_GRADIENT_THRESHOLD = 5.0   # Minimum gradient (%/10m) for "real" braking
@@ -835,10 +849,13 @@ def compute_deceleration(
     Returns:
         Deceleration array (m/s²) - negative values indicate braking
         Note: Array is one element shorter than input due to diff operation
+        Note: Intervals narrower than MIN_VALID_DELTA_DISTANCE_M are
+        numerically degenerate — deceleration is undefined there and returned
+        as NaN, never as a fabricated finite value.
 
     Example:
         >>> decel = compute_deceleration(distance, speed)
-        >>> heavy_braking_mask = decel < -5.0  # < -5 m/s²
+        >>> heavy_braking_mask = decel < -5.0  # < -5 m/s² (False on NaN)
     """
     distance = _safe_array(distance)
     speed = _safe_array(speed)
@@ -853,8 +870,23 @@ def compute_deceleration(
 
     # Calculate distance deltas
     delta_distance = np.diff(distance)
-    # Avoid division by zero (replace 0 with small value)
-    delta_distance = np.where(delta_distance == 0, 0.001, delta_distance)
+
+    # Near-zero Δd guard (WU-4): a = Δ(v²)/(2·Δd) is numerically undefined as
+    # Δd → 0 — a real speed change over a degenerate interval would otherwise
+    # become an unbounded fabricated spike (the previous exact-zero clamp to
+    # 0.001 m manufactured ~1000× artefacts). Undefined intervals are emitted
+    # as NaN: absent, not misleading. Downstream detector comparisons all
+    # evaluate False on NaN, so a guarded interval can never trigger
+    # detection.
+    degenerate = np.abs(delta_distance) < MIN_VALID_DELTA_DISTANCE_M
+    n_degenerate = int(np.count_nonzero(degenerate))
+    if n_degenerate:
+        logger.warning(
+            f"compute_deceleration: {n_degenerate} inter-sample interval(s) "
+            f"narrower than {MIN_VALID_DELTA_DISTANCE_M} m — deceleration is "
+            f"undefined there, emitting NaN"
+        )
+        delta_distance = np.where(degenerate, np.nan, delta_distance)
 
     # Calculate deceleration using kinematic equation
     # a = (v2² - v1²) / (2 × Δd)
@@ -862,16 +894,50 @@ def compute_deceleration(
     v2_sq = speed_ms[1:] ** 2
     decel = (v2_sq - v1_sq) / (2 * delta_distance)
 
-    # Apply smoothing to reduce noise from ~5 Hz sampling
+    # Apply smoothing to reduce noise from ~5 Hz sampling. With no guarded
+    # samples this is the unchanged pre-WU-4 moving average (same call, same
+    # edge zero-padding). With guarded samples, each undefined interval is
+    # excluded from its neighbours' windows and the window mean is
+    # renormalised by the GUARDED deficit only: a neighbour of one guarded
+    # sample averages its w-1 valid samples over w-1, not over w (zero-filling
+    # without renormalising would pull every neighbour toward zero by up to
+    # 1/w — a silent bias). The renormalisation is deliberately NOT applied
+    # to np.convolve's edge zero-padding, so array edges behave exactly as
+    # before and windows containing no guarded sample multiply by exactly 1.0
+    # (bit-identical to the plain convolution). NaN is restored at exactly
+    # the guarded positions afterwards, so one undefined interval cannot
+    # smear across smoothing_window outputs. The smoothing WINDOW itself
+    # (size and sample-count semantics) is untouched — that mechanism is the
+    # registered OPEN-1/OPEN-2 debt owned by the detector gate.
     if smoothing_window > 1 and len(decel) >= smoothing_window:
         kernel = np.ones(smoothing_window) / smoothing_window
-        decel = np.convolve(decel, kernel, mode="same")
+        if n_degenerate:
+            filled = np.where(degenerate, 0.0, decel)
+            smoothed = np.convolve(filled, kernel, mode="same")
+            deficit = np.convolve(
+                degenerate.astype(float), np.ones(smoothing_window), mode="same"
+            )
+            valid_count = smoothing_window - deficit
+            with np.errstate(divide="ignore", invalid="ignore"):
+                smoothed = np.where(
+                    valid_count > 0,
+                    smoothed * (smoothing_window / valid_count),
+                    np.nan,  # every sample in the window is degenerate
+                )
+            decel = np.where(degenerate, np.nan, smoothed)
+        else:
+            decel = np.convolve(decel, kernel, mode="same")
 
     if len(decel) > 0:
-        logger.debug(
-            f"Computed deceleration: min={decel.min():.1f} m/s², "
-            f"max={decel.max():.1f} m/s², mean={decel.mean():.1f} m/s²"
-        )
+        if np.isfinite(decel).any():
+            # nan-aware aggregates: a single guarded interval must not turn
+            # the whole log line into NaN.
+            logger.debug(
+                f"Computed deceleration: min={np.nanmin(decel):.1f} m/s², "
+                f"max={np.nanmax(decel):.1f} m/s², mean={np.nanmean(decel):.1f} m/s²"
+            )
+        else:
+            logger.debug("Computed deceleration: all intervals degenerate (NaN)")
 
     return decel
 

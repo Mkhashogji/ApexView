@@ -115,17 +115,24 @@ class TestDetectorOnNativeSubstrate:
         assert confidence in ("high", "medium")
 
     def test_no_duplicate_distance_pathology(self):
-        """The kinematic decel guard (np.maximum(dd, 0.1)) must keep the
-        derivative finite even on NEAR-DUPLICATE distances — the merged-frame
-        pathology measured in diagnostics/granularity REPORT.md Phase 4.
-        (Review L5-7: actually exercise the pathology, don't assert a
-        by-construction-clean fixture.)"""
+        """NEAR-DUPLICATE distances — the merged-frame pathology measured in
+        diagnostics/granularity REPORT.md Phase 4 — must not produce unbounded
+        derivative spikes. Since WU-4 the near-zero Δd guard emits NaN for the
+        degenerate interval (|Δd| < MIN_VALID_DELTA_DISTANCE_M) instead of
+        clamping the denominator: undefined, not fabricated. (Review L5-7:
+        actually exercise the pathology, don't assert a by-construction-clean
+        fixture. Pre-WU-4 this test asserted all-finite output, pinning the
+        old 0.001 m substitution — which fabricated a ~10^4 m/s² value here.)"""
         distance, speed, _ = _native_corner_fixture()
         # inject near-duplicate distance points (sub-cm spacing) with a speed step
         distance = np.insert(distance, 10, distance[10] + 0.001)
         speed = np.insert(speed, 10, speed[10] - 5.0)
         decel = compute_deceleration(distance, speed, 5)
-        assert np.all(np.isfinite(decel))
+        finite = np.isfinite(decel)
+        # exactly the injected degenerate interval is undefined ...
+        assert int(np.count_nonzero(~finite)) == 1
+        # ... and no unbounded spike leaks into the finite values
+        assert np.all(np.abs(decel[finite]) < 200.0)
 
 
 # =============================================================================

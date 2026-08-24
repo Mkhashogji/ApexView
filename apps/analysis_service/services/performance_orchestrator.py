@@ -39,6 +39,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import httpx
 
+from core.errors import NonFiniteTelemetryError
 from services.delta_analysis import calculate_scaled_delta, DeltaResult
 from services.corner_analysis import (
     analyze_corners,
@@ -69,6 +70,13 @@ logger = logging.getLogger("analysis_service.performance_orchestrator")
 API_SERVICE_URL = "http://api:8000"
 TELEMETRY_TIMEOUT_SECONDS = 30.0
 DEFAULT_NUM_POINTS = 1000
+
+# WU-2: stable prefix for honest-degrade messages produced when corner
+# analysis rejects non-finite telemetry. Stage 3 mirrors errors carrying this
+# prefix into result.warnings — the only field the frontend renders — so a
+# rejection is user-visible rather than a silently missing panel. Keep the
+# text deterministic: it appears in API responses.
+REJECTED_NONFINITE_PREFIX = "corner analysis rejected non-finite telemetry: "
 
 
 # =============================================================================
@@ -416,6 +424,40 @@ async def fetch_driver_telemetry(
                 logger.warning(error)
                 return None, error
 
+        # WU-2b: first-touch finiteness gate. A non-finite value — JSON null
+        # (the wire form of an API-side NaN, parsed to None), a real NaN
+        # round-tripped through the legacy Parquet cache's literal NaN token,
+        # or ±inf — is rejected here, before assembly. This is the only gate
+        # covering relative_distance and time, which never pass through
+        # _safe_array and would otherwise propagate unrepaired into the
+        # Tier-1/2 delta path (breaking the closure invariant silently).
+        # Optional channels are validated only when present: an absent
+        # optional (e.g. the mock head) keeps its existing Tier-3 meaning.
+        for channel, values in (
+            ("distance", data["distance"]),
+            ("speed", data["speed"]),
+            ("brake", data.get("brake")),
+            ("relative_distance", data.get("relativeDistance")),
+            ("time", data.get("time")),
+        ):
+            if values is None:
+                continue
+            try:
+                channel_arr = np.asarray(values, dtype=float)
+            except (TypeError, ValueError):
+                error = f"Non-numeric values in {channel} telemetry for {driver}"
+                logger.warning(error)
+                return None, error
+            finite = np.isfinite(channel_arr)
+            if not finite.all():
+                bad = np.flatnonzero(~finite)
+                error = (
+                    f"Non-finite values in {channel} telemetry for {driver} "
+                    f"({bad.size} of {channel_arr.size}, first at index {int(bad[0])})"
+                )
+                logger.warning(error)
+                return None, error
+
         # Get official lap time if available
         # Include relative_distance and time for Tier 1 delta algorithm
         telemetry = {
@@ -737,6 +779,13 @@ def run_phase3_corner(
 
         return result, None
 
+    except NonFiniteTelemetryError as e:
+        # WU-2 honest degrade: the data was dishonest, not the code broken.
+        # Distinguished from the generic handler so Stage 3 can surface the
+        # reason in warnings[] (user-visible) as well as errors[].
+        error = REJECTED_NONFINITE_PREFIX + str(e)
+        logger.error(error)
+        return None, error
     except Exception as e:
         error = f"Phase 3 error: {str(e)}"
         logger.error(error, exc_info=True)
@@ -958,6 +1007,12 @@ async def orchestrate_performance_insights(
 
             if error:
                 phase3_errors.append(error)
+                if error.startswith(REJECTED_NONFINITE_PREFIX):
+                    # WU-2: mirror the honest degrade into warnings[] — the
+                    # frontend renders warnings and never reads errors, so
+                    # without this the rejection would appear only as
+                    # silently missing panels.
+                    result.warnings.append(error)
             elif corner_result:
                 # G0: flag corners whose zones overlap acquisition gaps
                 # (internal bookkeeping; values and confidence unchanged).

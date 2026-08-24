@@ -34,6 +34,8 @@ import numpy as np
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
+from core.errors import NonFiniteTelemetryError
+
 logger = logging.getLogger("analysis_service.delta_analysis")
 
 
@@ -82,20 +84,32 @@ class DeltaResult:
 # Utility Functions
 # ============================================================================
 
-def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
+def _safe_array(arr, default_value: float = 0.0, name: str = "array") -> np.ndarray:
     """
-    Safely convert input to numpy array, handling None/empty/NaN cases.
+    Safely convert input to numpy array, handling None/empty inputs and
+    rejecting non-finite values.
 
     Module-local helper — not a service-wide standard (an earlier claim here
-    that CLAUDE.md defines it as one was incorrect). Its NaN-interpolation
-    behaviour is under review.
+    that CLAUDE.md defines it as one was incorrect). Since WU-2 the
+    non-finite branch REJECTS instead of interpolating: a NaN or ±inf in a
+    telemetry channel has no honest repaired form ("accurate or absent,
+    never misleading"), and the pre-WU-2 silent np.interp fill was exactly
+    the fabrication G0 eliminated at the acquisition boundary. The guard is
+    isfinite, not isnan, because inf was previously uncaught everywhere
+    (pydantic accepts it; this helper passed it through).
 
     Args:
         arr: Input (list, np.ndarray, None, or empty)
-        default_value: Fallback for empty/invalid arrays
-        
+        default_value: Fallback for empty/None input (empty-input behaviour
+            is unchanged)
+        name: Channel name used in the rejection message, so a refusal is
+            actionable without a debugging session
+
     Returns:
         np.ndarray with at least one valid element
+
+    Raises:
+        NonFiniteTelemetryError: if any element is NaN or ±inf
     """
     if arr is None or (hasattr(arr, '__len__') and len(arr) == 0):
         logger.warning(f"Empty/None array received, using default [{default_value}]")
@@ -103,18 +117,15 @@ def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
     
     result = np.array(arr, dtype=float)
     
-    if np.any(np.isnan(result)):
-        nan_count = np.sum(np.isnan(result))
-        logger.warning(f"Array contains {nan_count} NaN values, interpolating")
-        mask = np.isnan(result)
-        if np.any(~mask):
-            result[mask] = np.interp(
-                np.flatnonzero(mask),
-                np.flatnonzero(~mask),
-                result[~mask]
-            )
-        else:
-            result = np.full_like(result, default_value)
+    nonfinite = ~np.isfinite(result)
+    if np.any(nonfinite):
+        positions = np.flatnonzero(nonfinite)
+        raise NonFiniteTelemetryError(
+            channel=name,
+            n_nonfinite=int(positions.size),
+            n_total=int(result.size),
+            positions=positions[:5].tolist(),
+        )
     
     return result
 
@@ -201,11 +212,13 @@ def calculate_raw_delta(
         ... )
         >>> print(f"Final raw delta: {delta[-1]:.3f}s")
     """
-    # Safely convert inputs
-    ref_distance = _safe_array(ref_distance)
-    ref_speed = _safe_array(ref_speed, default_value=100.0)
-    comp_distance = _safe_array(comp_distance)
-    comp_speed = _safe_array(comp_speed, default_value=100.0)
+    # Safely convert inputs (first touch on the Tier-3 path — channel names
+    # make a non-finite rejection actionable; pre-WU-2 an all-NaN speed here
+    # fabricated a camouflaged 100 km/h pseudo-lap)
+    ref_distance = _safe_array(ref_distance, name="ref_distance")
+    ref_speed = _safe_array(ref_speed, default_value=100.0, name="ref_speed")
+    comp_distance = _safe_array(comp_distance, name="comp_distance")
+    comp_speed = _safe_array(comp_speed, default_value=100.0, name="comp_speed")
     
     # Find common distance range (overlap between both laps)
     min_dist = max(ref_distance.min(), comp_distance.min())

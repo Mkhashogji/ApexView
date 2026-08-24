@@ -23,6 +23,7 @@ from services.delta_analysis import (
     align_telemetry_to_distance,
     _safe_array
 )
+from core.errors import NonFiniteTelemetryError
 
 
 # ============================================================================
@@ -109,13 +110,17 @@ class TestSafeArray:
         assert len(result) == 1
         assert result[0] == 5.0
     
-    def test_interpolates_nan_values(self):
-        """Should interpolate NaN values in array."""
+    def test_rejects_nan_values(self):
+        """WU-2: NaN input is rejected, never interpolated into fabricated
+        values. The exception names the channel so the rejection is
+        actionable without a debugging session."""
         arr_with_nan = [1.0, np.nan, 3.0, np.nan, 5.0]
-        result = _safe_array(arr_with_nan)
-        assert not np.any(np.isnan(result))
-        assert result[1] == 2.0  # Interpolated
-        assert result[3] == 4.0  # Interpolated
+        with pytest.raises(NonFiniteTelemetryError) as exc_info:
+            _safe_array(arr_with_nan, name="ref_speed")
+        msg = str(exc_info.value)
+        assert "ref_speed" in msg
+        assert "2 of 5" in msg
+        assert exc_info.value.positions[:2] == [1, 3]
 
 
 # ============================================================================

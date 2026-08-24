@@ -39,6 +39,7 @@ import numpy as np
 
 from services.delta_analysis import DeltaResult, get_delta_change_in_range
 from core.corner_config import CornerAnalysisConfig, get_config_for_circuit
+from core.errors import NonFiniteTelemetryError
 
 logger = logging.getLogger("analysis_service.corner_analysis")
 
@@ -218,20 +219,33 @@ class CornerAnalysisResult:
 # Utility Functions
 # ============================================================================
 
-def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
+def _safe_array(arr, default_value: float = 0.0, name: str = "array") -> np.ndarray:
     """
-    Safely convert input to numpy array, handling None/empty/NaN cases.
+    Safely convert input to numpy array, handling None/empty inputs and
+    rejecting non-finite values.
 
     Module-local helper — not a service-wide standard (an earlier claim here
-    that CLAUDE.md defines it as one was incorrect). Its NaN-interpolation
-    behaviour is under review.
+    that CLAUDE.md defines it as one was incorrect). Since WU-2 the
+    non-finite branch REJECTS instead of interpolating: a NaN or ±inf in a
+    telemetry channel has no honest repaired form ("accurate or absent,
+    never misleading"), and the pre-WU-2 silent np.interp fill was exactly
+    the fabrication G0 eliminated at the acquisition boundary. The guard is
+    isfinite, not isnan, because inf was previously uncaught everywhere
+    (pydantic accepts it; this helper passed it through).
 
     Args:
         arr: Input (list, np.ndarray, None, or empty)
-        default_value: Fallback for empty/invalid arrays
+        default_value: Fallback for empty/None input (empty-input behaviour
+            is unchanged; three tests depend on the fabricated 1-element
+            default)
+        name: Channel name used in the rejection message, so a refusal is
+            actionable without a debugging session
 
     Returns:
         np.ndarray with at least one valid element
+
+    Raises:
+        NonFiniteTelemetryError: if any element is NaN or ±inf
     """
     if arr is None or (hasattr(arr, '__len__') and len(arr) == 0):
         logger.warning(f"Empty/None array received, using default [{default_value}]")
@@ -239,18 +253,15 @@ def _safe_array(arr, default_value: float = 0.0) -> np.ndarray:
 
     result = np.array(arr, dtype=float)
 
-    if np.any(np.isnan(result)):
-        nan_count = np.sum(np.isnan(result))
-        logger.warning(f"Array contains {nan_count} NaN values, interpolating")
-        mask = np.isnan(result)
-        if np.any(~mask):
-            result[mask] = np.interp(
-                np.flatnonzero(mask),
-                np.flatnonzero(~mask),
-                result[~mask]
-            )
-        else:
-            result = np.full_like(result, default_value)
+    nonfinite = ~np.isfinite(result)
+    if np.any(nonfinite):
+        positions = np.flatnonzero(nonfinite)
+        raise NonFiniteTelemetryError(
+            channel=name,
+            n_nonfinite=int(positions.size),
+            n_total=int(result.size),
+            positions=positions[:5].tolist(),
+        )
 
     return result
 
@@ -727,11 +738,12 @@ def analyze_corners(
         f"{delta_result.reference_driver} vs {delta_result.compare_driver}"
     )
 
-    # Convert to numpy arrays
-    ref_distance_arr = _safe_array(ref_distance)
-    ref_brake_arr = _safe_array(ref_brake)
-    comp_distance_arr = _safe_array(comp_distance)
-    comp_brake_arr = _safe_array(comp_brake)
+    # Convert to numpy arrays (first touch on the v1 path — channel names
+    # make a non-finite rejection actionable)
+    ref_distance_arr = _safe_array(ref_distance, name="ref_distance")
+    ref_brake_arr = _safe_array(ref_brake, name="ref_brake")
+    comp_distance_arr = _safe_array(comp_distance, name="comp_distance")
+    comp_brake_arr = _safe_array(comp_brake, name="comp_brake")
 
     # FastF1/API returns brake as 0-1 (boolean converted to float)
     # Convert to 0-100 percentage scale if needed
@@ -1631,13 +1643,14 @@ def analyze_corners_v2(
     # Get circuit-specific configuration
     config = get_config_for_circuit(circuit_id)
 
-    # Convert to numpy arrays
-    ref_distance_arr = _safe_array(ref_distance)
-    ref_brake_arr = _safe_array(ref_brake)
-    ref_speed_arr = _safe_array(ref_speed)
-    comp_distance_arr = _safe_array(comp_distance)
-    comp_brake_arr = _safe_array(comp_brake)
-    comp_speed_arr = _safe_array(comp_speed)
+    # Convert to numpy arrays (first touch on the live v2 path — channel
+    # names make a non-finite rejection actionable)
+    ref_distance_arr = _safe_array(ref_distance, name="ref_distance")
+    ref_brake_arr = _safe_array(ref_brake, name="ref_brake")
+    ref_speed_arr = _safe_array(ref_speed, name="ref_speed")
+    comp_distance_arr = _safe_array(comp_distance, name="comp_distance")
+    comp_brake_arr = _safe_array(comp_brake, name="comp_brake")
+    comp_speed_arr = _safe_array(comp_speed, name="comp_speed")
 
     # Analyze each corner (initial pass)
     corner_results: List[CornerResultV2] = []

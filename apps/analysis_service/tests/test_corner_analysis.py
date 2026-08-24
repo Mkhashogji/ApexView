@@ -28,6 +28,7 @@ from services.corner_analysis import (
     APPROACH_MARGIN_METERS,
 )
 from services.delta_analysis import DeltaResult
+from core.errors import NonFiniteTelemetryError
 
 
 # ============================================================================
@@ -123,22 +124,30 @@ class TestSafeArray:
         assert len(result) == 1
         assert result[0] == 5.0
 
-    def test_safe_array_handles_nan_values(self):
-        """Test that NaN values are interpolated."""
-        arr = [1.0, np.nan, 3.0]
-        result = _safe_array(arr)
-        assert len(result) == 3
-        assert result[0] == 1.0
-        assert result[2] == 3.0
-        # Middle value should be interpolated to ~2.0
-        assert abs(result[1] - 2.0) < 0.01
+    def test_safe_array_rejects_nan_and_inf(self):
+        """WU-2: non-finite values (NaN AND ±inf) are rejected, never
+        interpolated. inf is included deliberately — it was previously
+        uncaught by both pydantic and this helper."""
+        with pytest.raises(NonFiniteTelemetryError) as exc_info:
+            _safe_array([1.0, np.nan, 3.0], name="speed")
+        msg = str(exc_info.value)
+        assert "speed" in msg
+        assert "1 of 3" in msg
+        assert exc_info.value.positions == [1]
 
-    def test_safe_array_all_nan(self):
-        """Test that all-NaN array uses default."""
-        arr = [np.nan, np.nan, np.nan]
-        result = _safe_array(arr, default_value=10.0)
-        assert len(result) == 3
-        assert all(v == 10.0 for v in result)
+        with pytest.raises(NonFiniteTelemetryError) as inf_info:
+            _safe_array([1.0, np.inf, 3.0, -np.inf], name="distance")
+        assert "distance" in str(inf_info.value)
+        assert inf_info.value.n_nonfinite == 2
+
+    def test_safe_array_rejects_all_nan(self):
+        """WU-2: an all-NaN array is rejected — no full-length default fill.
+        (Pre-WU-2 this fabricated a constant default_value array.)"""
+        with pytest.raises(NonFiniteTelemetryError) as exc_info:
+            _safe_array([np.nan, np.nan, np.nan], name="brake", default_value=10.0)
+        msg = str(exc_info.value)
+        assert "brake" in msg
+        assert "3 of 3" in msg
 
 
 # ============================================================================

@@ -1,5 +1,5 @@
 # F1 Engineering API Dockerfile
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:90744cff8f32887f075c47d747a173ff333e9e98801667af93c357fa9f5e28ff
 
 # Set working directory
 WORKDIR /app
@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only requirements first to leverage Docker cache
-COPY apps/api/pyproject.toml ./
+COPY apps/api/pyproject.toml apps/api/constraints.txt ./
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+RUN pip install --no-cache-dir pip==26.2.1 && \
+    pip install --no-cache-dir -c constraints.txt .
 
 # Copy application code
 COPY apps/api/app /app/app

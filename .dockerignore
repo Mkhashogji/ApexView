@@ -43,7 +43,8 @@ pnpm-debug.log*
 
 # Testing
 coverage
-.pytest_cache
+**/.pytest_cache
+**/*.egg-info
 
 # Documentation
 docs
